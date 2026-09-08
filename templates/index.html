@@ -120,12 +120,85 @@
         .modelo-info h4 {
             margin-bottom: 10px;
         }
+
+        /* Responsividade Mobile */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px 10px;
+            }
+
+            header {
+                margin-bottom: 20px;
+            }
+
+            header h1 {
+                font-size: 1.7rem;
+            }
+
+            header p {
+                font-size: 0.9rem;
+            }
+
+            .user-top-bar {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 12px !important;
+                padding: 12px 14px !important;
+            }
+
+            .user-top-bar-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .user-top-bar-actions {
+                display: flex;
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                gap: 8px !important;
+                padding-bottom: 4px;
+                width: 100%;
+                scrollbar-width: none;
+            }
+
+            .user-top-bar-actions::-webkit-scrollbar {
+                display: none;
+            }
+
+            .user-top-bar-actions > a {
+                flex: 0 0 auto;
+                font-size: 0.82rem !important;
+                padding: 7px 12px !important;
+                white-space: nowrap;
+            }
+
+            .loterias-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+                margin-top: 18px;
+            }
+
+            .loteria-card {
+                padding: 18px 16px;
+            }
+
+            .modelo-info {
+                padding: 16px 14px;
+                margin-top: 20px;
+                font-size: 0.88rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; background: rgba(0,0,0,0.2); padding: 12px 20px; border-radius: 14px; backdrop-filter: blur(8px);">
-            <div style="display: flex; align-items: center; gap: 12px; color: white;">
+        <div class="user-top-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; background: rgba(0,0,0,0.2); padding: 12px 20px; border-radius: 14px; backdrop-filter: blur(8px);">
+            <div class="user-top-bar-info" style="display: flex; align-items: center; gap: 12px; color: white;">
                 {% if current_user %}
                     <span>👤 Olá, <strong>{{ current_user.name or current_user.email }}</strong></span>
                     {% if access and access.is_vip %}
@@ -137,7 +210,7 @@
                     {% endif %}
                 {% endif %}
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div class="user-top-bar-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <a href="/planos" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 800; box-shadow: 0 4px 10px rgba(245,158,11,0.3);">
                     💎 Planos / VIP (R$ 29,90)
                 </a>

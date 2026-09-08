@@ -494,16 +494,87 @@
 
         @media (max-width: 768px) {
             .navbar {
-                padding: 15px 5%;
+                padding: 12px 16px;
             }
             .nav-links {
                 display: none;
             }
+            .logo {
+                font-size: 1.15rem;
+            }
+            .nav-actions {
+                gap: 8px;
+            }
+            .nav-actions .btn-secondary,
+            .nav-actions .btn-primary {
+                padding: 7px 12px;
+                font-size: 0.82rem;
+            }
+            .hero {
+                padding: 40px 16px;
+            }
             .hero h1 {
-                font-size: 2.3rem;
+                font-size: 1.85rem;
+                line-height: 1.25;
+            }
+            .hero p {
+                font-size: 0.95rem;
+            }
+            .hero-cta-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 12px;
+            }
+            .hero-cta-group a {
+                width: 100%;
+                text-align: center;
+            }
+            .loterias-grid,
+            .features-grid,
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
             }
             .pricing-card.featured {
                 transform: none;
+            }
+            .pricing-card {
+                padding: 24px 18px;
+            }
+            #lgpd-cookie-banner {
+                left: 10px !important;
+                right: 10px !important;
+                bottom: 10px !important;
+                padding: 14px 16px !important;
+            }
+            #lgpd-cookie-banner > div {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+            #lgpd-cookie-banner > div > div:last-child {
+                flex-direction: column;
+                width: 100%;
+            }
+            #lgpd-cookie-banner button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 10px 12px;
+            }
+            .logo {
+                font-size: 1.05rem;
+            }
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+            .badge-pill {
+                font-size: 0.75rem;
+                padding: 6px 12px;
             }
         }
     </style>

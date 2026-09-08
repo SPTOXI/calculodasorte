@@ -728,6 +728,8 @@
                 border: 1px solid #999 !important;
                 box-shadow: none !important;
             }
+        }
+
         /* Estilos do Histórico de Apostas Salvas */
         .aposta-salva-card {
             background: white;
@@ -852,6 +854,368 @@
             transition: opacity 0.2s;
         }
         .btn-aposta-action:hover { opacity: 0.9; }
+
+        /* ==========================================================================
+           RESPONSIVIDADE MOBILE (Tablets e Smartphones: max-width 768px e 480px)
+           ========================================================================== */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 8px;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            header {
+                margin-bottom: 16px;
+            }
+
+            header h1 {
+                font-size: 1.55rem;
+                line-height: 1.25;
+            }
+
+            header p {
+                font-size: 0.85rem;
+            }
+
+            /* Barra de Navegação Superior e Usuário */
+            .nav-top-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+
+            .nav-top-bar > div:first-child {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .btn-voltar {
+                width: 100%;
+                justify-content: center;
+                padding: 9px 14px;
+                font-size: 0.9rem;
+            }
+
+            .downloads-bar {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+                gap: 8px;
+                width: 100%;
+                scrollbar-width: none;
+            }
+
+            .downloads-bar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .btn-download {
+                flex: 0 0 auto;
+                padding: 7px 12px;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
+            /* Banner de Regras e Limites Oficiais */
+            .loteria-regras-banner {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                padding: 14px;
+                margin-bottom: 16px;
+            }
+
+            .regra-divider {
+                display: none;
+            }
+
+            .regra-item {
+                gap: 8px;
+            }
+
+            .regra-icone {
+                font-size: 1.4rem;
+            }
+
+            .regra-label {
+                font-size: 0.68rem;
+            }
+
+            .regra-valor {
+                font-size: 0.95rem;
+            }
+
+            .loteria-regras-banner > .regra-item:last-child {
+                grid-column: span 2;
+                border-top: 1px solid #f1f5f9;
+                padding-top: 8px;
+            }
+
+            /* Sistema de Abas com Scroll Horizontal Touch */
+            .tabs {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                gap: 8px;
+                margin-bottom: 14px;
+                padding-bottom: 6px;
+                scrollbar-width: none;
+            }
+
+            .tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-btn {
+                flex: 0 0 auto;
+                padding: 9px 14px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+
+            /* Caixa de Conteúdo da Aba */
+            .tab-content {
+                padding: 16px 12px;
+                border-radius: 12px;
+            }
+
+            /* Tab 1: Status Caixa e Lista de Concursos */
+            .status-badge-caixa {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 12px 14px;
+            }
+
+            .status-badge-caixa > div:last-child {
+                flex-direction: column;
+                width: 100%;
+                gap: 6px;
+            }
+
+            .status-badge-caixa .btn-download,
+            .status-badge-caixa .btn-action {
+                width: 100%;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .concurso-card {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .bolas-caixa {
+                gap: 5px;
+            }
+
+            .bola-caixa {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+
+            /* Tab 2: Inputs e Ações Manuais */
+            textarea {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+
+            .input-group label {
+                font-size: 0.95rem;
+            }
+
+            /* Tab 3: Gerador de Jogos e Modos */
+            .modo-selector-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .modo-card {
+                padding: 14px 16px;
+            }
+
+            .volante-container {
+                padding: 14px 10px;
+            }
+
+            .volante-grid {
+                grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+                gap: 6px;
+                max-height: 240px;
+            }
+
+            .volante-bola {
+                height: 32px;
+                font-size: 0.85rem;
+            }
+
+            .jogos-grid-container {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .jogo-card {
+                padding: 14px;
+            }
+
+            .bola {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
+
+            .actions-export-bar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px;
+                gap: 10px;
+            }
+
+            .actions-export-bar > div {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                gap: 8px;
+            }
+
+            .actions-export-bar .btn-action,
+            .actions-export-bar .btn-download {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Botões de Ação Gerais */
+            .btn-action {
+                padding: 10px 18px;
+                font-size: 0.95rem;
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Tab 4: Apostas Salvas */
+            .aposta-salva-card {
+                padding: 14px;
+            }
+
+            .aposta-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .aposta-jogo-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+                padding: 10px 12px;
+            }
+
+            .bola-aposta {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+
+            .aposta-actions-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .btn-aposta-action {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Tab 5: Grids de Estatísticas */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-card .value {
+                font-size: 1.35rem;
+            }
+
+            .stat-card h4 {
+                font-size: 0.8rem;
+            }
+
+            .stat-card .label {
+                font-size: 0.78rem;
+            }
+
+            /* Tab 6: Tabelas */
+            table th, table td {
+                padding: 8px 10px;
+                font-size: 0.82rem;
+            }
+
+            /* Modal de Paywall */
+            #paywall-modal > div {
+                padding: 22px 18px !important;
+                max-width: 95% !important;
+            }
+
+            /* Chat Flutuante IA - Mobile Bottom Sheet Drawer */
+            #ai-chat-floating-btn {
+                bottom: 16px !important;
+                right: 16px !important;
+                width: 52px !important;
+                height: 52px !important;
+                font-size: 1.6rem !important;
+            }
+
+            #ai-chat-panel {
+                position: fixed !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 85vh !important;
+                max-height: 85vh !important;
+                border-radius: 20px 20px 0 0 !important;
+                border-bottom: none !important;
+                border-left: none !important;
+                border-right: none !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .loteria-regras-banner {
+                grid-template-columns: 1fr;
+            }
+
+            .loteria-regras-banner > .regra-item:last-child {
+                grid-column: span 1;
+            }
+
+            .bola {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
