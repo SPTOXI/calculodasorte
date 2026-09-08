@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora da Sorte — Ciência Matemática e IA para Loterias</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --gold: #f59e0b;
+            --gold-dark: #d97706;
+            --dark: #0f172a;
+            --dark-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0b1120;
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: var(--primary-light);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--gold));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-secondary {
+            color: white;
+            text-decoration: none;
+            padding: 9px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 90px 8% 70px;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.15) 0%, transparent 60%);
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(5, 150, 105, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--primary-light);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hero h1 {
+            font-size: 3.4rem;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span.gradient-text {
+            background: linear-gradient(135deg, #34d399 0%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 780px;
+            margin: 0 auto 36px;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .btn-large {
+            padding: 16px 36px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #1a1a1a;
+            font-weight: 800;
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+            color: #000;
+        }
+
+        .trust-metrics {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .metric-item strong {
+            display: block;
+            font-size: 1.6rem;
+            color: white;
+            font-weight: 800;
+        }
+
+        .metric-item span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Loterias Suportadas */
+        .section {
+            padding: 80px 8%;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        .loterias-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .loteria-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 24px;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .loteria-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-light);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .loteria-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .loteria-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .loteria-badge {
+            background: rgba(5, 150, 105, 0.2);
+            color: var(--primary-light);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .loteria-card-details {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .loteria-card-details li {
+            list-style: none;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 3 Pilares Científicos */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 36px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(5, 150, 105, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--primary-light);
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Tabela de Preços & Planos */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            gap: 30px;
+            align-items: stretch;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 36px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border: 2px solid var(--primary-light);
+            background: linear-gradient(180deg, #13272f 0%, var(--dark-card) 100%);
+            transform: scale(1.03);
+            box-shadow: 0 10px 35px rgba(5, 150, 105, 0.25);
+        }
+
+        .pricing-ribbon {
+            position: absolute;
+            top: -14px;
+            right: 24px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 4px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pricing-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .pricing-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .pricing-price {
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .pricing-features li {
+            font-size: 0.92rem;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 50px 8% 30px;
+            background: #080d1a;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+        }
+
+        .footer-disclaimer {
+            font-size: 0.8rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.5;
+        }
+
+        .footer-copy {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 5%;
+            }
+            .nav-links {
+                display: none;
+            }
+            .hero h1 {
+                font-size: 2.3rem;
+            }
+            .pricing-card.featured {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navegação -->
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <div class="logo-icon">🎲</div>
+            Calculadora da <span>Sorte</span>
+        </a>
+        <div class="nav-links">
+            <a href="#loterias">Loterias</a>
+            <a href="#diferenciais">Como Funciona</a>
+            <a href="#planos">Planos & Preços</a>
+            <a href="#ia">Agente IA</a>
+        </div>
+        <div class="nav-actions">
+            <a href="/login" class="btn-secondary">Entrar</a>
+            <a href="/cadastro" class="btn-primary">Criar Conta Grátis</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="badge-pill">
+            <span>✨ Tecnologia Canônica 3.0 + Agente IA Oficial</span>
+        </div>
+        <h1>
+            Pare de Apostar no Escuro.<br>
+            Transforme <span class="gradient-text">Sorte em Ciência Estatística</span>.
+        </h1>
+        <p>
+            O primeiro software do Brasil que combina o <strong>Modelo Canônico MCSCE 3.0</strong>, microdinâmica estocástica e <strong>Inteligência Artificial</strong> sincronizada aos sorteios oficiais da Caixa Econômica Federal.
+        </p>
+
+        <div class="hero-cta-group">
+            <a href="/cadastro" class="btn-primary btn-large btn-gold">
+                🎁 Comece Agora com 1 Análise Grátis
+            </a>
+            <a href="#planos" class="btn-secondary btn-large">
+                Conhecer Planos e Preços
+            </a>
+        </div>
+
+        <div class="trust-metrics">
+            <div class="metric-item">
+                <strong>9 Loterias Oficiais</strong>
+                <span>Mega-Sena, Lotofácil, Quina e mais</span>
+            </div>
+            <div class="metric-item">
+                <strong>23:59h</strong>
+                <span>Sincronização diária com a Caixa</span>
+            </div>
+            <div class="metric-item">
+                <strong>7 Camadas</strong>
+                <span>Do Modelo Canônico MCSCE</span>
+            </div>
+            <div class="metric-item">
+                <strong>100% Privado</strong>
+                <span>Histórico exclusivo do apostador</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- As 9 Loterias -->
+    <section id="loterias" class="section">
+        <div class="section-header">
+            <h2>As 9 Loterias Oficiais da Caixa Suportadas</h2>
+            <p>Selecione a sua modalidade preferida e descubra as tendências de convergência matemática de cada sorteio.</p>
+        </div>
+
+        <div class="loterias-grid">
+            <!-- Mega Sena -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>Mega-Sena</h3>
+                        <span class="loteria-badge">Mais Popular</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 1 a 60 números</li>
+                        <li>⭐ Sorteados: 6 dezenas</li>
+                        <li>🟢 Aposta mínima: 6 dezenas (R$ 5,00)</li>
+                        <li>🟣 Fechamentos até: 20 dezenas</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Mega-Sena</a>
+            </div>
+
+            <!-- Lotofacil -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>Lotofácil</h3>
+                        <span class="loteria-badge">Maior Probabilidade</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 1 a 25 números</li>
+                        <li>⭐ Sorteados: 15 dezenas</li>
+                        <li>🟢 Aposta mínima: 15 dezenas (R$ 3,00)</li>
+                        <li>🟣 Fechamentos até: 20 dezenas</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Lotofácil</a>
+            </div>
+
+            <!-- Quina -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>Quina</h3>
+                        <span class="loteria-badge">Sorteios Diários</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 1 a 80 números</li>
+                        <li>⭐ Sorteados: 5 dezenas</li>
+                        <li>🟢 Aposta mínima: 5 dezenas (R$ 2,50)</li>
+                        <li>🟣 Fechamentos até: 15 dezenas</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Quina</a>
+            </div>
+
+            <!-- Lotomania -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>Lotomania</h3>
+                        <span class="loteria-badge">100 Números</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 1 a 100 números</li>
+                        <li>⭐ Sorteados: 20 dezenas</li>
+                        <li>🟢 Aposta: 50 números</li>
+                        <li>🟣 Faixas de acerto: 20, 19, 18, 17, 16, 15 ou 0</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Lotomania</a>
+            </div>
+
+            <!-- +Milionária -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>+Milionária</h3>
+                        <span class="loteria-badge">Super Prêmios</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 50 números + 6 trevos</li>
+                        <li>⭐ Sorteados: 6 dezenas + 2 trevos</li>
+                        <li>🟢 Aposta mínima: R$ 6,00</li>
+                        <li>🟣 Análise estocástica combinada</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar +Milionária</a>
+            </div>
+
+            <!-- Dia de Sorte -->
+            <div class="loteria-card">
+                <div>
+                    <div class="loteria-card-top">
+                        <h3>Dia de Sorte</h3>
+                        <span class="loteria-badge">31 Dias</span>
+                    </div>
+                    <ul class="loteria-card-details">
+                        <li>🎯 Volante: 31 números + 12 meses</li>
+                        <li>⭐ Sorteados: 7 dezenas + Mês de Sorte</li>
+                        <li>🟢 Aposta mínima: 7 dezenas (R$ 2,50)</li>
+                        <li>🟣 Fechamentos até: 14 dezenas</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Dia de Sorte</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Como Funciona / 3 Pilares -->
+    <section id="diferenciais" class="section" style="background: rgba(15, 23, 42, 0.6);">
+        <div class="section-header">
+            <h2>Por que a Calculadora da Sorte é Diferente?</h2>
+            <p>Esqueça os "palpites místicos" ou geradores aleatórios comuns. Conheça os 3 pilares matemáticos da nossa plataforma:</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📐</div>
+                <h3>1. Modelo Canônico 3.0 (MCSCE)</h3>
+                <p>
+                    Algoritmo estocástico em 7 camadas que examina convergência temporal (LLN), índice de estabilidade (ICT), classes A-B-C-D, entropia informacional de Shannon e validação Bayesiana sobre todos os concursos da Caixa.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎲</div>
+                <h3>2. Fechamentos e Desdobramentos</h3>
+                <p>
+                    O sistema elimina combinações estatisticamente mortas (como 5 números consecutivos ou dezenas sem dispersão) e monta cartelas de fechamento inteligente baseadas no seu grupo favorito de números.
+                </p>
+            </div>
+
+            <div class="feature-card" id="ia">
+                <div class="feature-icon">🤖</div>
+                <h3>3. Agente IA Consultor de Loterias</h3>
+                <p>
+                    Inteligência Artificial avançada que lê todos os números, interpreta as tendências da rodada e gera um parecer didático, explicando exatamente por que aquelas combinações têm maior probabilidade harmônica.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planos e Preços -->
+    <section id="planos" class="section">
+        <div class="section-header">
+            <h2>Escolha o Plano Ideal para as Suas Apostas</h2>
+            <p>Transparência total: pague por análise avulsa ou tenha acesso ilimitado com a assinatura mensal.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Degustação Grátis -->
+            <div class="pricing-card">
+                <div>
+                    <h3 class="pricing-title">Degustação Grátis</h3>
+                    <div class="pricing-subtitle">Para experimentar a inteligência do sistema</div>
+                    <div class="pricing-price">R$ 0 <span>/ cadastro</span></div>
+                    <ul class="pricing-features">
+                        <li>✅ <strong>1 Análise Completa de Cortesia</strong></li>
+                        <li>✅ Acesso a qualquer uma das 9 loterias</li>
+                        <li>✅ Geração de palpites inteligentes</li>
+                        <li>✅ Parecer básico do Agente IA</li>
+                        <li>✅ Download em formato .TXT</li>
+                    </ul>
+                </div>
+                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Criar Conta e Ganhar 1 Grátis</a>
+            </div>
+
+            <!-- VIP Mensal (Destaque) -->
+            <div class="pricing-card featured">
+                <div class="pricing-ribbon">⭐ Mais Escolhido</div>
+                <div>
+                    <h3 class="pricing-title">Plano VIP Ilimitado</h3>
+                    <div class="pricing-subtitle">Para apostadores assíduos e bolões</div>
+                    <div class="pricing-price">R$ 29,90 <span>/ mês</span></div>
+                    <ul class="pricing-features">
+                        <li>👑 <strong>Acesso 100% Ilimitado a Todas as 9 Loterias</strong></li>
+                        <li>👑 <strong>Gerador sem limites de jogos</strong> (de 1 a 100 apostas)</li>
+                        <li>👑 <strong>Fechamento e Desdobramento Manual com Volante</strong></li>
+                        <li>👑 <strong>Histórico permanente de apostas salvas no SQLite</strong></li>
+                        <li>👑 <strong>Conferência Automática Oficial de Acertos com a Caixa</strong></li>
+                        <li>👑 <strong>Pareceres completos do Agente IA + Chat Consultor</strong></li>
+                        <li>👑 <strong>Exportação completa (.TXT, .MD e PDF formatado)</strong></li>
+                    </ul>
+                </div>
+                <a href="/cadastro?plano=vip" class="btn-primary btn-gold" style="text-align: center; justify-content: center; font-size: 1.05rem;">
+                    Assinar Plano VIP (R$ 29,90)
+                </a>
+            </div>
+
+            <!-- Avulso Pay-per-use -->
+            <div class="pricing-card">
+                <div>
+                    <h3 class="pricing-title">Análise Avulsa</h3>
+                    <div class="pricing-subtitle">Pague apenas quando for registrar seus jogos</div>
+                    <div class="pricing-price">R$ 3,00 <span>a R$ 5,00 / análise</span></div>
+                    <ul class="pricing-features">
+                        <li>✅ <strong>Valor correspondente à aposta oficial da loteria</strong></li>
+                        <li>✅ Mega-Sena: R$ 5,00 por análise</li>
+                        <li>✅ Lotofácil: R$ 3,00 por análise</li>
+                        <li>✅ Quina: R$ 2,50 por análise</li>
+                        <li>✅ Pagamento instantâneo via PIX</li>
+                        <li>✅ Geração de jogos para a rodada escolhida</li>
+                    </ul>
+                </div>
+                <a href="/cadastro?plano=avulso" class="btn-secondary" style="text-align: center;">Comprar Análise Avulsa</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <p class="footer-disclaimer">
+            <strong>Aviso de Responsabilidade e Transparência:</strong> A Calculadora da Sorte é uma plataforma de pesquisa e análise probabilística baseada em modelos matemáticos e estatísticos (Modelo Canônico MCSCE 3.0 e inteligência artificial). Loterias são jogos de prognósticos estocásticos e dependem de sorteio oficial realizado pela Caixa Econômica Federal. Nossos cálculos otimizam combinações estatísticas, mas não garantem prêmios fixos. Jogue com responsabilidade. Proibido para menores de 18 anos.
+        </p>
+        <p class="footer-copy">
+            © 2026 Calculadora da Sorte — Todos os direitos reservados.
+        </p>
+    </footer>
+
+</body>
+</html>

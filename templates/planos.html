@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planos & Recargas PIX — Calculadora da Sorte</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --gold: #f59e0b;
+            --gold-dark: #d97706;
+            --dark: #0f172a;
+            --dark-card: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0b1120;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 40px 20px;
+            background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.15) 0%, #0b1120 60%);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .btn-back {
+            color: #94a3b8;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .btn-back:hover {
+            color: white;
+        }
+
+        .user-status-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .badge-status {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .badge-vip {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--gold);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-credits {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--primary-light);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-size: 2.3rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .plan-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 36px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .plan-card.highlight {
+            border: 2px solid var(--primary-light);
+            background: linear-gradient(180deg, #13272f 0%, var(--dark-card) 100%);
+            box-shadow: 0 10px 30px rgba(5, 150, 105, 0.2);
+        }
+
+        .plan-ribbon {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .plan-price {
+            font-size: 2.6rem;
+            font-weight: 900;
+            margin: 16px 0 24px;
+            color: white;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: normal;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .plan-features li {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+        }
+
+        .btn-green:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #1a1a1a;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+            color: #000;
+        }
+
+        /* Modal PIX */
+        .pix-modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .pix-modal {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .pix-qrcode-box {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .pix-copia-cola-box {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.82rem;
+            color: #38bdf8;
+            word-break: break-all;
+            margin-bottom: 20px;
+            max-height: 90px;
+            overflow-y: auto;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="top-nav">
+            <a href="/dashboard" class="btn-back">← Voltar para as Loterias</a>
+            <div style="font-weight: 700; color: var(--primary-light);">🎲 Calculadora da Sorte</div>
+        </div>
+
+        <!-- Status do Usuário -->
+        <div class="user-status-card">
+            <div>
+                <strong style="font-size: 1.1rem; color: white;">Olá, {{ user.name or user.email }}!</strong>
+                <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 4px;">
+                    E-mail: {{ user.email }}
+                </div>
+            </div>
+            <div>
+                {% if access.is_vip %}
+                    <span class="badge-status badge-vip">👑 Assinante VIP Ilimitado</span>
+                {% elif access.credits > 0 %}
+                    <span class="badge-status badge-credits">🪙 {{ access.credits }} Análise(s) Disponível(is)</span>
+                {% else %}
+                    <span class="badge-status" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">
+                        ⚠️ Nenhum Crédito Ativo
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="page-header">
+            <h1>Escolha seu Plano ou Recarga PIX</h1>
+            <p>Ativação imediata via PIX. Escolha a melhor opção para seu perfil de apostas:</p>
+        </div>
+
+        <div class="plans-grid">
+            <!-- Opção 1: VIP Mensal -->
+            <div class="plan-card highlight">
+                <div class="plan-ribbon">⭐ Mais Vantajoso</div>
+                <div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Plano VIP Mensal</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Acesso total, livre e ilimitado por 30 dias</p>
+                    <div class="plan-price">
+                        R$ 29,90 <span>/ mês</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li>👑 <strong>Todas as 9 loterias oficiais da Caixa liberadas</strong></li>
+                        <li>👑 <strong>Geração ilimitada de apostas</strong> (de 1 a 100 jogos)</li>
+                        <li>👑 <strong>Fechamento inteligente com volante de dezenas</strong></li>
+                        <li>👑 <strong>Pareceres completos do Agente IA em tempo real</strong></li>
+                        <li>👑 <strong>Conferência automática oficial de prêmios com a Caixa</strong></li>
+                        <li>👑 <strong>Histórico permanente de todos os seus jogos</strong></li>
+                    </ul>
+                </div>
+                <button class="btn-checkout btn-gold" onclick="iniciarCheckoutPix('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')">
+                    ⚡ Ativar VIP por R$ 29,90 via PIX
+                </button>
+            </div>
+
+            <!-- Opção 2: Análise Avulsa -->
+            <div class="plan-card">
+                <div>
+                    <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Análise Avulsa</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Valor correspondente ao bilhete oficial da Caixa</p>
+                    <div class="plan-price">
+                        R$ 5,00 <span>/ crédito</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li>✅ <strong>1 Crédito completo de análise e geração</strong></li>
+                        <li>✅ Escolha qualquer loteria (Mega, Quina, Lotofácil)</li>
+                        <li>✅ Gera até 20 jogos otimizados na rodada</li>
+                        <li>✅ Parecer técnico do Modelo Canônico</li>
+                        <li>✅ Exportação em .TXT e .MD</li>
+                        <li>✅ Sem compromisso de mensalidade</li>
+                    </ul>
+                </div>
+                <button class="btn-checkout btn-green" onclick="iniciarCheckoutPix('avulso', 5.00, '1 Crédito de Análise Avulsa')">
+                    🪙 Comprar 1 Crédito (R$ 5,00) via PIX
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal PIX Dinâmico -->
+    <div class="pix-modal-backdrop" id="pix-modal">
+        <div class="pix-modal">
+            <h2 style="font-size: 1.5rem; color: white; margin-bottom: 8px;" id="pix-titulo">Pagamento Instantâneo PIX</h2>
+            <div style="color: var(--primary-light); font-weight: 800; font-size: 1.3rem; margin-bottom: 12px;" id="pix-valor">R$ 29,90</div>
+            
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">
+                Abra o app do seu banco, escolha <strong>PIX Copia e Cola</strong> ou aponte a câmera para o QR Code abaixo:
+            </p>
+
+            <div class="pix-qrcode-box">
+                <!-- QR Code SVG ilustrativo dinâmico -->
+                <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" fill="white"/>
+                    <rect x="10" y="10" width="30" height="30" fill="#059669"/>
+                    <rect x="15" y="15" width="20" height="20" fill="white"/>
+                    <rect x="20" y="20" width="10" height="10" fill="#059669"/>
+                    
+                    <rect x="60" y="10" width="30" height="30" fill="#059669"/>
+                    <rect x="65" y="15" width="20" height="20" fill="white"/>
+                    <rect x="70" y="20" width="10" height="10" fill="#059669"/>
+
+                    <rect x="10" y="60" width="30" height="30" fill="#059669"/>
+                    <rect x="15" y="65" width="20" height="20" fill="white"/>
+                    <rect x="20" y="70" width="10" height="10" fill="#059669"/>
+
+                    <rect x="50" y="50" width="15" height="15" fill="#047857"/>
+                    <rect x="70" y="65" width="20" height="15" fill="#047857"/>
+                    <rect x="50" y="75" width="15" height="15" fill="#047857"/>
+                </svg>
+            </div>
+
+            <div style="font-size: 0.85rem; color: #94a3b8; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
+            <div class="pix-copia-cola-box" id="pix-codigo">Carregando código PIX...</div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-checkout btn-green" onclick="copiarPixCodigo()" style="flex: 1;">
+                    📋 Copiar Código PIX
+                </button>
+            </div>
+
+            <!-- Botão de Ativação / Simulação -->
+            <button class="btn-checkout btn-gold" id="btn-confirmar-pix" onclick="confirmarPagamentoPix()">
+                ✅ Confirmar Pagamento e Liberar Agora
+            </button>
+
+            <button onclick="fecharModalPix()" style="background: none; border: none; color: #94a3b8; margin-top: 15px; cursor: pointer; font-size: 0.9rem;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let pagamentoAtualId = null;
+
+        async function iniciarCheckoutPix(tipo, valor, titulo) {
+            document.getElementById('pix-titulo').textContent = titulo;
+            document.getElementById('pix-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+            document.getElementById('pix-modal').style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/checkout/pix', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tipo, valor })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    pagamentoAtualId = data.pagamento.id;
+                    document.getElementById('pix-codigo').textContent = data.pagamento.pix_copia_cola;
+                } else {
+                    alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
+                }
+            } catch (e) {
+                alert('Erro de conexão ao gerar PIX: ' + e.message);
+            }
+        }
+
+        function copiarPixCodigo() {
+            const codigo = document.getElementById('pix-codigo').textContent;
+            navigator.clipboard.writeText(codigo).then(() => {
+                alert('Código PIX copiado com sucesso! Abra o aplicativo do seu banco e cole no PIX Copia e Cola.');
+            });
+        }
+
+        async function confirmarPagamentoPix() {
+            if (!pagamentoAtualId) return;
+            const btn = document.getElementById('btn-confirmar-pix');
+            btn.innerHTML = '⏳ <em>Validando pagamento...</em>';
+            
+            try {
+                const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('🎉 Pagamento aprovado com sucesso! Seu acesso já está liberado.');
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Status: ' + (data.erro || 'Aguardando compensação do PIX.'));
+                    btn.innerHTML = '✅ Confirmar Pagamento e Liberar Agora';
+                }
+            } catch (e) {
+                alert('Erro: ' + e.message);
+                btn.innerHTML = '✅ Confirmar Pagamento e Liberar Agora';
+            }
+        }
+
+        function fecharModalPix() {
+            document.getElementById('pix-modal').style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>

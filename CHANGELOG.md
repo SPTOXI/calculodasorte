@@ -5,6 +5,32 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 
 ---
 
+### [v1.5.0] - 2026-09-08 — Landing Page de Alta Conversão, Cadastro Obrigatório, Monetização PIX & Agente Consultor IA
+#### 🚀 Novas Funcionalidades
+- **Landing Page de Alta Conversão (`/`):**
+  - Apresentação visual moderna e persuasiva para atrair apostadores de loteria.
+  - Seções de destaque: Hero com chamada para ação ("Gerar Palpites com IA"), vitrine interativa das 9 modalidades oficiais da Caixa, os 3 Pilares Científicos do Modelo Canônico 3.0, Tabela de Planos e Depoimentos de Apostadores.
+  - Visitantes não autenticados veem a Landing Page; usuários autenticados são direcionados automaticamente para o `/dashboard`.
+- **Autenticação Obrigatória & Cadastro de Apostadores (`/cadastro` e `/login`):**
+  - Registro de novos usuários com nome, e-mail e senha.
+  - Cada apostador possui conta própria e histórico privado e seguro de palpites e conferências.
+  - Concessão automática de **1 crédito de degustação gratuito** no cadastro para testar a inteligência do sistema sem custo inicial.
+- **Sistema de Monetização com Checkout PIX Imediato (`/planos`):**
+  - **Plano VIP Mensal (R$ 29,90/mês):** Acesso ilimitado a todas as 9 loterias, gerações sem limite, exportações e pareceres com o Agente IA.
+  - **Plano Avulso por Análise (R$ 3,00 a R$ 5,00):** Cobrança unitária por lote de palpites gerados ao valor exato da aposta oficial da loteria.
+  - Geração automática de chave Copia e Cola do PIX e QR Code para pagamento instantâneo.
+  - Tabela `payments` no SQLite para rastreamento de transações, txid e aprovação.
+  - Modal de Paywall automático na interface quando os créditos se esgotam.
+- **Agente IA Consultor Estatístico (`ai_agent.py`):**
+  - Integração via REST de alto desempenho com **Google Gemini 1.5 Flash** (chave `GEMINI_API_KEY` ou `GOOGLE_API_KEY`) e **Anthropic Claude 3.5 Haiku** (`ANTHROPIC_API_KEY`), compatível com Vercel (sem dependências pesadas de C++).
+  - **Motor Heurístico Canônico 3.0 Nativo (Fallback):** Produz pareceres técnicos e didáticos humanizados mesmo sem chaves de API externas configuradas.
+  - Card de Parecer Técnico da IA na Aba do Gerador de Jogos avaliando estabilidade estocástica, entropia e balanceamento das cartelas geradas.
+  - Chat Flutuante Interativo (Widget IA) no canto inferior direito para tirar dúvidas matemáticas sobre as probabilidades e estratégias da loteria em tempo real.
+- **Barra de Perfil & Créditos em Tempo Real:**
+  - Exibição de badge VIP (`👑 VIP ILIMITADO`) ou créditos restantes (`🪙 X CRÉDITO(S)`) no topo de todas as páginas (`/dashboard` e `/analise/<loteria>`).
+
+---
+
 ### [v1.4.0] - 2026-09-08 — Histórico de Apostas do Usuário & Conferência Caixa
 #### 🚀 Novas Funcionalidades
 - **Histórico Permanente de Apostas (`user_bets`):** Criada tabela no banco SQLite (`database.db`) para persistir todos os jogos gerados e salvos pelo usuário, vinculados ao seu login ou sessão.

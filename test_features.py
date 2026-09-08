@@ -153,13 +153,148 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
     def test_08_excluir_aposta_usuario(self):
         """Testa a exclusão de uma aposta salva"""
-        aposta_id = self.test_06_salvar_e_listar_apostas_usuario()
+        # Salva aposta auxiliar para testar exclusão
+        res_salvar = self.client.post('/api/apostas/salvar',
+            data=json.dumps({
+                'loteria_type': 'mega_sena',
+                'modalidade': 'fechamento',
+                'jogos': [[1, 2, 3, 4, 5, 6]],
+                'titulo': 'Para Teste Exclusao'
+            }),
+            content_type='application/json'
+        )
+        aposta_id = res_salvar.get_json()['aposta_id']
         res_del = self.client.delete(f'/api/apostas/{aposta_id}')
         self.assertEqual(res_del.status_code, 200)
         dados_del = res_del.get_json()
         self.assertTrue(dados_del['sucesso'])
 
+    def test_09_cadastro_novo_usuario_com_credito(self):
+        """Testa cadastro de novo apostador com 1 crédito grátis de análise"""
+        import uuid
+        email_teste = f"apostador_{uuid.uuid4().hex[:8]}@teste.com"
+        res = self.client.post('/cadastro', data={
+            'nome': 'Apostador Teste',
+            'email': email_teste,
+            'password': 'senha123teste',
+            'confirm_password': 'senha123teste'
+        }, follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'dashboard', res.request.path.encode() or b'')
+
+    def test_10_protecao_rotas_sem_login(self):
+        """Testa que rotas privadas redirecionam para /login quando não autenticado"""
+        anon_client = app.test_client()
+        res = anon_client.get('/dashboard', follow_redirects=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertIn('/login', res.headers.get('Location', ''))
+
+    def test_11_checkout_pix_e_ativacao(self):
+        """Testa criação de pedido PIX e ativação de plano"""
+        import uuid
+        import database
+        email = f"vip_{uuid.uuid4().hex[:8]}@teste.com"
+        user = database.create_user(email, 'senha123', name='VIP User')
+        user_id = user['id']
+        
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # Gerar PIX VIP R$ 29,90
+        res_pix = self.client.post('/api/checkout/pix',
+            data=json.dumps({'tipo': 'vip_mensal'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_pix.status_code, 200)
+        dados_pix = res_pix.get_json()
+        self.assertTrue(dados_pix['sucesso'])
+        self.assertEqual(dados_pix['valor'], 29.90)
+        self.assertIn('pix_copia_cola', dados_pix)
+        payment_id = dados_pix['payment_id']
+
+        # Confirmar pagamento
+        res_conf = self.client.post(f'/api/checkout/confirmar/{payment_id}')
+        self.assertEqual(res_conf.status_code, 200)
+        dados_conf = res_conf.get_json()
+        self.assertTrue(dados_conf['sucesso'])
+        self.assertEqual(dados_conf['novo_status'], 'aprovado')
+
+        # Checar se usuário agora tem VIP ativo
+        access = database.check_user_access(user_id)
+        self.assertTrue(access['is_vip'])
+        self.assertTrue(access['has_access'])
+
+    def test_12_agente_ia_parecer_e_chat(self):
+        """Testa parecer técnico e chat interativo com o Consultor IA (usando motor heurístico nativo)"""
+        import uuid
+        import database
+        email = f"ia_{uuid.uuid4().hex[:8]}@teste.com"
+        user = database.create_user(email, 'senha123', name='IA Tester')
+        user_id = user['id']
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        jogos = [
+            [4, 11, 23, 38, 45, 59],
+            [7, 14, 28, 35, 49, 52]
+        ]
+        # Teste do parecer
+        res_parecer = self.client.post('/api/ia/parecer/mega_sena',
+            data=json.dumps({'jogos': jogos}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_parecer.status_code, 200)
+        data_p = res_parecer.get_json()
+        self.assertTrue(data_p['sucesso'])
+        self.assertIn('parecer', data_p)
+        self.assertIn('parecer_texto', data_p['parecer'])
+        self.assertIn('recomendacoes', data_p['parecer'])
+
+        # Teste do chat
+        res_chat = self.client.post('/api/ia/chat',
+            data=json.dumps({
+                'mensagem': 'Qual a melhor estratégia para o próximo concurso?',
+                'loteria_type': 'mega_sena',
+                'jogos_recentes': jogos
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(res_chat.status_code, 200)
+        data_c = res_chat.get_json()
+        self.assertTrue(data_c['sucesso'])
+        self.assertIn('resposta', data_c)
+        self.assertGreater(len(data_c['resposta']), 20)
+
+    def test_13_paywall_creditos_esgotados(self):
+        """Testa se o gerador bloqueia e retorna precisa_plano=True após créditos esgotados"""
+        import uuid
+        import database
+        email = f"sem_credito_{uuid.uuid4().hex[:8]}@teste.com"
+        user = database.create_user(email, 'senha123', name='Free User')
+        user_id = user['id']
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # Consumir o único crédito de boas-vindas
+        database.consume_user_credit(user_id)
+        access = database.check_user_access(user_id)
+        self.assertEqual(access['credits'], 0)
+        self.assertFalse(access['has_access'])
+
+        # Tentar gerar novo jogo deve ser barrado com 403
+        res = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
+            data=json.dumps({'quantidade_jogos': 2, 'dezenas_por_jogo': 6}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 403)
+        data = res.get_json()
+        self.assertFalse(data['sucesso'])
+        self.assertTrue(data.get('precisa_plano'))
+
 
 if __name__ == '__main__':
     unittest.main()
+
 

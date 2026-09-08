@@ -856,18 +856,41 @@
 </head>
 <body>
     <div class="container">
-        <!-- Barra de Navegação e Downloads -->
-        <div class="nav-top-bar">
-            <a href="/" class="btn-voltar">← Escolher Outra Loteria</a>
+        <!-- Barra de Navegação e Status do Usuário -->
+        <div class="nav-top-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <a href="/dashboard" class="btn-voltar">← Escolher Outra Loteria</a>
+                {% if current_user %}
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #cbd5e1;">
+                    <span>👤 <strong>{{ current_user.name or current_user.email }}</strong></span>
+                    {% if access and access.is_vip %}
+                        <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">👑 VIP ILIMITADO</span>
+                    {% elif access and access.credits > 0 %}
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🪙 {{ access.credits }} CRÉDITO(S)</span>
+                    {% else %}
+                        <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">⚠️ SEM CRÉDITOS</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
             <div class="downloads-bar">
+                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; font-weight: 800;">
+                    💎 Planos / VIP (R$ 29,90)
+                </a>
                 <a href="/download/historico/{{ loteria.value }}/md" class="btn-download" title="Baixar histórico oficial em Markdown">
                     📥 Baixar Histórico (.MD)
                 </a>
                 <a href="/download/historico/{{ loteria.value }}/txt" class="btn-download" title="Baixar histórico oficial em Texto">
                     📥 Baixar Histórico (.TXT)
                 </a>
+                {% if current_user and current_user.role == 'admin' %}
                 <a href="/admin" class="btn-download" style="background: rgba(0,0,0,0.25);">
                     ⚙️ Painel Admin
+                </a>
+                {% endif %}
+                <a href="/logout" class="btn-download" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5;">
+                    🚪 Sair
                 </a>
             </div>
         </div>
@@ -1153,6 +1176,24 @@ Exemplo para {{ config.nome }}:
                         <button class="btn-action" onclick="imprimirJogosPDF()" style="background: #dc2626; font-size: 0.9rem;">
                             🖨️ Imprimir / Salvar em PDF
                         </button>
+                    </div>
+                </div>
+
+                <!-- Card do Agente IA Consultor -->
+                <div id="ai-parecer-card" style="margin-top: 25px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 2px solid #10b981; border-radius: 12px; padding: 22px; color: #f8fafc; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5rem;">🤖</span>
+                            <strong style="font-size: 1.15rem; color: #34d399;">Parecer do Agente Consultor IA</strong>
+                        </div>
+                        <span id="ai-provedor-tag" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700;">
+                            Inteligência Artificial Ativa
+                        </span>
+                    </div>
+                    <div id="ai-parecer-texto" style="font-size: 0.95rem; line-height: 1.6; color: #e2e8f0; white-space: pre-line;">
+                        Aguardando geração de jogos para análise da IA...
+                    </div>
+                    <div id="ai-recomendacoes-lista" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #cbd5e1;">
                     </div>
                 </div>
             </div>
@@ -1900,12 +1941,19 @@ Exemplo para {{ config.nome }}:
 
                 const data = await res.json();
                 if (!res.ok) {
-                    alert(data.erro || 'Erro ao gerar palpites');
+                    if (data.precisa_plano) {
+                        mostrarModalPaywall();
+                    } else {
+                        alert(data.erro || 'Erro ao gerar palpites');
+                    }
                     return;
                 }
 
                 ultimosJogosGerados = data.jogos;
                 exibirJogosGerados(data);
+                
+                // Disparar parecer do Consultor IA
+                obterParecerIA(data.jogos);
             } catch (e) {
                 alert('Erro ao conectar com o gerador: ' + e.message);
             }
@@ -2408,6 +2456,135 @@ Exemplo para {{ config.nome }}:
         }
 
         // ==========================================
+        // AGENTE CONSULTOR IA & PAYWALL
+        // ==========================================
+
+        function mostrarModalPaywall() {
+            const modal = document.getElementById('paywall-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function fecharModalPaywall() {
+            const modal = document.getElementById('paywall-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function alternarChatIA() {
+            const painel = document.getElementById('ai-chat-panel');
+            if (painel) {
+                const isHidden = painel.style.display === 'none' || !painel.style.display;
+                painel.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) {
+                    const inp = document.getElementById('ai-chat-input');
+                    if (inp) inp.focus();
+                }
+            }
+        }
+
+        async function obterParecerIA(jogos) {
+            const parecerCard = document.getElementById('ai-parecer-card');
+            const textoEl = document.getElementById('ai-parecer-texto');
+            const tagEl = document.getElementById('ai-provedor-tag');
+            const recsEl = document.getElementById('ai-recomendacoes-lista');
+            
+            if (!parecerCard || !textoEl) return;
+            
+            parecerCard.style.display = 'block';
+            textoEl.innerHTML = '<em>Consultando o Agente IA e calculando parecer técnico...</em>';
+            if (recsEl) recsEl.innerHTML = '';
+            
+            try {
+                const res = await fetch(`/api/ia/parecer/${loteriaType}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        jogos: jogos,
+                        historico: historicoCaixaOficial
+                    })
+                });
+                const data = await res.json();
+                if (data.sucesso && data.parecer) {
+                    const p = data.parecer;
+                    if (tagEl) {
+                        tagEl.textContent = `IA: ${p.provedor_ia || 'Calculadora da Sorte IA'}`;
+                    }
+                    textoEl.innerHTML = p.parecer_texto ? p.parecer_texto.replace(/\n/g, '<br>') : 'Análise realizada com sucesso.';
+                    
+                    if (recsEl && p.recomendacoes && p.recomendacoes.length > 0) {
+                        let recHtml = '<strong style="color: #34d399;">💡 Recomendações Estratégicas:</strong><ul style="margin: 8px 0 0 18px; padding: 0;">';
+                        p.recomendacoes.forEach(r => {
+                            recHtml += `<li style="margin-bottom: 4px;">${r}</li>`;
+                        });
+                        recHtml += '</ul>';
+                        recsEl.innerHTML = recHtml;
+                    }
+                } else {
+                    textoEl.textContent = 'Não foi possível obter o parecer da IA no momento: ' + (data.erro || 'Tente novamente.');
+                }
+            } catch (e) {
+                textoEl.textContent = 'Falha ao contatar o Agente IA: ' + e.message;
+            }
+        }
+
+        function enviarPerguntaChat(pergunta) {
+            const input = document.getElementById('ai-chat-input');
+            if (input) {
+                input.value = pergunta;
+                enviarMensagemChat();
+            }
+        }
+
+        async function enviarMensagemChat() {
+            const input = document.getElementById('ai-chat-input');
+            const container = document.getElementById('ai-chat-messages');
+            if (!input || !container) return;
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            input.value = '';
+            
+            // Mensagem do usuário
+            const userBubble = document.createElement('div');
+            userBubble.style.cssText = 'background: #2563eb; color: white; padding: 10px 14px; border-radius: 12px; border-top-right-radius: 2px; align-self: flex-end; max-width: 85%; font-size: 0.88rem; line-height: 1.4;';
+            userBubble.textContent = msg;
+            container.appendChild(userBubble);
+            
+            // Indicador de digitação
+            const loadingBubble = document.createElement('div');
+            loadingBubble.id = 'ai-chat-typing';
+            loadingBubble.style.cssText = 'background: #1e293b; color: #94a3b8; padding: 10px 14px; border-radius: 12px; border-top-left-radius: 2px; align-self: flex-start; max-width: 85%; font-size: 0.85rem; font-style: italic;';
+            loadingBubble.textContent = 'O Consultor IA está pensando...';
+            container.appendChild(loadingBubble);
+            container.scrollTop = container.scrollHeight;
+            
+            try {
+                const res = await fetch('/api/ia/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        mensagem: msg,
+                        loteria_type: loteriaType,
+                        jogos_recentes: ultimosJogosGerados
+                    })
+                });
+                const data = await res.json();
+                loadingBubble.remove();
+                
+                const aiBubble = document.createElement('div');
+                aiBubble.style.cssText = 'background: #1e293b; border: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; padding: 12px 14px; border-radius: 12px; border-top-left-radius: 2px; align-self: flex-start; max-width: 90%; font-size: 0.88rem; line-height: 1.5; white-space: pre-line;';
+                aiBubble.textContent = data.resposta || 'Não foi possível gerar uma resposta agora.';
+                container.appendChild(aiBubble);
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                loadingBubble.remove();
+                const errBubble = document.createElement('div');
+                errBubble.style.cssText = 'background: #ef4444; color: white; padding: 10px 14px; border-radius: 12px; align-self: flex-start; max-width: 85%; font-size: 0.85rem;';
+                errBubble.textContent = 'Erro ao enviar: ' + e.message;
+                container.appendChild(errBubble);
+            }
+        }
+
+        // ==========================================
         // INICIALIZAÇÃO
         // ==========================================
 
@@ -2417,5 +2594,69 @@ Exemplo para {{ config.nome }}:
             carregarApostasSalvas();
         });
     </script>
+
+    <!-- Modal de Bloqueio / Paywall -->
+    <div id="paywall-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; backdrop-filter: blur(6px); justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #1e293b; border: 2px solid #f59e0b; border-radius: 16px; max-width: 480px; width: 100%; padding: 32px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; text-align: center;">
+            <button onclick="fecharModalPaywall()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #94a3b8; cursor: pointer;">&times;</button>
+            <div style="font-size: 3.2rem; margin-bottom: 14px;">🔒</div>
+            <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 8px;">Créditos de Análise Esgotados</h3>
+            <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
+                Você utilizou seu crédito promocional. Para continuar gerando palpites baseados no <strong>Modelo Canônico 3.0</strong> e consultando o <strong>Agente IA</strong>, escolha uma opção:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <a href="/planos" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 20px; border-radius: 10px; font-weight: 800; font-size: 1.05rem; text-decoration: none; box-shadow: 0 4px 14px rgba(245,158,11,0.35);">
+                    👑 Assinar VIP Ilimitado (R$ 29,90/mês)
+                </a>
+                <a href="/planos" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
+                    🪙 Adquirir Recarga Avulsa (R$ 5,00)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Button do Chat IA -->
+    <button id="ai-chat-floating-btn" onclick="alternarChatIA()" title="Conversar com o Consultor IA" style="position: fixed; bottom: 25px; right: 25px; width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; z-index: 998; transition: transform 0.2s;">
+        🤖
+    </button>
+
+    <!-- Painel do Chat IA -->
+    <div id="ai-chat-panel" style="display: none; position: fixed; bottom: 100px; right: 25px; width: 390px; max-width: calc(100vw - 40px); height: 520px; max-height: calc(100vh - 130px); background: #0f172a; border: 2px solid #10b981; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); z-index: 999; flex-direction: column; overflow: hidden;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid rgba(16, 185, 129, 0.3); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+                <div>
+                    <strong style="color: #f8fafc; font-size: 0.95rem; display: block;">Consultor Estatístico IA</strong>
+                    <span style="color: #94a3b8; font-size: 0.75rem;">{{ config.nome }} &bull; Modelo Canônico 3.0</span>
+                </div>
+            </div>
+            <button onclick="alternarChatIA()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- Sugestões Rápidas -->
+        <div style="padding: 8px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; gap: 6px; overflow-x: auto; white-space: nowrap;">
+            <button onclick="enviarPerguntaChat('Qual a melhor estratégia para o próximo concurso?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Estratégia</button>
+            <button onclick="enviarPerguntaChat('Como funciona a divisão por classes A, B, C e D?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Classes ICT</button>
+            <button onclick="enviarPerguntaChat('Por que evitar sequências óbvias na aposta?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Evitar Vícios</button>
+        </div>
+
+        <!-- Mensagens -->
+        <div id="ai-chat-messages" style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; border-top-left-radius: 2px; padding: 12px; color: #e2e8f0; font-size: 0.88rem; line-height: 1.5;">
+                Olá! Sou o seu <strong>Consultor Estatístico IA</strong> para a {{ config.nome }}.
+                <br><br>
+                Posso analisar as dezenas geradas, tirar dúvidas sobre o Modelo Canônico 3.0 ou sugerir ajustes estratégicos. Em que posso ajudar?
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div style="padding: 10px 12px; background: #1e293b; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px;">
+            <input type="text" id="ai-chat-input" placeholder="Pergunte ao Consultor IA..." style="flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; color: white; font-size: 0.88rem; outline: none;" onkeydown="if(event.key==='Enter') enviarMensagemChat()">
+            <button onclick="enviarMensagemChat()" style="background: #10b981; border: none; border-radius: 8px; padding: 0 14px; color: white; font-weight: bold; cursor: pointer; font-size: 1rem;">
+                ➤
+            </button>
+        </div>
+    </div>
 </body>
 </html>

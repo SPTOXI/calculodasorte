@@ -5,7 +5,7 @@ Projeto Calculadora da Sorte
 
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -43,14 +43,29 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL DEFAULT 'Apostador',
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'user',
+                plan TEXT NOT NULL DEFAULT 'free',
+                credits INTEGER NOT NULL DEFAULT 1,
+                vip_expires_at TIMESTAMP,
                 is_blocked INTEGER NOT NULL DEFAULT 0,
                 must_change_password INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_login TIMESTAMP
             )
         ''')
+
+        # Migração segura de colunas na tabela users se já existir
+        colunas_existentes = [r['name'] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if 'name' not in colunas_existentes:
+            conn.execute("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT 'Apostador'")
+        if 'plan' not in colunas_existentes:
+            conn.execute("ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'")
+        if 'credits' not in colunas_existentes:
+            conn.execute("ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 1")
+        if 'vip_expires_at' not in colunas_existentes:
+            conn.execute("ALTER TABLE users ADD COLUMN vip_expires_at TIMESTAMP")
         
         # Tabela de Histórico de Sincronizações
         cursor.execute('''
@@ -81,6 +96,23 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         ''')
+
+        # Tabela de Pagamentos (PIX / Assinaturas / Avulso)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                tipo TEXT NOT NULL,
+                loteria_type TEXT,
+                valor REAL NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pendente',
+                pix_copia_cola TEXT,
+                pix_txid TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                approved_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        ''')
         
         conn.commit()
 
@@ -95,10 +127,21 @@ def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123
         create_user(
             email=email,
             password=password,
+            name='Administrador Silvio',
             role='admin',
+            plan='vip_mensal',
+            credits=9999,
             must_change_password=1
         )
         print(f"[DB] Administrador padrão criado: {email}")
+    else:
+        with get_db_connection() as conn:
+            conn.execute('''
+                UPDATE users 
+                SET role = 'admin', plan = 'vip_mensal', credits = 9999, name = 'Administrador Silvio' 
+                WHERE email = ?
+            ''', (email,))
+            conn.commit()
 
 
 def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
@@ -119,10 +162,10 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 
 def get_all_users() -> List[Dict[str, Any]]:
-    """Listar todos os usuários"""
+    """Listar todos os usuários com dados de plano e créditos"""
     with get_db_connection() as conn:
         rows = conn.execute(
-            'SELECT id, email, role, is_blocked, must_change_password, created_at, last_login '
+            'SELECT id, email, name, role, plan, credits, vip_expires_at, is_blocked, must_change_password, created_at, last_login '
             'FROM users ORDER BY id ASC'
         ).fetchall()
         return [dict(r) for r in rows]
@@ -131,10 +174,13 @@ def get_all_users() -> List[Dict[str, Any]]:
 def create_user(
     email: str, 
     password: str, 
+    name: str = 'Apostador',
     role: str = 'user', 
+    plan: str = 'free',
+    credits: int = 1,
     must_change_password: int = 0
 ) -> Dict[str, Any]:
-    """Criar novo usuário no sistema"""
+    """Criar novo usuário no sistema com crédito de degustação gratuito"""
     email_clean = email.strip().lower()
     if not email_clean or '@' not in email_clean:
         raise ValueError("E-mail inválido")
@@ -142,13 +188,14 @@ def create_user(
     if len(password) < 4:
         raise ValueError("A senha deve conter pelo menos 4 caracteres")
 
+    name_clean = (name or 'Apostador').strip()
     pwd_hash = generate_password_hash(password)
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO users (email, password_hash, role, is_blocked, must_change_password)
-            VALUES (?, ?, ?, 0, ?)
-        ''', (email_clean, pwd_hash, role, must_change_password))
+            INSERT INTO users (email, name, password_hash, role, plan, credits, is_blocked, must_change_password)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+        ''', (email_clean, name_clean, pwd_hash, role, plan, credits, must_change_password))
         conn.commit()
         user_id = cursor.lastrowid
         
@@ -381,4 +428,184 @@ def excluir_aposta(aposta_id: int, user_id: Optional[int] = None, session_id: Op
             cursor.execute("DELETE FROM user_bets WHERE id = ?", (aposta_id,))
         conn.commit()
         return cursor.rowcount > 0
+
+
+# ==========================================
+# CONTROLE DE ACESSO, CRÉDITOS E MONETIZAÇÃO
+# ==========================================
+
+def check_user_access(user_id: int) -> Dict[str, Any]:
+    """
+    Verifica o status de acesso do usuário:
+    - Se é admin: acesso ilimitado liberado
+    - Se plano == 'vip_mensal' e não expirou: acesso ilimitado liberado
+    - Se possui créditos > 0: acesso liberado por crédito
+    - Caso contrário: bloqueado (necessário assinar ou recarregar)
+    """
+    user = get_user_by_id(user_id)
+    if not user:
+        return {'has_access': False, 'reason': 'not_found', 'credits': 0, 'is_vip': False, 'name': 'Visitante'}
+
+    if user.get('role') == 'admin':
+        return {
+            'has_access': True, 
+            'reason': 'admin', 
+            'credits': 9999, 
+            'is_vip': True, 
+            'plan': 'vip_mensal',
+            'name': user.get('name', 'Administrador')
+        }
+
+    # Verificar VIP
+    if user.get('plan') == 'vip_mensal':
+        vip_expires_at = user.get('vip_expires_at')
+        if not vip_expires_at:
+            return {
+                'has_access': True, 
+                'reason': 'vip', 
+                'credits': user.get('credits', 0), 
+                'is_vip': True, 
+                'plan': 'vip_mensal',
+                'name': user.get('name', 'Apostador VIP')
+            }
+        try:
+            exp_date = datetime.strptime(vip_expires_at, '%Y-%m-%d %H:%M:%S')
+            if datetime.now() <= exp_date:
+                return {
+                    'has_access': True, 
+                    'reason': 'vip', 
+                    'credits': user.get('credits', 0), 
+                    'is_vip': True, 
+                    'plan': 'vip_mensal', 
+                    'expires_at': vip_expires_at,
+                    'name': user.get('name', 'Apostador VIP')
+                }
+        except Exception:
+            pass
+
+    # Verificar créditos avulsos
+    credits = user.get('credits', 0)
+    if credits > 0:
+        return {
+            'has_access': True, 
+            'reason': 'credits', 
+            'credits': credits, 
+            'is_vip': False, 
+            'plan': user.get('plan', 'free'),
+            'name': user.get('name', 'Apostador')
+        }
+
+    return {
+        'has_access': False, 
+        'reason': 'no_credits', 
+        'credits': 0, 
+        'is_vip': False, 
+        'plan': user.get('plan', 'free'),
+        'name': user.get('name', 'Apostador')
+    }
+
+
+def consume_user_credit(user_id: int) -> bool:
+    """Consome 1 crédito do usuário caso não seja VIP ativo ou admin"""
+    user = get_user_by_id(user_id)
+    if not user:
+        return False
+    if user.get('role') == 'admin':
+        return True
+    
+    access = check_user_access(user_id)
+    if access.get('is_vip'):
+        return True
+
+    if access.get('credits', 0) > 0:
+        with get_db_connection() as conn:
+            conn.execute('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0', (user_id,))
+            conn.commit()
+        return True
+
+    return False
+
+
+def activate_vip_plan(user_id: int, days: int = 30):
+    """Ativa ou renova plano VIP por X dias"""
+    now = datetime.now()
+    user = get_user_by_id(user_id)
+    current_exp = user.get('vip_expires_at') if user else None
+    
+    base_date = now
+    if current_exp:
+        try:
+            parsed = datetime.strptime(current_exp, '%Y-%m-%d %H:%M:%S')
+            if parsed > now:
+                base_date = parsed
+        except Exception:
+            base_date = now
+            
+    new_exp = (base_date + timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
+    with get_db_connection() as conn:
+        conn.execute('''
+            UPDATE users 
+            SET plan = 'vip_mensal', vip_expires_at = ? 
+            WHERE id = ?
+        ''', (new_exp, user_id))
+        conn.commit()
+
+
+def add_user_credits(user_id: int, amount: int = 1):
+    """Adiciona créditos de análise ao usuário"""
+    with get_db_connection() as conn:
+        conn.execute('UPDATE users SET credits = credits + ? WHERE id = ?', (amount, user_id))
+        conn.commit()
+
+
+def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional[str] = None) -> Dict[str, Any]:
+    """Registra uma intenção de pagamento PIX e gera payload Copia e Cola"""
+    import random
+    import string
+    txid = 'PIX' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    pix_copia_cola = f"00020126580014br.gov.bcb.pix0136silvio.luis.morais@gmail.com520400005303986540{valor:.2f}5802BR5920Calculadora da Sorte6009Sao Paulo62070503***6304{txid[-4:]}"
+    
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO payments (user_id, tipo, loteria_type, valor, status, pix_copia_cola, pix_txid)
+            VALUES (?, ?, ?, ?, 'pendente', ?, ?)
+        ''', (user_id, tipo, loteria_type, valor, pix_copia_cola, txid))
+        conn.commit()
+        payment_id = cursor.lastrowid
+        
+    return get_payment_by_id(payment_id)
+
+
+def get_payment_by_id(payment_id: int) -> Optional[Dict[str, Any]]:
+    """Obtém detalhes do pagamento"""
+    with get_db_connection() as conn:
+        row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
+        return dict(row) if row else None
+
+
+def approve_payment(payment_id: int) -> bool:
+    """Aprova um pagamento e libera os créditos ou VIP correspondentes"""
+    payment = get_payment_by_id(payment_id)
+    if not payment or payment.get('status') == 'aprovado':
+        return False
+        
+    user_id = payment['user_id']
+    tipo = payment['tipo']
+    
+    with get_db_connection() as conn:
+        conn.execute('''
+            UPDATE payments 
+            SET status = 'aprovado', approved_at = ? 
+            WHERE id = ?
+        ''', (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), payment_id))
+        conn.commit()
+        
+    if tipo == 'vip_mensal':
+        activate_vip_plan(user_id, days=30)
+    elif tipo == 'avulso':
+        add_user_credits(user_id, amount=1)
+        
+    return True
+
 

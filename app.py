@@ -14,6 +14,7 @@ from werkzeug.security import check_password_hash
 
 import database
 import updater
+import ai_agent
 from core import (
     ModeloCanonico30, 
     ValidaçãoCamada7, 
@@ -93,7 +94,18 @@ def salvar_historico(loteria_type: str, historico: list):
 
 @app.route('/')
 def index():
-    """Página inicial com seleção de loteria"""
+    """Página inicial: Landing Page para visitantes, ou redireciona para dashboard se autenticado"""
+    if 'user_id' in session:
+        user = database.get_user_by_id(session['user_id'])
+        if user and not user['is_blocked']:
+            return redirect(url_for('dashboard'))
+    return render_template('landing.html')
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """Painel do apostador autenticado com seleção das 9 loterias e status da conta"""
     loterias = [
         {
             'id': loteria.value,
@@ -102,31 +114,102 @@ def index():
         }
         for loteria, config in LOTERIAS_CONFIG.items()
     ]
-    current_user = None
-    if 'user_id' in session:
-        current_user = database.get_user_by_id(session['user_id'])
-    return render_template('index.html', loterias=loterias, current_user=current_user)
+    current_user = database.get_user_by_id(session['user_id'])
+    access = database.check_user_access(session['user_id'])
+    return render_template('index.html', loterias=loterias, current_user=current_user, access=access)
 
 
 @app.route('/analise/<loteria_type>')
+@login_required
 def analise_page(loteria_type: str):
-    """Página de análise para uma loteria específica"""
+    """Página de análise para uma loteria específica (Protegida por cadastro/login)"""
     try:
         loteria = LoteriaType(loteria_type)
         config = LOTERIAS_CONFIG[loteria]
     except ValueError:
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     
-    current_user = None
+    current_user = database.get_user_by_id(session['user_id'])
+    access = database.check_user_access(session['user_id'])
+    
+    return render_template(
+        'analise.html', 
+        loteria=loteria, 
+        config=config, 
+        current_user=current_user, 
+        access=access
+    )
+
+
+@app.route('/planos')
+@login_required
+def planos_page():
+    """Página de seleção de planos e recargas PIX"""
+    user = database.get_user_by_id(session['user_id'])
+    access = database.check_user_access(session['user_id'])
+    return render_template('planos.html', user=user, access=access)
+
+
+# ==========================================
+# ROTAS DE AUTENTICAÇÃO (CADASTRO / LOGIN / LOGOUT)
+# ==========================================
+
+@app.route('/cadastro', methods=['GET', 'POST'])
+def cadastro():
+    """Auto-cadastro de novos apostadores com 1 crédito grátis de cortesia"""
     if 'user_id' in session:
-        current_user = database.get_user_by_id(session['user_id'])
-    
-    return render_template('analise.html', loteria=loteria, config=config, current_user=current_user)
+        return redirect(url_for('dashboard'))
 
+    plano_desejado = request.args.get('plano', 'free')
+    erro = None
+    nome = ''
+    email = ''
 
-# ==========================================
-# ROTAS DE AUTENTICAÇÃO (LOGIN / LOGOUT)
-# ==========================================
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        plano_desejado = request.form.get('plano_desejado', 'free')
+
+        if not nome:
+            erro = 'Por favor, informe seu nome completo.'
+        elif not email or '@' not in email:
+            erro = 'Por favor, informe um endereço de e-mail válido.'
+        elif len(password) < 4:
+            erro = 'A senha deve conter pelo menos 4 caracteres.'
+        elif password != confirm_password:
+            erro = 'As senhas digitadas não coincidem.'
+        elif database.get_user_by_email(email):
+            erro = 'Este e-mail já está cadastrado. Faça login para continuar.'
+
+        if not erro:
+            try:
+                user = database.create_user(
+                    email=email,
+                    password=password,
+                    name=nome,
+                    role='user',
+                    plan='free',
+                    credits=1 # 1 crédito de degustação gratuito!
+                )
+                session['user_id'] = user['id']
+                session['user_email'] = user['email']
+                session['user_role'] = user['role']
+                session['user_name'] = user.get('name', nome)
+                database.record_login(user['id'])
+
+                if plano_desejado == 'vip':
+                    return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Assine seu Plano VIP abaixo:'))
+                elif plano_desejado == 'avulso':
+                    return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Adquira sua recarga avulsa abaixo:'))
+                
+                return redirect(url_for('dashboard'))
+            except Exception as e:
+                erro = f'Erro ao criar conta: {str(e)}'
+
+    return render_template('cadastro.html', erro=erro, nome=nome, email=email, plano_desejado=plano_desejado)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -134,7 +217,7 @@ def login():
     if 'user_id' in session:
         user = database.get_user_by_id(session['user_id'])
         if user and not user['is_blocked']:
-            return redirect(url_for('admin_dashboard') if user['role'] == 'admin' else url_for('index'))
+            return redirect(url_for('admin_dashboard') if user['role'] == 'admin' else url_for('dashboard'))
 
     erro = request.args.get('erro')
     sucesso = request.args.get('sucesso')
@@ -154,6 +237,7 @@ def login():
         session['user_id'] = user['id']
         session['user_email'] = user['email']
         session['user_role'] = user['role']
+        session['user_name'] = user.get('name', 'Apostador')
         database.record_login(user['id'])
 
         next_url = request.args.get('next')
@@ -162,7 +246,7 @@ def login():
 
         if user['role'] == 'admin':
             return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
 
     return render_template('login.html', erro=erro, sucesso=sucesso)
 
@@ -585,12 +669,24 @@ def gerar_jogo(loteria_type: str):
 
 @app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
 def api_gerar_multiplos_jogos(loteria_type: str):
-    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0"""
+    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0 com verificação de plano/créditos"""
     try:
         loteria = LoteriaType(loteria_type)
         config = LOTERIAS_CONFIG[loteria]
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
+
+    # Verificação de Acesso / Créditos do Usuário
+    user_id = session.get('user_id')
+    access = {'is_vip': True, 'credits': 999}
+    if user_id:
+        access = database.check_user_access(user_id)
+        if not access.get('has_access'):
+            return jsonify({
+                'sucesso': False,
+                'erro': 'Você utilizou todos os seus créditos de análise. Assine o Plano VIP (R$ 29,90/mês) ou adquira uma recarga avulsa para continuar gerando jogos.',
+                'precisa_plano': True
+            }), 403
 
     dados = request.get_json() or {}
     quantidade_jogos = int(dados.get('quantidade_jogos', 5))
@@ -615,6 +711,11 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     modelo = ModeloCanonico30(historico_input, loteria)
     jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
 
+    # Consumir crédito de usuário se for avulso/free
+    if user_id:
+        database.consume_user_credit(user_id)
+        access = database.check_user_access(user_id)
+
     return jsonify({
         'sucesso': True,
         'loteria': config.nome,
@@ -625,8 +726,108 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
-        }
+        },
+        'user_access': access
     })
+
+
+# ==========================================
+# ROTAS DE CHECKOUT PIX E MONETIZAÇÃO
+# ==========================================
+
+@app.route('/api/checkout/pix', methods=['POST'])
+@login_required
+def api_checkout_pix():
+    """Gera cobrança PIX para assinatura VIP ou recarga avulsa"""
+    dados = request.get_json() or {}
+    tipo = dados.get('tipo', 'avulso')
+    if tipo == 'vip_mensal':
+        valor = 29.90
+    else:
+        valor = float(dados.get('valor', 5.0))
+    loteria_type = dados.get('loteria_type')
+
+    user_id = session['user_id']
+    pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
+
+    return jsonify({
+        'sucesso': True,
+        'payment_id': pagamento['id'],
+        'valor': pagamento['valor'],
+        'tipo': pagamento['tipo'],
+        'pix_copia_cola': pagamento.get('pix_copia_cola'),
+        'pix_qr_code_base64': pagamento.get('pix_qr_code_base64'),
+        'pagamento': pagamento
+    })
+
+
+@app.route('/api/checkout/confirmar/<int:payment_id>', methods=['POST'])
+@login_required
+def api_confirmar_pix(payment_id: int):
+    """Aprova pagamento PIX e libera acesso VIP ou créditos de análise"""
+    sucesso = database.approve_payment(payment_id)
+    if sucesso:
+        access = database.check_user_access(session['user_id'])
+        return jsonify({
+            'sucesso': True,
+            'mensagem': 'Pagamento aprovado com sucesso! Acesso liberado.',
+            'novo_status': 'aprovado',
+            'access': access
+        })
+    return jsonify({'erro': 'Pagamento não encontrado ou já processado'}), 400
+
+
+# ==========================================
+# ROTAS DO AGENTE IA CONSULTOR
+# ==========================================
+
+@app.route('/api/ia/parecer/<loteria_type>', methods=['POST'])
+@login_required
+def api_ia_parecer(loteria_type: str):
+    """Gera parecer estatístico didático do Agente IA para a rodada e palpites"""
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    dados = request.get_json() or {}
+    jogos = dados.get('jogos', [])
+
+    historico = carregar_historico(loteria_type)
+    if not historico or len(historico) < 10:
+        return jsonify({'erro': 'Histórico insuficiente para a IA analisar'}), 400
+
+    modelo = ModeloCanonico30(historico, loteria)
+    resumo_analise = modelo.obter_resumo_analise()
+
+    parecer = ai_agent.gerar_parecer_ia(config.nome, resumo_analise, jogos)
+    return jsonify({
+        'sucesso': True,
+        'parecer': parecer
+    })
+
+
+@app.route('/api/ia/chat', methods=['POST'])
+@login_required
+def api_ia_chat():
+    """Bate-papo consultivo com o Agente IA sobre probabilidades e estratégias"""
+    dados = request.get_json() or {}
+    pergunta = (dados.get('pergunta') or dados.get('mensagem') or '').strip()
+    loteria_type = dados.get('loteria_type', 'mega_sena')
+
+    if not pergunta:
+        return jsonify({'erro': 'Pergunta vazia'}), 400
+
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+        loteria_nome = config.nome
+    except ValueError:
+        loteria_nome = 'Loteria da Caixa'
+
+    resposta = ai_agent.responder_chat_consultor(pergunta, loteria_nome)
+    return jsonify({'sucesso': True, 'resposta': resposta})
 
 
 @app.route('/download/historico/<loteria_type>/<formato>', methods=['GET'])
