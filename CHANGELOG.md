@@ -57,7 +57,8 @@ Todas as alterações, adições de recursos, correções e versões deste softw
   - Tabela `payments` no SQLite para rastreamento de transações, txid e aprovação.
   - Modal de Paywall automático na interface quando os créditos se esgotam.
 - **Agente IA Consultor Estatístico (`ai_agent.py`):**
-  - Integração via REST de alto desempenho com **Google Gemini 1.5 Flash** (chave `GEMINI_API_KEY` ou `GOOGLE_API_KEY`) e **Anthropic Claude 3.5 Haiku** (`ANTHROPIC_API_KEY`), compatível com Vercel (sem dependências pesadas de C++).
+  - Integração nativa e priorizada com **Moonshot AI Kimi K3** (`MOONSHOT_API_KEY`), compatível com OpenAI, com suporte a raciocínio estocástico profundo e failover ágil de alto desempenho (`kimi-k2.7-code-highspeed`).
+  - Integração via REST com **Google Gemini** (chave `GEMINI_API_KEY` ou `GOOGLE_API_KEY`, modelos `gemini-flash-latest` e `gemini-2.5-flash`) e **Anthropic Claude** (`ANTHROPIC_API_KEY`).
   - **Motor Heurístico Canônico 3.0 Nativo (Fallback):** Produz pareceres técnicos e didáticos humanizados mesmo sem chaves de API externas configuradas.
   - Card de Parecer Técnico da IA na Aba do Gerador de Jogos avaliando estabilidade estocástica, entropia e balanceamento das cartelas geradas.
   - Chat Flutuante Interativo (Widget IA) no canto inferior direito para tirar dúvidas matemáticas sobre as probabilidades e estratégias da loteria em tempo real.

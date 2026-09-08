@@ -36,6 +36,10 @@ def _get_gemini_key() -> Optional[str]:
     _carregar_env()
     return os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
 
+def _get_moonshot_key() -> Optional[str]:
+    _carregar_env()
+    return os.environ.get('MOONSHOT_API_KEY') or os.environ.get('KIMI_API_KEY')
+
 def _get_claude_key() -> Optional[str]:
     _carregar_env()
     return os.environ.get('ANTHROPIC_API_KEY')
@@ -53,13 +57,80 @@ Diretrizes:
 """
 
 
+def _chamar_kimi(prompt: str, max_tokens: int = 2500) -> Optional[tuple]:
+    """
+    Chama a API do Moonshot AI (Kimi K3 / Kimi models) compatível com OpenAI.
+    Retorna (texto_resposta, nome_modelo) ou None se falhar.
+    """
+    moonshot_key = _get_moonshot_key()
+    if not moonshot_key:
+        return None
+
+    user_model = os.environ.get('MOONSHOT_MODEL') or 'kimi-k3'
+    modelos_candidatos = [user_model]
+    if 'highspeed' not in user_model:
+        modelos_candidatos.append('kimi-k2.7-code-highspeed')
+
+    url = "https://api.moonshot.ai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {moonshot_key}",
+        "Content-Type": "application/json"
+    }
+
+    for modelo in modelos_candidatos:
+        # Timeout dinâmico: 20s para o modelo principal, 15s para o highspeed
+        timeout = 20 if modelo == user_model else 15
+        payload = {
+            "model": modelo,
+            "messages": [
+                {"role": "system", "content": PROMPT_SISTEMA_CONSULTOR},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 1,
+            "max_tokens": max_tokens
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get('choices', [])
+                if choices:
+                    message = choices[0].get('message', {})
+                    content = message.get('content')
+                    if content and len(content.strip()) > 0:
+                        return content, modelo
+                    reasoning = message.get('reasoning_content')
+                    if reasoning and len(reasoning.strip()) > 0:
+                        return reasoning, modelo
+            elif response.status_code == 401:
+                # Fallback para endpoint .cn caso a chave seja regional doméstica da China
+                cn_url = "https://api.moonshot.cn/v1/chat/completions"
+                r2 = requests.post(cn_url, headers=headers, json=payload, timeout=timeout)
+                if r2.status_code == 200:
+                    choices = r2.json().get('choices', [])
+                    if choices:
+                        content = choices[0].get('message', {}).get('content')
+                        if content:
+                            return content, modelo
+            else:
+                print(f"[AI AGENT] Moonshot ({modelo}) status {response.status_code}: {response.text[:120]}")
+        except Exception as e:
+            print(f"[AI AGENT] Moonshot {modelo} demorou ({e}). Tentando próximo...")
+
+    return None
+
+
+
+
+
 def _chamar_gemini(prompt: str) -> Optional[str]:
-    """Chama a API do Google Gemini via REST puro (sem dependências externas)"""
+    """Chama a API do Google Gemini via REST puro com fallback automático entre modelos ativos"""
     gemini_key = _get_gemini_key()
     if not gemini_key:
         return None
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    modelos = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-1.5-flash"]
     headers = {"Content-Type": "application/json"}
     payload = {
         "system_instruction": {"parts": [{"text": PROMPT_SISTEMA_CONSULTOR}]},
@@ -70,17 +141,19 @@ def _chamar_gemini(prompt: str) -> Optional[str]:
         }
     }
     
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=12)
-        if response.status_code == 200:
-            data = response.json()
-            candidates = data.get('candidates', [])
-            if candidates:
-                parts = candidates[0].get('content', {}).get('parts', [])
-                if parts:
-                    return parts[0].get('text')
-    except Exception as e:
-        print(f"[AI AGENT] Erro ao chamar Google Gemini: {e}")
+    for modelo in modelos:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={gemini_key}"
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=12)
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get('candidates', [])
+                if candidates:
+                    parts = candidates[0].get('content', {}).get('parts', [])
+                    if parts:
+                        return parts[0].get('text')
+        except Exception as e:
+            print(f"[AI AGENT] Erro ao chamar Google Gemini ({modelo}): {e}")
         
     return None
 
@@ -115,6 +188,7 @@ def _chamar_claude(prompt: str) -> Optional[str]:
         print(f"[AI AGENT] Erro ao chamar Anthropic Claude: {e}")
 
     return None
+
 
 
 def _gerar_parecer_heuristico_canonico(loteria_nome: str, dados_analise: Dict[str, Any], jogos_gerados: Optional[List[List[int]]] = None) -> Dict[str, Any]:
@@ -198,13 +272,33 @@ def gerar_parecer_ia(loteria_nome: str, dados_analise: Dict[str, Any], jogos_ger
         prompt += f"- Primeiros jogos gerados: {jogos_gerados[:3]}\n"
     prompt += "\nPor favor, elabore um parecer consultivo profissional, didático e motivador para o apostador, com tópicos e recomendações práticas para a rodada."
 
-    # 2. Tentativa Gemini
+    # 2. Tentativa Moonshot Kimi (se configurada)
+    if _get_moonshot_key():
+        res_kimi = _chamar_kimi(prompt)
+        if res_kimi:
+            resposta_kimi, modelo_usado = res_kimi
+            nome_display = "Kimi K3" if "k3" in modelo_usado else f"Kimi ({modelo_usado})"
+            return {
+                'sucesso': True,
+                'provedor': f'Moonshot AI {nome_display} (IA)',
+                'provedor_ia': f'Moonshot AI {nome_display} (IA)',
+                'parecer': resposta_kimi,
+                'parecer_texto': resposta_kimi,
+                'recomendacoes': [
+                    f"Estratégia otimizada por IA {nome_display} com balanceamento estocástico avançado.",
+                    "Consulte os números em destaque na Tabela Canônica antes de registrar suas apostas.",
+                    "Mantenha a regularidade nos jogos mantendo a mesma matriz por ao menos 3 concursos."
+                ],
+                'radar_concurso': f"Radar probabilístico atualizado por IA {nome_display} para a {loteria_nome}."
+            }
+
+    # 3. Tentativa Gemini
     resposta_gemini = _chamar_gemini(prompt)
     if resposta_gemini:
         return {
             'sucesso': True,
-            'provedor': 'Google Gemini 1.5 Flash (IA)',
-            'provedor_ia': 'Google Gemini 1.5 Flash (IA)',
+            'provedor': 'Google Gemini (IA)',
+            'provedor_ia': 'Google Gemini (IA)',
             'parecer': resposta_gemini,
             'parecer_texto': resposta_gemini,
             'recomendacoes': [
@@ -215,13 +309,13 @@ def gerar_parecer_ia(loteria_nome: str, dados_analise: Dict[str, Any], jogos_ger
             'radar_concurso': f"Radar oficial atualizado pela IA para a {loteria_nome}."
         }
 
-    # 3. Tentativa Claude
+    # 4. Tentativa Claude
     resposta_claude = _chamar_claude(prompt)
     if resposta_claude:
         return {
             'sucesso': True,
-            'provedor': 'Anthropic Claude 3.5 Haiku (IA)',
-            'provedor_ia': 'Anthropic Claude 3.5 Haiku (IA)',
+            'provedor': 'Anthropic Claude (IA)',
+            'provedor_ia': 'Anthropic Claude (IA)',
             'parecer': resposta_claude,
             'parecer_texto': resposta_claude,
             'recomendacoes': [
@@ -229,10 +323,10 @@ def gerar_parecer_ia(loteria_nome: str, dados_analise: Dict[str, Any], jogos_ger
                 "Evite repetições de combinações já premiadas recentemente.",
                 "Utilize desdobramentos inteligentes para proteger seus investimentos."
             ],
-            'radar_concurso': f"Radar probabilístico elaborado por Claude 3.5 para a {loteria_nome}."
+            'radar_concurso': f"Radar probabilístico elaborado por Claude para a {loteria_nome}."
         }
 
-    # 4. Fallback Motor Heurístico Nativo
+    # 5. Fallback Motor Heurístico Nativo
     return _gerar_parecer_heuristico_canonico(loteria_nome, dados_analise, jogos_gerados)
 
 
@@ -245,10 +339,17 @@ def responder_chat_consultor(pergunta: str, loteria_nome: str, dados_analise: Op
         f"Responda como um especialista amigável em loterias e estatística canônica, dando dicas práticas e seguras."
     )
 
+    # Tenta Moonshot Kimi
+    if _get_moonshot_key():
+        res_kimi = _chamar_kimi(prompt)
+        if res_kimi:
+            return res_kimi[0]
+
     # Tenta Gemini
     resp = _chamar_gemini(prompt)
     if resp:
         return resp
+
 
     # Tenta Claude
     resp = _chamar_claude(prompt)
