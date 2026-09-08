@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise - {{ config.nome }} | Loteria Canônica</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .btn-voltar {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .btn-voltar:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-action {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-action:hover {
+            opacity: 0.9;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .resultado-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .classe-A { background: #d4edda; color: #155724; }
+        .classe-B { background: #fff3cd; color: #856404; }
+        .classe-C { background: #ffe5d0; color: #8b4513; }
+        .classe-D { background: #f8d7da; color: #721c24; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .jogo-sugerido {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .bola {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .help-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="btn-voltar">← Voltar</a>
+        
+        <header>
+            <h1>{{ config.nome }}</h1>
+            <p>Universo: {{ config.universo }} | Sorteados: {{ config.sorteados }} | Aposta: {{ config.minimo_aposta }}-{{ config.maximo_aposta }} números</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('dados')">📊 Importar Dados</button>
+            <button class="tab-btn" onclick="showTab('analise')">🔍 Análise Completa</button>
+            <button class="tab-btn" onclick="showTab('numeros')">📈 Números</button>
+            <button class="tab-btn" onclick="showTab('validacao')">✓ Validação</button>
+            <button class="tab-btn" onclick="showTab('jogos')">🎲 Gerar Jogos</button>
+        </div>
+
+        <!-- Tab: Importar Dados -->
+        <div id="dados" class="tab-content active">
+            <h2>Importar Histórico de Concursos</h2>
+            <p class="help-text">Cole os resultados no formato JSON: [[n1,n2,n3...], [n1,n2,n3...], ...]</p>
+            
+            <div class="input-group">
+                <label for="historico-input">Histórico de Concursos:</label>
+                <textarea id="historico-input" rows="10" placeholder='Exemplo: [[1, 5, 10, 23, 35, 42], [3, 12, 18, 29, 41, 55], ...]'></textarea>
+                <p class="help-text">Mínimo de 10 concursos necessários para análise.</p>
+            </div>
+
+            <button class="btn-action" onclick="salvarHistorico()">💾 Salvar Histórico</button>
+            <button class="btn-action" onclick="carregarHistoricoSalvo()" style="margin-left: 10px; background: #28a745;">📂 Carregar Salvo</button>
+            <button class="btn-action" onclick="gerarDadosExemplo()" style="margin-left: 10px; background: #17a2b8;">🎲 Gerar Exemplo</button>
+            
+            <div id="dados-msg"></div>
+        </div>
+
+        <!-- Tab: Análise Completa -->
+        <div id="analise" class="tab-content">
+            <h2>Análise Estatística Completa</h2>
+            <button class="btn-action" onclick="realizarAnalise()">🔍 Realizar Análise</button>
+            
+            <div id="analise-loading" class="loading" style="display: none;">
+                Processando análise... Aguarde.
+            </div>
+
+            <div id="analise-resultado" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Concursos Analisados</h4>
+                        <div class="value" id="stat-concursos">-</div>
+                        <div class="label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>ICT Médio</h4>
+                        <div class="value" id="stat-ict">-</div>
+                        <div class="label">Estabilidade</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Entropia</h4>
+                        <div class="value" id="stat-entropia">-</div>
+                        <div class="label">Informação</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Compressibilidade</h4>
+                        <div class="value" id="stat-compress">-</div>
+                        <div class="label">Regularidade</div>
+                    </div>
+                </div>
+
+                <div class="resultado-section">
+                    <h3>Distribuição por Classes (ICT)</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card classe-A">
+                            <h4>Classe A</h4>
+                            <div class="value" id="classe-a">-</div>
+                            <div class="label">Mais estáveis</div>
+                        </div>
+                        <div class="stat-card classe-B">
+                            <h4>Classe B</h4>
+                            <div class="value" id="classe-b">-</div>
+                            <div class="label">Intermediária</div>
+                        </div>
+                        <div class="stat-card classe-C">
+                            <h4>Classe C</h4>
+                            <div class="value" id="classe-c">-</div>
+                            <div class="label">Intermediária</div>
+                        </div>
+                        <div class="stat-card classe-D">
+                            <h4>Classe D</h4>
+                            <div class="value" id="classe-d">-</div>
+                            <div class="label">Menos estáveis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resultado-section">
+                    <h3>Maturidade Estatística</h3>
+                    <div id="maturidade-stats"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Números -->
+        <div id="numeros" class="tab-content">
+            <h2>Análise Individual dos Números</h2>
+            <input type="text" id="filtro-numero" placeholder="Filtrar por número..." 
+                   onkeyup="filtrarTabela()" style="padding: 10px; width: 100%; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px;">
+            
+            <div style="overflow-x: auto;">
+                <table id="tabela-numeros">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Contagem</th>
+                            <th>Frequência</th>
+                            <th>FR</th>
+                            <th>HI</th>
+                            <th>ICT</th>
+                            <th>Classe</th>
+                            <th>Maturidade</th>
+                            <th>Score MCP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-numeros-body">
+                        <tr><td colspan="9" style="text-align: center;">Realize a análise para ver os dados</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: Validação -->
+        <div id="validacao" class="tab-content">
+            <h2>Validação - Camada 7</h2>
+            <p>Testes de Monte Carlo, Análise Bayesiana e Backtest</p>
+            
+            <div id="validacao-resultado" class="resultado-section" style="display: none;">
+                <h3>Teste de Monte Carlo</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Simulações</h4>
+                        <div class="value" id="mc-simulacoes">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Percentil</h4>
+                        <div class="value" id="mc-percentil">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Significativo</h4>
+                        <div class="value" id="mc-significativo">-</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">Análise Bayesiana</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Chi-Quadrado</h4>
+                        <div class="value" id="bayes-chi2">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Bayes Factor</h4>
+                        <div class="value" id="bayes-factor">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Evidência Forte</h4>
+                        <div class="value" id="bayes-evidencia">-</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">Backtest</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Taxa de Acerto</h4>
+                        <div class="value" id="bt-acerto">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Taxa Esperada</h4>
+                        <div class="value" id="bt-esperada">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Performance Relativa</h4>
+                        <div class="value" id="bt-performance">-</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" style="margin-top: 20px;">
+                    <strong>Conclusão:</strong> <span id="validacao-conclusao">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Jogos -->
+        <div id="jogos" class="tab-content">
+            <h2>Gerar Sugestões de Jogos</h2>
+            <p>Baseado na análise estatística do Modelo Canônico</p>
+            
+            <button class="btn-action" onclick="gerarJogos()">🎲 Gerar Jogos Sugeridos</button>
+            
+            <div id="jogos-resultado" style="display: none; margin-top: 30px;">
+                <div class="resultado-section">
+                    <h3>Jogo Simples ({{ config.minimo_aposta }} números)</h3>
+                    <div class="jogo-sugerido" id="jogo-simples"></div>
+                </div>
+                
+                <div class="resultado-section">
+                    <h3>Jogo Médio ({{ config.minimo_aposta + 2 }} números)</h3>
+                    <div class="jogo-sugerido" id="jogo-medio"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loteriaType = '{{ loteria.value }}';
+        let analiseAtual = null;
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function salvarHistorico() {
+            const input = document.getElementById('historico-input').value;
+            let historico;
+            
+            try {
+                historico = JSON.parse(input);
+            } catch (e) {
+                mostrarMensagem('dados-msg', 'Formato JSON inválido!', 'error');
+                return;
+            }
+
+            const response = await fetch(`/api/salvar-historico/${loteriaType}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({historico})
+            });
+
+            const result = await response.json();
+            
+            if (result.sucesso) {
+                mostrarMensagem('dados-msg', `${result.concursos_salvos} concursos salvos com sucesso!`, 'success');
+            } else {
+                mostrarMensagem('dados-msg', result.erro || 'Erro ao salvar', 'error');
+            }
+        }
+
+        async function carregarHistoricoSalvo() {
+            const response = await fetch(`/api/carregar-historico/${loteriaType}`);
+            const result = await response.json();
+            
+            if (result.historico && result.historico.length > 0) {
+                document.getElementById('historico-input').value = JSON.stringify(result.historico, null, 2);
+                mostrarMensagem('dados-msg', `${result.concursos_count} concursos carregados!`, 'success');
+            } else {
+                mostrarMensagem('dados-msg', 'Nenhum histórico salvo encontrado.', 'error');
+            }
+        }
+
+        function gerarDadosExemplo() {
+            const config = {
+                'mega_sena': {universo: 60, sorteados: 6},
+                'quina': {universo: 80, sorteados: 5},
+                'lotofacil': {universo: 25, sorteados: 15},
+                'lotomania': {universo: 100, sorteados: 20},
+                'mais_milionaria': {universo: 50, sorteados: 6},
+                'dia_de_sorte': {universo: 31, sorteados: 7},
+                'super_sete': {universo: 10, sorteados: 7},
+                'timemania': {universo: 80, sorteados: 7},
+                'dupla_sena': {universo: 50, sorteados: 6}
+            };
+
+            const cfg = config[loteriaType] || {universo: 60, sorteados: 6};
+            const historico = [];
+            
+            for (let i = 0; i < 50; i++) {
+                const concurso = new Set();
+                while (concurso.size < cfg.sorteados) {
+                    concurso.add(Math.floor(Math.random() * cfg.universo) + 1);
+                }
+                historico.push(Array.from(concurso));
+            }
+            
+            document.getElementById('historico-input').value = JSON.stringify(historico, null, 2);
+            mostrarMensagem('dados-msg', '50 concursos de exemplo gerados!', 'success');
+        }
+
+        function mostrarMensagem(elementId, msg, tipo) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
+            setTimeout(() => el.innerHTML = '', 5000);
+        }
+
+        async function realizarAnalise() {
+            const historicoInput = document.getElementById('historico-input').value;
+            let historico = [];
+            
+            try {
+                historico = JSON.parse(historicoInput || '[]');
+            } catch (e) {
+                alert('Formato JSON inválido!');
+                return;
+            }
+
+            document.getElementById('analise-loading').style.display = 'block';
+            document.getElementById('analise-resultado').style.display = 'none';
+
+            const response = await fetch(`/api/analise/${loteriaType}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({historico})
+            });
+
+            const result = await response.json();
+            document.getElementById('analise-loading').style.display = 'none';
+
+            if (result.erro) {
+                alert(result.erro);
+                return;
+            }
+
+            analiseAtual = result;
+            exibirAnalise(result);
+        }
+
+        function exibirAnalise(result) {
+            document.getElementById('analise-resultado').style.display = 'block';
+            
+            // Estatísticas gerais
+            document.getElementById('stat-concursos').textContent = result.total_concursos;
+            document.getElementById('stat-ict').textContent = result.estatisticas_gerais.ict_medio.toFixed(4);
+            document.getElementById('stat-entropia').textContent = result.camada_informacional.entropia.toFixed(4);
+            document.getElementById('stat-compress').textContent = result.camada_informacional.compressibilidade.toFixed(4);
+            
+            // Classes
+            document.getElementById('classe-a').textContent = result.distribuicao_classes.A;
+            document.getElementById('classe-b').textContent = result.distribuicao_classes.B;
+            document.getElementById('classe-c').textContent = result.distribuicao_classes.C;
+            document.getElementById('classe-d').textContent = result.distribuicao_classes.D;
+            
+            // Maturidade
+            let maturidadeHtml = '<div class="stats-grid">';
+            for (const [maturidade, count] of Object.entries(result.distribuicao_maturidade)) {
+                maturidadeHtml += `
+                    <div class="stat-card">
+                        <div class="value">${count}</div>
+                        <div class="label">${maturidade}</div>
+                    </div>
+                `;
+            }
+            maturidadeHtml += '</div>';
+            document.getElementById('maturidade-stats').innerHTML = maturidadeHtml;
+            
+            // Tabela de números
+            const tbody = document.getElementById('tabela-numeros-body');
+            tbody.innerHTML = '';
+            
+            result.analises_individuais.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${a.numero}</strong></td>
+                    <td>${a.contagem}</td>
+                    <td>${a.frequencia}</td>
+                    <td>${a.fr}</td>
+                    <td>${a.hi}</td>
+                    <td>${a.ict}</td>
+                    <td><span class="classe-${a.classe}" style="padding: 4px 8px; border-radius: 4px;">${a.classe}</span></td>
+                    <td>${a.maturidade}</td>
+                    <td>${a.score_mcp}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Validação
+            if (result.validacao_camada7) {
+                const v = result.validacao_camada7;
+                document.getElementById('mc-simulacoes').textContent = v.monte_carlo.simulacoes;
+                document.getElementById('mc-percentil').textContent = v.monte_carlo.percentil.toFixed(4);
+                document.getElementById('mc-significativo').textContent = v.monte_carlo.significativo ? 'Sim' : 'Não';
+                
+                document.getElementById('bayes-chi2').textContent = v.bayesiana.chi_quadrado.toFixed(2);
+                document.getElementById('bayes-factor').textContent = v.bayesiana.bayes_factor.toExponential(4);
+                document.getElementById('bayes-evidencia').textContent = v.bayesiana.evidencia_forte ? 'Sim' : 'Não';
+                
+                if (v.backtest.taxa_acerto !== undefined) {
+                    document.getElementById('bt-acerto').textContent = (v.backtest.taxa_acerto * 100).toFixed(2) + '%';
+                    document.getElementById('bt-esperada').textContent = (v.backtest.taxa_esperada * 100).toFixed(2) + '%';
+                    document.getElementById('bt-performance').textContent = v.backtest.performance_relativa.toFixed(2) + 'x';
+                } else {
+                    document.getElementById('bt-acerto').textContent = 'N/A';
+                    document.getElementById('bt-esperada').textContent = 'N/A';
+                    document.getElementById('bt-performance').textContent = 'N/A';
+                }
+                
+                document.getElementById('validacao-conclusao').textContent = v.conclusao;
+                document.getElementById('validacao-resultado').style.display = 'block';
+            }
+        }
+
+        function filtrarTabela() {
+            const filtro = document.getElementById('filtro-numero').value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabela-numeros-body tr');
+            
+            linhas.forEach(linha => {
+                const texto = linha.textContent.toLowerCase();
+                linha.style.display = texto.includes(filtro) ? '' : 'none';
+            });
+        }
+
+        async function gerarJogos() {
+            if (!analiseAtual) {
+                alert('Realize a análise primeiro!');
+                return;
+            }
+            
+            const historicoInput = document.getElementById('historico-input').value;
+            const historico = JSON.parse(historicoInput || '[]');
+            
+            const response = await fetch(`/gerar-jogo/${loteriaType}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({historico})
+            });
+            
+            const result = await response.json();
+            
+            if (result.jogo) {
+                document.getElementById('jogos-resultado').style.display = 'block';
+                
+                const simplesDiv = document.getElementById('jogo-simples');
+                simplesDiv.innerHTML = '';
+                result.jogo.slice(0, {{ config.minimo_aposta }}).forEach(num => {
+                    simplesDiv.innerHTML += `<div class="bola">${num}</div>`;
+                });
+                
+                const medioDiv = document.getElementById('jogo-medio');
+                medioDiv.innerHTML = '';
+                result.jogo.slice(0, {{ config.minimo_aposta + 2 }}).forEach(num => {
+                    medioDiv.innerHTML += `<div class="bola">${num}</div>`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

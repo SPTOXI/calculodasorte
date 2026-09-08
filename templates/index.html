@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loteria Canônica - Análise Estatística</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .loterias-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .loteria-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .loteria-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .loteria-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .loteria-info {
+            list-style: none;
+        }
+
+        .loteria-info li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+
+        .loteria-info li:last-child {
+            border-bottom: none;
+        }
+
+        .loteria-info strong {
+            color: #333;
+        }
+
+        .btn-analisar {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-analisar:hover {
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+        }
+
+        .modelo-info {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            color: white;
+        }
+
+        .modelo-info h4 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎲 Loteria Canônica</h1>
+            <p>Modelo Canônico 3.0 + MCP-MD 1.0 | AGENTE LLN ICT FR</p>
+        </header>
+
+        <div class="modelo-info">
+            <h4>Sistema de Análise Estatística Baseado no Modelo Canônico</h4>
+            <p>Análise completa através das 7 camadas: Convergência, Estabilidade, Saturação, Dinâmica, Informacional, Não Linear e Validação.</p>
+        </div>
+
+        <h2 style="color: white; margin-top: 30px; text-align: center;">Selecione uma Loteria</h2>
+
+        <div class="loterias-grid">
+            {% for loteria in loterias %}
+            <div class="loteria-card">
+                <h3>{{ loteria.config.nome }}</h3>
+                <ul class="loteria-info">
+                    <li><strong>Universo:</strong> {{ loteria.config.universo }} números</li>
+                    <li><strong>Sorteados:</strong> {{ loteria.config.sorteados }} por concurso</li>
+                    <li><strong>Aposta:</strong> {{ loteria.config.minimo_aposta }} a {{ loteria.config.maximo_aposta }} números</li>
+                    <li><strong>Custo mínimo:</strong> R$ {{ "%.2f"|format(loteria.config.custo_minimo) }}</li>
+                    <li><strong>Sorteios:</strong> {{ loteria.config.dias_sorteio | join(', ') }}</li>
+                </ul>
+                <a href="/analise/{{ loteria.id }}" style="text-decoration: none;">
+                    <button class="btn-analisar">Analisar →</button>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <footer>
+            <p>⚠️ Este sistema não promete resultados, vantagem ou padrão. Promete rigor científico e teste estatístico.</p>
+            <p style="margin-top: 10px;">Modelo Canônico 3.0 — MCSCE | MCP-MD 1.0</p>
+        </footer>
+    </div>
+</body>
+</html>
