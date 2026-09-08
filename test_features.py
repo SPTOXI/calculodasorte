@@ -106,6 +106,60 @@ class TestNovasFuncionalidades(unittest.TestCase):
         data = res.get_json()
         self.assertIn('sucesso', data)
 
+    def test_06_salvar_e_listar_apostas_usuario(self):
+        """Testa salvar apostas no banco SQLite e listar apostas da sessão"""
+        jogos_teste = [
+            [4, 12, 25, 33, 41, 58],
+            [2, 10, 20, 30, 40, 50]
+        ]
+        # Salvar aposta
+        res_salvar = self.client.post('/api/apostas/salvar',
+            data=json.dumps({
+                'loteria_type': 'mega_sena',
+                'modalidade': 'fechamento',
+                'jogos': jogos_teste,
+                'titulo': 'Teste Automatizado Unitário'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(res_salvar.status_code, 200)
+        dados_salvos = res_salvar.get_json()
+        self.assertTrue(dados_salvos['sucesso'])
+        aposta_id = dados_salvos['aposta_id']
+        self.assertGreater(aposta_id, 0)
+
+        # Listar apostas
+        res_listar = self.client.get('/api/apostas/listar/mega_sena')
+        self.assertEqual(res_listar.status_code, 200)
+        dados_lista = res_listar.get_json()
+        self.assertTrue(dados_lista['sucesso'])
+        self.assertGreaterEqual(dados_lista['total'], 1)
+        ids = [a['id'] for a in dados_lista['apostas']]
+        self.assertIn(aposta_id, ids)
+
+        return aposta_id
+
+    def test_07_conferir_aposta_com_caixa(self):
+        """Testa o endpoint de conferência automática contra o último sorteio da Caixa"""
+        aposta_id = self.test_06_salvar_e_listar_apostas_usuario()
+        res_conf = self.client.get(f'/api/apostas/conferir/{aposta_id}')
+        self.assertEqual(res_conf.status_code, 200)
+        dados_conf = res_conf.get_json()
+        self.assertTrue(dados_conf['sucesso'])
+        self.assertIn('concurso_numero', dados_conf)
+        self.assertIn('dezenas_sorteadas', dados_conf)
+        self.assertIn('jogos_conferidos', dados_conf)
+        self.assertGreater(len(dados_conf['jogos_conferidos']), 0)
+
+    def test_08_excluir_aposta_usuario(self):
+        """Testa a exclusão de uma aposta salva"""
+        aposta_id = self.test_06_salvar_e_listar_apostas_usuario()
+        res_del = self.client.delete(f'/api/apostas/{aposta_id}')
+        self.assertEqual(res_del.status_code, 200)
+        dados_del = res_del.get_json()
+        self.assertTrue(dados_del['sucesso'])
+
 
 if __name__ == '__main__':
     unittest.main()
+

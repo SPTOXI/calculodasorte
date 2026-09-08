@@ -728,13 +728,130 @@
                 border: 1px solid #999 !important;
                 box-shadow: none !important;
             }
-            .bola {
-                border: 1px solid #333 !important;
-                color: black !important;
-                background: #eee !important;
-                box-shadow: none !important;
-            }
+        /* Estilos do Histórico de Apostas Salvas */
+        .aposta-salva-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
+        .aposta-salva-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+        }
+        .aposta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+        .aposta-titulo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .aposta-titulo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .aposta-tag {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tag-auto { background: #dcfce7; color: #15803d; }
+        .tag-fechamento { background: #f3e8ff; color: #7e22ce; }
+        .tag-manual { background: #e0f2fe; color: #0369a1; }
+        .aposta-data {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .aposta-jogos-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .aposta-jogo-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+        .aposta-bolas-wrap {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .bola-aposta {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #475569;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .bola-aposta.acerto {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+            box-shadow: 0 0 0 3px #86efac;
+            font-weight: 800;
+            transform: scale(1.08);
+        }
+        .badge-premio-linha {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+        .aposta-actions-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .btn-aposta-action {
+            padding: 7px 13px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.2s;
+        }
+        .btn-aposta-action:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -808,6 +925,7 @@
             <button class="tab-btn active" onclick="showTab('caixa')">🏛️ Resultados da Caixa</button>
             <button class="tab-btn" onclick="showTab('meus-numeros')">✍️ Meus Números (Manual)</button>
             <button class="tab-btn" onclick="showTab('jogos')">🎲 Gerador de Jogos</button>
+            <button class="tab-btn" onclick="showTab('salvos')">📋 Meus Jogos Salvos <span id="badge-total-salvos" style="display:none; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 6px; font-weight: 800;">0</span></button>
             <button class="tab-btn" onclick="showTab('analise')">🔍 Análise Canônica</button>
             <button class="tab-btn" onclick="showTab('numeros')">📈 Tabela de Números</button>
             <button class="tab-btn" onclick="showTab('validacao')">✓ Validação Estatística</button>
@@ -1023,6 +1141,9 @@ Exemplo para {{ config.nome }}:
                         <div style="color: #64748b; font-size: 0.85rem;">Pronto para marcar na lotérica ou salvar nos seus arquivos</div>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-action" onclick="salvarJogosGeradosNoHistorico()" style="background: #059669; font-size: 0.9rem;">
+                            💾 Salvar no Meu Histórico
+                        </button>
                         <button class="btn-action" onclick="baixarJogosGerados('txt')" style="background: #475569; font-size: 0.9rem;">
                             📄 Baixar em .TXT
                         </button>
@@ -1033,6 +1154,55 @@ Exemplo para {{ config.nome }}:
                             🖨️ Imprimir / Salvar em PDF
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Meus Jogos Salvos & Conferência Oficial -->
+        <div id="salvos" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <h2>📋 Meus Jogos Salvos — {{ config.nome }}</h2>
+                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 0.95rem;">
+                        Histórico permanente das suas apostas salvas no banco de dados. Você pode conferir os acertos contra o último sorteio da Caixa ou baixá-las a qualquer momento.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-action" onclick="carregarApostasSalvas()" style="padding: 9px 16px; font-size: 0.9rem;">
+                        🔄 Atualizar Lista
+                    </button>
+                </div>
+            </div>
+
+            <!-- Painel Dinâmico de Conferência Oficial da Caixa -->
+            <div id="conferencia-resultado-painel" style="display: none; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 22px; margin-bottom: 25px; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                    <div>
+                        <h3 style="margin: 0; color: #166534; display: flex; align-items: center; gap: 8px;">
+                            <span>🏆 Resultado da Conferência Oficial</span>
+                        </h3>
+                        <div id="conferencia-subtitulo" style="font-size: 0.9rem; color: #15803d; margin-top: 4px;"></div>
+                    </div>
+                    <button type="button" onclick="fecharConferencia()" style="background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; font-size: 1.2rem; cursor: pointer; color: #15803d; padding: 2px 10px; line-height: 1;">&times;</button>
+                </div>
+                
+                <!-- Dezenas Oficiais Sorteadas pela Caixa -->
+                <div style="background: white; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #166534; margin-bottom: 8px;">DEZENAS SORTEADAS PELA CAIXA:</div>
+                    <div class="aposta-bolas-wrap" id="conferencia-dezenas-caixa"></div>
+                </div>
+
+                <!-- Resumo de Premiações Detectadas -->
+                <div id="conferencia-resumo-premios" style="margin-bottom: 16px;"></div>
+
+                <!-- Lista de Cartelas com Acertos Destacados -->
+                <div id="conferencia-cartelas-detalhes" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- Lista de Apostas Salvas -->
+            <div id="lista-apostas-salvas">
+                <div style="text-align: center; color: #64748b; padding: 40px;">
+                    Carregando suas apostas salvas...
                 </div>
             </div>
         </div>
@@ -1215,6 +1385,9 @@ Exemplo para {{ config.nome }}:
             if (el) el.classList.add('active');
             if (event && event.target && event.target.classList.contains('tab-btn')) {
                 event.target.classList.add('active');
+            }
+            if (tabId === 'salvos') {
+                carregarApostasSalvas();
             }
         }
 
@@ -1468,8 +1641,9 @@ Exemplo para {{ config.nome }}:
 
             const result = await response.json();
             if (result.sucesso) {
-                mostrarMensagem('dados-msg', `${result.concursos_salvos} apostas salvas com sucesso!`, 'success');
+                mostrarMensagem('dados-msg', `✅ ${result.concursos_salvos} aposta(s) salvas no seu histórico! Você pode consultá-las e conferir acertos na aba "Meus Jogos Salvos".`, 'success');
                 realizarAnalise(historico);
+                carregarApostasSalvas();
             } else {
                 mostrarMensagem('dados-msg', result.erro || 'Erro ao salvar histórico', 'error');
             }
@@ -1932,12 +2106,315 @@ Exemplo para {{ config.nome }}:
         }
 
         // ==========================================
+        // ABA 4: MEUS JOGOS SALVOS E CONFERÊNCIA
+        // ==========================================
+
+        let apostasSalvasCache = [];
+
+        async function carregarApostasSalvas() {
+            const container = document.getElementById('lista-apostas-salvas');
+            try {
+                const res = await fetch(`/api/apostas/listar/${loteriaType}`);
+                const data = await res.json();
+                if (data.sucesso) {
+                    apostasSalvasCache = data.apostas || [];
+                    atualizarBadgeApostasSalvas(apostasSalvasCache.length);
+                    renderizarApostasSalvas(apostasSalvasCache);
+                } else {
+                    container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Erro ao carregar apostas: ${data.erro || 'Desconhecido'}</div>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Falha ao conectar com o servidor: ${e.message}</div>`;
+            }
+        }
+
+        function atualizarBadgeApostasSalvas(total) {
+            const badge = document.getElementById('badge-total-salvos');
+            if (badge) {
+                if (total > 0) {
+                    badge.textContent = total;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function renderizarApostasSalvas(apostas) {
+            const container = document.getElementById('lista-apostas-salvas');
+            if (!apostas || apostas.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 50px 20px; background: white; border-radius: 12px; border: 2px dashed #cbd5e1;">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">🎲</div>
+                        <h3 style="color: #1e293b; margin-bottom: 8px;">Nenhuma aposta salva para a ${CONFIG_LOTERIA.nome}</h3>
+                        <p style="color: #64748b; max-width: 500px; margin: 0 auto 20px;">
+                            Você pode gerar novos jogos na aba <strong>"🎲 Gerador de Jogos"</strong> ou digitar suas combinações na aba <strong>"✍️ Meus Números"</strong> e clicar em <strong>"Salvar no Meu Histórico"</strong>.
+                        </p>
+                        <button class="btn-action" onclick="showTab('jogos')">Ir para o Gerador de Jogos</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            apostas.forEach(aposta => {
+                const tagClass = aposta.modalidade === 'automatico' ? 'tag-auto' : (aposta.modalidade === 'fechamento' ? 'tag-fechamento' : 'tag-manual');
+                const tagTexto = aposta.modalidade === 'automatico' ? 'Automático Caixa' : (aposta.modalidade === 'fechamento' ? 'Fechamento Manual' : 'Digitado');
+                const dataFormatada = aposta.created_at ? new Date(aposta.created_at).toLocaleString('pt-BR') : '';
+
+                let jogosHtml = '<div class="aposta-jogos-list">';
+                (aposta.jogos || []).forEach((jogo, idx) => {
+                    let bolas = '';
+                    jogo.forEach(num => {
+                        const nStr = num < 10 ? '0' + num : num;
+                        bolas += `<span class="bola-aposta" id="bola-aposta-${aposta.id}-${idx}-${num}">${nStr}</span>`;
+                    });
+                    jogosHtml += `
+                        <div class="aposta-jogo-row" id="linha-aposta-${aposta.id}-${idx}">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <strong style="font-size: 0.85rem; color: #64748b; min-width: 60px;">Jogo #${idx + 1}:</strong>
+                                <div class="aposta-bolas-wrap">${bolas}</div>
+                            </div>
+                            <div id="resultado-jogo-${aposta.id}-${idx}"></div>
+                        </div>
+                    `;
+                });
+                jogosHtml += '</div>';
+
+                html += `
+                    <div class="aposta-salva-card" id="card-aposta-${aposta.id}">
+                        <div class="aposta-header">
+                            <div class="aposta-titulo-area">
+                                <span class="aposta-tag ${tagClass}">${tagTexto}</span>
+                                <span class="aposta-titulo">${aposta.titulo || 'Aposta ' + CONFIG_LOTERIA.nome}</span>
+                            </div>
+                            <div class="aposta-data">
+                                📅 Salvo em: <strong>${dataFormatada}</strong>
+                            </div>
+                        </div>
+
+                        ${jogosHtml}
+
+                        <div class="aposta-actions-footer">
+                            <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">
+                                Total: ${aposta.quantidade_jogos} jogo(s) de ${aposta.dezenas_por_jogo || (aposta.jogos[0] ? aposta.jogos[0].length : CONFIG_LOTERIA.sorteados)} dezenas
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn-aposta-action" onclick="conferirAposta(${aposta.id})" style="background: #059669; color: white;">
+                                    🔍 Conferir com a Caixa
+                                </button>
+                                <button class="btn-aposta-action" onclick="baixarApostaIndividual(${aposta.id}, 'txt')" style="background: #475569; color: white;">
+                                    📄 .TXT
+                                </button>
+                                <button class="btn-aposta-action" onclick="baixarApostaIndividual(${aposta.id}, 'md')" style="background: #4338ca; color: white;">
+                                    📝 .MD
+                                </button>
+                                <button class="btn-aposta-action" onclick="excluirAposta(${aposta.id})" style="background: #ef4444; color: white;">
+                                    🗑️ Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function salvarJogosGeradosNoHistorico() {
+            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
+                alert('Gere jogos primeiro antes de salvar!');
+                return;
+            }
+
+            const modo = modoGeracaoAtual === 'manual_pool' ? 'fechamento' : 'automatico';
+            const dezenasPorJogo = ultimosJogosGerados[0].length;
+            const titulo = modo === 'fechamento'
+                ? `Fechamento (${numerosBaseSelecionados.size} dezenas base) - ${ultimosJogosGerados.length} jogo(s)`
+                : `Geração Automática Canônica - ${ultimosJogosGerados.length} jogo(s)`;
+
+            try {
+                const res = await fetch('/api/apostas/salvar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        loteria_type: loteriaType,
+                        modalidade: modo,
+                        jogos: ultimosJogosGerados,
+                        dezenas_por_jogo: dezenasPorJogo,
+                        titulo: titulo
+                    })
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ ${data.mensagem}\n\nVocê pode visualizá-los e conferir acertos na aba "Meus Jogos Salvos".`);
+                    carregarApostasSalvas();
+                } else {
+                    alert('Erro ao salvar apostas: ' + (data.erro || 'Falha na gravação.'));
+                }
+            } catch (e) {
+                alert('Erro ao salvar no banco: ' + e.message);
+            }
+        }
+
+        async function conferirAposta(apostaId) {
+            const painel = document.getElementById('conferencia-resultado-painel');
+            const subtitulo = document.getElementById('conferencia-subtitulo');
+            const dezenasCaixaWrap = document.getElementById('conferencia-dezenas-caixa');
+            const resumoPremios = document.getElementById('conferencia-resumo-premios');
+            const cartelasDetalhes = document.getElementById('conferencia-cartelas-detalhes');
+
+            painel.style.display = 'block';
+            subtitulo.innerHTML = '<em>Consultando os servidores oficiais e calculando acertos...</em>';
+            dezenasCaixaWrap.innerHTML = '';
+            resumoPremios.innerHTML = '';
+            cartelasDetalhes.innerHTML = '';
+            painel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            try {
+                const res = await fetch(`/api/apostas/conferir/${apostaId}`);
+                const data = await res.json();
+
+                if (!data.sucesso) {
+                    subtitulo.innerHTML = `<span style="color: #dc2626;">Erro na conferência: ${data.erro}</span>`;
+                    return;
+                }
+
+                subtitulo.innerHTML = `Conferido contra o <strong>Concurso Oficial #${data.concurso_numero}</strong> da Caixa Econômica Federal (Apuração: ${data.data_apuracao})`;
+
+                // Renderizar dezenas da Caixa
+                let dezenasHtml = '';
+                (data.dezenas_sorteadas || []).forEach(num => {
+                    const nStr = num < 10 ? '0' + num : num;
+                    dezenasHtml += `<span class="bola-aposta acerto">${nStr}</span>`;
+                });
+                dezenasCaixaWrap.innerHTML = dezenasHtml;
+
+                // Resumo de premiações
+                const premios = data.premiacoes_resumo || {};
+                const premiosKeys = Object.keys(premios);
+                if (premiosKeys.length > 0) {
+                    let premiosHtml = '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+                    premiosKeys.forEach(k => {
+                        premiosHtml += `<span class="badge-premio-linha" style="font-size: 0.95rem; padding: 6px 14px;">🎉 ${k}: ${premios[k]} jogo(s)</span>`;
+                    });
+                    premiosHtml += '</div>';
+                    resumoPremios.innerHTML = premiosHtml;
+                } else {
+                    resumoPremios.innerHTML = `<span style="font-size: 0.9rem; color: #64748b;">Nenhuma faixa principal de premiação atingida neste concurso.</span>`;
+                }
+
+                // Destacar nas cartelas
+                let cartelasHtml = '';
+                const setSorteados = new Set(data.dezenas_sorteadas || []);
+
+                data.jogos_conferidos.forEach(item => {
+                    let bolasJogo = '';
+                    item.jogo.forEach(n => {
+                        const acertou = setSorteados.has(n);
+                        const nStr = n < 10 ? '0' + n : n;
+                        bolasJogo += `<span class="bola-aposta ${acertou ? 'acerto' : ''}">${nStr}</span>`;
+                    });
+
+                    const premioBadge = item.rotulo_premio 
+                        ? `<span class="badge-premio-linha">${item.rotulo_premio}</span>`
+                        : `<span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">${item.qtd_acertos} acerto(s)</span>`;
+
+                    cartelasHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <strong style="font-size: 0.85rem; color: #1e293b;">Jogo #${item.numero}:</strong>
+                                <div class="aposta-bolas-wrap">${bolasJogo}</div>
+                            </div>
+                            <div>${premioBadge}</div>
+                        </div>
+                    `;
+                });
+
+                cartelasDetalhes.innerHTML = cartelasHtml;
+
+            } catch (e) {
+                subtitulo.innerHTML = `<span style="color: #dc2626;">Falha na requisição: ${e.message}</span>`;
+            }
+        }
+
+        function fecharConferencia() {
+            document.getElementById('conferencia-resultado-painel').style.display = 'none';
+        }
+
+        function baixarApostaIndividual(apostaId, formato) {
+            const aposta = apostasSalvasCache.find(a => a.id === apostaId);
+            if (!aposta || !aposta.jogos) {
+                alert('Aposta não encontrada no cache local');
+                return;
+            }
+
+            const jogos = aposta.jogos;
+            let conteudo = '';
+            let tipoMime = 'text/plain';
+            let extensao = formato;
+
+            if (formato === 'txt') {
+                conteudo = `CALCULADORA DA SORTE - APOSTAS SALVAS\n`;
+                conteudo += `Loteria: ${CONFIG_LOTERIA.nome}\n`;
+                conteudo += `Título: ${aposta.titulo || 'Apostas'}\n`;
+                conteudo += `Data: ${aposta.created_at || ''}\n`;
+                conteudo += `Total de Jogos: ${jogos.length}\n`;
+                conteudo += `-------------------------------------------\n\n`;
+                jogos.forEach((j, idx) => {
+                    const dezenas = j.map(n => String(n).padStart(2, '0')).join(' ');
+                    conteudo += `Jogo #${String(idx + 1).padStart(2, '0')}: [ ${dezenas} ]\n`;
+                });
+            } else if (formato === 'md') {
+                conteudo = `# Calculadora da Sorte - Apostas Salvas\n\n`;
+                conteudo += `**Loteria:** ${CONFIG_LOTERIA.nome}  \n`;
+                conteudo += `**Título:** ${aposta.titulo || 'Apostas'}  \n`;
+                conteudo += `**Data:** ${aposta.created_at || ''}  \n`;
+                conteudo += `**Total de Jogos:** ${jogos.length}  \n\n`;
+                conteudo += `| Jogo | Dezenas Selecionadas | Qtd Dezenas |\n`;
+                conteudo += `| :---: | :--- | :---: |\n`;
+                jogos.forEach((j, idx) => {
+                    const dezenas = j.map(n => String(n).padStart(2, '0')).join(' ');
+                    conteudo += `| #${idx + 1} | ${dezenas} | ${j.length} |\n`;
+                });
+            }
+
+            const blob = new Blob([conteudo], { type: tipoMime + ';charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `aposta_${loteriaType}_${apostaId}.${extensao}`;
+            link.click();
+        }
+
+        async function excluirAposta(apostaId) {
+            if (!confirm('Deseja realmente excluir este pacote de apostas do seu histórico?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/apostas/${apostaId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    apostasSalvasCache = apostasSalvasCache.filter(a => a.id !== apostaId);
+                    atualizarBadgeApostasSalvas(apostasSalvasCache.length);
+                    renderizarApostasSalvas(apostasSalvasCache);
+                } else {
+                    alert('Erro ao excluir aposta: ' + (data.erro || 'Falha'));
+                }
+            } catch (e) {
+                alert('Erro de conexão ao excluir: ' + e.message);
+            }
+        }
+
+        // ==========================================
         // INICIALIZAÇÃO
         // ==========================================
 
         window.addEventListener('DOMContentLoaded', () => {
             montarChipsDezenas();
             carregarHistoricoSalvo();
+            carregarApostasSalvas();
         });
     </script>
 </body>

@@ -65,6 +65,23 @@ def init_db():
             )
         ''')
         
+        # Tabela de Histórico de Apostas dos Usuários
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_bets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                session_id TEXT,
+                loteria_type TEXT NOT NULL,
+                titulo TEXT,
+                modalidade TEXT NOT NULL,
+                quantidade_jogos INTEGER NOT NULL,
+                dezenas_por_jogo INTEGER NOT NULL,
+                jogos_json TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        ''')
+        
         conn.commit()
 
     # Garantir criação do admin padrão
@@ -259,3 +276,109 @@ def get_latest_sync_logs(limit: int = 20) -> List[Dict[str, Any]]:
             (limit,)
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+# ==========================================
+# GESTÃO DE HISTÓRICO DE APOSTAS DO USUÁRIO
+# ==========================================
+
+def salvar_aposta(
+    loteria_type: str,
+    modalidade: str,
+    jogos: List[List[int]],
+    dezenas_por_jogo: int,
+    user_id: Optional[int] = None,
+    session_id: Optional[str] = None,
+    titulo: Optional[str] = None
+) -> int:
+    """Salva um lote de jogos no banco de dados SQLite"""
+    import json
+    if not titulo:
+        mod_label = {
+            'automatico': 'Geração Automática (Caixa)',
+            'fechamento': 'Fechamento / Desdobramento',
+            'manual': 'Apostas Manuais'
+        }.get(modalidade, 'Apostas')
+        data_str = datetime.now().strftime('%d/%m/%Y %H:%M')
+        titulo = f"{mod_label} - {len(jogos)} jogo(s) ({data_str})"
+
+    jogos_json = json.dumps(jogos)
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO user_bets 
+            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json))
+        conn.commit()
+        return cursor.lastrowid
+
+
+def listar_apostas(
+    loteria_type: Optional[str] = None,
+    user_id: Optional[int] = None,
+    session_id: Optional[str] = None,
+    limit: int = 50
+) -> List[Dict[str, Any]]:
+    """Lista apostas do usuário logado ou da sessão atual"""
+    import json
+    with get_db_connection() as conn:
+        query = "SELECT * FROM user_bets WHERE "
+        params = []
+
+        if user_id:
+            query += "(user_id = ? OR session_id = ?) "
+            params.extend([user_id, session_id or ''])
+        elif session_id:
+            query += "session_id = ? "
+            params.append(session_id)
+        else:
+            query += "1=1 "
+
+        if loteria_type:
+            query += "AND loteria_type = ? "
+            params.append(loteria_type)
+
+        query += "ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+
+        rows = conn.execute(query, tuple(params)).fetchall()
+        resultado = []
+        for r in rows:
+            d = dict(r)
+            try:
+                d['jogos'] = json.loads(d['jogos_json'])
+            except Exception:
+                d['jogos'] = []
+            resultado.append(d)
+        return resultado
+
+
+def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:
+    """Obtém detalhes completos de uma aposta por ID"""
+    import json
+    with get_db_connection() as conn:
+        row = conn.execute("SELECT * FROM user_bets WHERE id = ?", (aposta_id,)).fetchone()
+        if row:
+            d = dict(row)
+            try:
+                d['jogos'] = json.loads(d['jogos_json'])
+            except Exception:
+                d['jogos'] = []
+            return d
+        return None
+
+
+def excluir_aposta(aposta_id: int, user_id: Optional[int] = None, session_id: Optional[str] = None) -> bool:
+    """Exclui aposta garantindo autenticação por usuário ou sessão"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if user_id:
+            cursor.execute("DELETE FROM user_bets WHERE id = ? AND (user_id = ? OR session_id = ?)", (aposta_id, user_id, session_id or ''))
+        elif session_id:
+            cursor.execute("DELETE FROM user_bets WHERE id = ? AND session_id = ?", (aposta_id, session_id))
+        else:
+            cursor.execute("DELETE FROM user_bets WHERE id = ?", (aposta_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+

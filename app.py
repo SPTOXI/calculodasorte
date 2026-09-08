@@ -7,6 +7,7 @@ Com Painel Administrativo, Gestão de Usuários e Atualizador Diário Caixa
 from functools import wraps
 import json
 import os
+import uuid
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
 from werkzeug.security import check_password_hash
@@ -116,7 +117,11 @@ def analise_page(loteria_type: str):
     except ValueError:
         return redirect(url_for('index'))
     
-    return render_template('analise.html', loteria=loteria, config=config)
+    current_user = None
+    if 'user_id' in session:
+        current_user = database.get_user_by_id(session['user_id'])
+    
+    return render_template('analise.html', loteria=loteria, config=config, current_user=current_user)
 
 
 # ==========================================
@@ -343,9 +348,157 @@ def api_analise(loteria_type: str):
     return jsonify(resumo)
 
 
+def _obter_identificadores_usuario():
+    """Retorna (user_id, session_id) garantindo sessão única"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    return session.get('user_id'), session.get('session_id')
+
+
+@app.route('/api/apostas/salvar', methods=['POST'])
+def api_salvar_apostas():
+    """Salva um lote de jogos no histórico do usuário no SQLite"""
+    dados = request.get_json() or {}
+    loteria_type = dados.get('loteria_type')
+    modalidade = dados.get('modalidade', 'manual')
+    jogos = dados.get('jogos', [])
+    titulo = dados.get('titulo')
+    
+    try:
+        loteria = LoteriaType(loteria_type)
+    except (ValueError, TypeError):
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    if not isinstance(jogos, list) or len(jogos) == 0:
+        return jsonify({'erro': 'Nenhum jogo fornecido'}), 400
+
+    dezenas_por_jogo = len(jogos[0]) if jogos and isinstance(jogos[0], list) else 6
+    user_id, session_id = _obter_identificadores_usuario()
+
+    aposta_id = database.salvar_aposta(
+        loteria_type=loteria_type,
+        modalidade=modalidade,
+        jogos=jogos,
+        dezenas_por_jogo=dezenas_por_jogo,
+        user_id=user_id,
+        session_id=session_id,
+        titulo=titulo
+    )
+
+    return jsonify({
+        'sucesso': True,
+        'aposta_id': aposta_id,
+        'quantidade_jogos': len(jogos),
+        'mensagem': f'{len(jogos)} aposta(s) salvas no seu histórico!'
+    })
+
+
+@app.route('/api/apostas/listar/<loteria_type>', methods=['GET'])
+def api_listar_apostas(loteria_type: str):
+    """Lista o histórico de apostas salvas do usuário para a loteria"""
+    user_id, session_id = _obter_identificadores_usuario()
+    apostas = database.listar_apostas(
+        loteria_type=loteria_type,
+        user_id=user_id,
+        session_id=session_id
+    )
+    return jsonify({
+        'sucesso': True,
+        'apostas': apostas,
+        'total': len(apostas)
+    })
+
+
+@app.route('/api/apostas/<int:aposta_id>', methods=['DELETE'])
+def api_excluir_aposta(aposta_id: int):
+    """Exclui uma aposta salva do usuário"""
+    user_id, session_id = _obter_identificadores_usuario()
+    sucesso = database.excluir_aposta(aposta_id, user_id=user_id, session_id=session_id)
+    if sucesso:
+        return jsonify({'sucesso': True, 'mensagem': 'Aposta removida com sucesso'})
+    return jsonify({'erro': 'Aposta não encontrada ou não autorizada'}), 404
+
+
+@app.route('/api/apostas/conferir/<int:aposta_id>', methods=['GET'])
+def api_conferir_aposta(aposta_id: int):
+    """Confere as cartelas de uma aposta salva contra o último sorteio oficial da Caixa"""
+    aposta = database.obter_aposta(aposta_id)
+    if not aposta:
+        return jsonify({'erro': 'Aposta não encontrada'}), 404
+
+    loteria_type = aposta['loteria_type']
+    historico = carregar_historico(loteria_type)
+    meta = updater.carregar_meta(loteria_type)
+
+    if not historico:
+        return jsonify({'erro': 'Nenhum sorteio oficial disponível para conferência'}), 400
+
+    ultimo_sorteio = historico[-1]
+    set_sorteio = set(ultimo_sorteio)
+
+    conferencia_jogos = []
+    premiacoes_resumo = {}
+
+    for idx, jogo in enumerate(aposta.get('jogos', []), 1):
+        set_jogo = set(jogo)
+        acertos = sorted(list(set_jogo.intersection(set_sorteio)))
+        qtd_acertos = len(acertos)
+        
+        rotulo_premio = None
+        if loteria_type == 'mega_sena':
+            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
+            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
+            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
+        elif loteria_type == 'quina':
+            if qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) 🏆'
+            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) ⭐'
+            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos) 🎯'
+            elif qtd_acertos == 2: rotulo_premio = 'Duque (2 acertos)'
+        elif loteria_type == 'lotofacil':
+            if qtd_acertos == 15: rotulo_premio = '15 Acertos 🏆'
+            elif qtd_acertos == 14: rotulo_premio = '14 Acertos ⭐'
+            elif qtd_acertos == 13: rotulo_premio = '13 Acertos 🎯'
+            elif qtd_acertos == 12: rotulo_premio = '12 Acertos'
+            elif qtd_acertos == 11: rotulo_premio = '11 Acertos'
+        elif loteria_type == 'dupla_sena':
+            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
+            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
+            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
+            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos)'
+        elif loteria_type == 'dia_de_sorte':
+            if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
+            elif qtd_acertos == 6: rotulo_premio = '6 Acertos ⭐'
+            elif qtd_acertos == 5: rotulo_premio = '5 Acertos 🎯'
+            elif qtd_acertos == 4: rotulo_premio = '4 Acertos'
+        else:
+            if qtd_acertos >= 4:
+                rotulo_premio = f'{qtd_acertos} acertos 🎯'
+
+        if rotulo_premio:
+            premiacoes_resumo[rotulo_premio] = premiacoes_resumo.get(rotulo_premio, 0) + 1
+
+        conferencia_jogos.append({
+            'numero': idx,
+            'jogo': jogo,
+            'acertos': acertos,
+            'qtd_acertos': qtd_acertos,
+            'rotulo_premio': rotulo_premio
+        })
+
+    return jsonify({
+        'sucesso': True,
+        'aposta_titulo': aposta.get('titulo'),
+        'concurso_numero': meta.get('ultimo_concurso', len(historico)),
+        'data_apuracao': meta.get('data_apuracao', 'Recente'),
+        'dezenas_sorteadas': ultimo_sorteio,
+        'jogos_conferidos': conferencia_jogos,
+        'premiacoes_resumo': premiacoes_resumo
+    })
+
+
 @app.route('/api/salvar-historico/<loteria_type>', methods=['POST'])
 def api_salvar_historico(loteria_type: str):
-    """API para salvar histórico de concursos"""
+    """API para salvar apostas manuais do usuário no banco SQLite (sem alterar dados da Caixa)"""
     try:
         loteria = LoteriaType(loteria_type)
     except ValueError:
@@ -361,10 +514,21 @@ def api_salvar_historico(loteria_type: str):
         if not isinstance(concurso, list) or len(concurso) == 0:
             return jsonify({'erro': 'Formato de concurso inválido'}), 400
     
-    salvar_historico(loteria_type, historico)
+    user_id, session_id = _obter_identificadores_usuario()
+    dezenas_por_jogo = len(historico[0]) if historico else 6
+    aposta_id = database.salvar_aposta(
+        loteria_type=loteria_type,
+        modalidade='manual',
+        jogos=historico,
+        dezenas_por_jogo=dezenas_por_jogo,
+        user_id=user_id,
+        session_id=session_id,
+        titulo=f"Jogos Digitados ({len(historico)} aposta(s))"
+    )
     
     return jsonify({
         'sucesso': True,
+        'aposta_id': aposta_id,
         'concursos_salvos': len(historico)
     })
 
