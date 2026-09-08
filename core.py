@@ -682,16 +682,25 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
 def gerar_multiplos_jogos(
     modelo: ModeloCanonico30, 
     quantidade_jogos: int, 
-    quantidade_numeros: int
+    quantidade_numeros: int,
+    numeros_base: Optional[List[int]] = None
 ) -> List[List[int]]:
     """
     Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 3.0.
     Garante que não haja jogos duplicados e respeita os limites da loteria.
+    Se numeros_base for fornecido, restringe a geração ao subconjunto de números escolhido pelo usuário.
     """
     import random
 
     analises = modelo.analisar_todos_elementos()
-    universo = list(range(1, modelo.N + 1))
+    
+    # Se o usuário definiu um pool de números base, valida e filtra
+    if numeros_base and len(numeros_base) >= quantidade_numeros:
+        universo_disponivel = sorted(list({n for n in numeros_base if 1 <= n <= modelo.N}))
+        if len(universo_disponivel) < quantidade_numeros:
+            universo_disponivel = list(range(1, modelo.N + 1))
+    else:
+        universo_disponivel = list(range(1, modelo.N + 1))
     
     # Calcular pesos estatísticos para cada número
     pesos = {}
@@ -704,29 +713,36 @@ def gerar_multiplos_jogos(
     jogos_gerados = []
     jogos_set = set()
     tentativas = 0
-    max_tentativas = quantidade_jogos * 100
+    max_tentativas = quantidade_jogos * 150
+
+    # Candidatos disponíveis dentro do universo selecionado
+    candidatos_analises = [a for a in analises if a.numero in universo_disponivel]
 
     while len(jogos_gerados) < quantidade_jogos and tentativas < max_tentativas:
         tentativas += 1
         jogo = set()
         
-        # 1. 50% dos números vindos dos melhores scores com rotação
-        top_candidatos = sorted(analises, key=lambda x: pesos[x.numero], reverse=True)[:max(quantidade_numeros * 2, 15)]
-        qtd_top = min(len(top_candidatos), max(1, int(quantidade_numeros * 0.5)))
-        amostra_top = random.sample([c.numero for c in top_candidatos], qtd_top)
-        jogo.update(amostra_top)
+        # 1. 40% dos números vindos dos melhores scores do grupo disponível
+        if len(candidatos_analises) > quantidade_numeros:
+            top_candidatos = sorted(candidatos_analises, key=lambda x: pesos[x.numero], reverse=True)[:max(quantidade_numeros * 2, 10)]
+            qtd_top = min(len(top_candidatos), max(1, int(quantidade_numeros * 0.4)))
+            amostra_top = random.sample([c.numero for c in top_candidatos], qtd_top)
+            jogo.update(amostra_top)
         
-        # 2. Completar com amostragem ponderada pelos pesos canônicos
+        # 2. Completar com amostragem ponderada pelos pesos canônicos no universo disponível
         while len(jogo) < quantidade_numeros:
-            candidatos_restantes = [n for n in universo if n not in jogo]
-            pesos_restantes = [pesos[n] for n in candidatos_restantes]
+            candidatos_restantes = [n for n in universo_disponivel if n not in jogo]
+            if not candidatos_restantes:
+                break
+            pesos_restantes = [pesos.get(n, 1.0) for n in candidatos_restantes]
             escolhido = random.choices(candidatos_restantes, weights=pesos_restantes, k=1)[0]
             jogo.add(escolhido)
 
-        jogo_ordenado = tuple(sorted(list(jogo)))
-        if jogo_ordenado not in jogos_set:
-            jogos_set.add(jogo_ordenado)
-            jogos_gerados.append(list(jogo_ordenado))
+        if len(jogo) == quantidade_numeros:
+            jogo_ordenado = tuple(sorted(list(jogo)))
+            if jogo_ordenado not in jogos_set:
+                jogos_set.add(jogo_ordenado)
+                jogos_gerados.append(list(jogo_ordenado))
 
     return jogos_gerados
 

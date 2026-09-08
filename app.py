@@ -371,12 +371,21 @@ def api_salvar_historico(loteria_type: str):
 
 @app.route('/api/carregar-historico/<loteria_type>', methods=['GET'])
 def api_carregar_historico(loteria_type: str):
-    """API para carregar histórico salvo"""
+    """API para carregar histórico salvo com metadados"""
     historico = carregar_historico(loteria_type)
+    meta = updater.carregar_meta(loteria_type)
     return jsonify({
         'historico': historico,
-        'concursos_count': len(historico)
+        'concursos_count': len(historico),
+        'meta': meta
     })
+
+
+@app.route('/api/sincronizar/<loteria_type>', methods=['POST'])
+def api_sincronizar_publica(loteria_type: str):
+    """Sincroniza os últimos resultados oficiais da Caixa para a modalidade"""
+    res = updater.sincronizar_loteria(loteria_type, n_historico=25)
+    return jsonify(res)
 
 
 @app.route('/gerar-jogo/<loteria_type>', methods=['POST'])
@@ -426,6 +435,12 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     dezenas = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
     dezenas = max(config.minimo_aposta, min(config.maximo_aposta, dezenas))
 
+    numeros_base = dados.get('numeros_base', [])
+    if numeros_base and len(numeros_base) < dezenas:
+        return jsonify({
+            'erro': f'Para gerar apostas de {dezenas} dezenas no modo personalizado, selecione ao menos {dezenas} números favoritos.'
+        }), 400
+
     historico_input = dados.get('historico', [])
     if not historico_input:
         historico_input = carregar_historico(loteria_type)
@@ -434,7 +449,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
 
     modelo = ModeloCanonico30(historico_input, loteria)
-    jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas)
+    jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
 
     return jsonify({
         'sucesso': True,
@@ -442,6 +457,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'quantidade_jogos': len(jogos),
         'dezenas_por_jogo': dezenas,
         'jogos': jogos,
+        'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)

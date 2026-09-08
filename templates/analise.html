@@ -369,6 +369,171 @@
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
         }
 
+        /* Seletor de Modo de Geração */
+        .modo-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .modo-card {
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .modo-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .modo-card.active {
+            border-color: #667eea;
+            background: #f5f7ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .modo-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .modo-card-header strong {
+            font-size: 1.05rem;
+            color: #1e293b;
+        }
+
+        .modo-card p {
+            font-size: 0.88rem;
+            color: #64748b;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* Volante Seletor de Dezenas (Modo Manual / Fechamento) */
+        .volante-container {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+
+        .volante-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+            gap: 8px;
+            margin-top: 14px;
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .volante-bola {
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            background: white;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .volante-bola:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: #eef2ff;
+        }
+
+        .volante-bola.selected {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border-color: #4338ca;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+            transform: scale(1.05);
+        }
+
+        /* Lista de Concursos Oficiais da Caixa (Aba 1) */
+        .concursos-caixa-wrapper {
+            margin-top: 20px;
+            max-height: 560px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .concurso-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .concurso-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .concurso-info-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .concurso-num {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #1e293b;
+        }
+
+        .concurso-data {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .bolas-caixa {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .bola-caixa {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+        }
+
         .resultado-section {
             margin-top: 30px;
             padding: 20px;
@@ -640,36 +805,66 @@
 
         <!-- Abas -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('dados')">📊 Números & Histórico</button>
+            <button class="tab-btn active" onclick="showTab('caixa')">🏛️ Resultados da Caixa</button>
+            <button class="tab-btn" onclick="showTab('meus-numeros')">✍️ Meus Números (Manual)</button>
             <button class="tab-btn" onclick="showTab('jogos')">🎲 Gerador de Jogos</button>
             <button class="tab-btn" onclick="showTab('analise')">🔍 Análise Canônica</button>
             <button class="tab-btn" onclick="showTab('numeros')">📈 Tabela de Números</button>
             <button class="tab-btn" onclick="showTab('validacao')">✓ Validação Estatística</button>
         </div>
 
-        <!-- Tab 1: Cole Aqui Seus Números & Histórico -->
-        <div id="dados" class="tab-content active">
+        <!-- Tab 1: Resultados Oficiais da Caixa (Somente Informativo) -->
+        <div id="caixa" class="tab-content active">
             <div class="status-badge-caixa" id="caixa-status-badge">
                 <div>
-                    <strong>🏛️ Histórico Oficial da Caixa Econômica Federal</strong>
-                    <div style="font-size: 0.9rem; margin-top: 3px;" id="caixa-status-texto">
-                        Carregando histórico oficial integrado...
+                    <strong style="font-size: 1.05rem;">🏛️ Caixa Econômica Federal — Base Oficial Sincronizada</strong>
+                    <div style="font-size: 0.9rem; margin-top: 4px;" id="caixa-status-texto">
+                        Conectando com os servidores oficiais da Caixa...
                     </div>
                 </div>
-                <div>
-                    <button class="btn-action" style="padding: 8px 16px; font-size: 0.9rem;" onclick="carregarHistoricoSalvo()">
-                        🔄 Restaurar Histórico da Caixa
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="/download/historico/{{ loteria.value }}/md" class="btn-download" style="background: #4338ca;" title="Baixar histórico em Markdown">
+                        📥 Baixar em .MD
+                    </a>
+                    <a href="/download/historico/{{ loteria.value }}/txt" class="btn-download" style="background: #334155;" title="Baixar histórico em Texto">
+                        📥 Baixar em .TXT
+                    </a>
+                    <button class="btn-action" style="padding: 8px 16px; font-size: 0.9rem;" onclick="sincronizarComCaixaAgora()">
+                        🔄 Sincronizar Agora
                     </button>
                 </div>
             </div>
 
-            <!-- Caixa de Instruções e Regras da Loteria -->
+            <!-- Aviso Informativo -->
+            <div class="info-box-instrucoes" style="border-left-color: #059669; background: #ecfdf5;">
+                <h4 style="color: #065f46;">ℹ️ Informações sobre os Resultados Oficiais:</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #047857; line-height: 1.5;">
+                    Estes números são <strong>estritamente informativos para sua conferência e consulta</strong>. Eles são extraídos diretamente da base de dados oficial da Caixa Econômica Federal e alimentam automaticamente o motor estatístico (Modelo Canônico 3.0 + MCP-MD) em segundo plano.
+                </p>
+            </div>
+
+            <!-- Barra de Filtro de Concursos -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="color: #1e293b;">Histórico dos Últimos Concursos</h3>
+                <input type="text" id="filtro-concurso" placeholder="🔍 Filtrar por concurso ou dezena..." onkeyup="filtrarConcursosCaixa()" style="padding: 8px 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; width: 280px; max-width: 100%;">
+            </div>
+
+            <!-- Container com lista de concursos -->
+            <div class="concursos-caixa-wrapper" id="lista-concursos-caixa">
+                <div style="text-align: center; color: #64748b; padding: 40px;">
+                    Carregando resultados oficiais da Caixa...
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Meus Números & Análise Manual -->
+        <div id="meus-numeros" class="tab-content">
             <div class="info-box-instrucoes">
-                <h4>📋 Como informar seus números para a {{ config.nome }}:</h4>
+                <h4>📋 Como analisar suas próprias apostas para a {{ config.nome }}:</h4>
                 <ul>
-                    <li><strong>Formato limpo e direto:</strong> Cole <strong>um jogo/concurso por linha</strong> com dezenas separadas por espaço ou vírgula (ex: <code>06 11 25 45 48 58</code>). Não precisa de colchetes ou JSON.</li>
-                    <li><strong>Regras da {{ config.nome }}:</strong> Cada aposta deve conter de <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} números</strong>, todos entre <strong>1 e {{ config.universo }}</strong>.</li>
-                    <li><strong>Cálculo Matemático:</strong> O histórico oficial da Caixa já é carregado abaixo e alimenta o modelo matemático. Se quiser testar seus próprios palpites, cole-os na caixa e clique em "Analisar Números".</li>
+                    <li><strong>Área de trabalho pessoal:</strong> Digite ou cole suas combinações abaixo (um jogo por linha, ex: <code>06 11 25 45 48 58</code>).</li>
+                    <li><strong>Regras da {{ config.nome }}:</strong> De <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} dezenas</strong> por linha, com números entre <strong>1 e {{ config.universo }}</strong>.</li>
+                    <li><strong>Análise Estatística:</strong> Ao clicar em <strong>"Analisar Meus Números"</strong>, o sistema calculará o ICT, estabilidade e maturidade estatística exclusiva das suas sequências.</li>
                 </ul>
             </div>
 
@@ -678,10 +873,10 @@
                     <label for="historico-input" style="margin-bottom: 0;">Cole aqui seus números (1 jogo por linha):</label>
                     <div style="display: flex; gap: 8px;">
                         <button type="button" class="btn-badge" onclick="limparCaixaTexto()">🧹 Limpar Campo</button>
-                        <button type="button" class="btn-badge" onclick="carregarHistoricoSalvo()">🔄 Restaurar Caixa</button>
+                        <button type="button" class="btn-badge" onclick="carregarExemploNoInput()">📋 Preencher Exemplo</button>
                     </div>
                 </div>
-                <textarea id="historico-input" rows="10" oninput="validarInputEmTempoReal()" placeholder="Cole aqui seus números (um jogo ou concurso por linha)...
+                <textarea id="historico-input" rows="10" oninput="validarInputEmTempoReal()" placeholder="Cole aqui suas apostas (um jogo por linha)...
 Exemplo para {{ config.nome }}:
 06 11 25 45 48 58
 02 14 28 33 49 52
@@ -689,25 +884,73 @@ Exemplo para {{ config.nome }}:
                 
                 <!-- Feedback Dinâmico em Tempo Real -->
                 <div id="input-live-feedback" class="input-live-feedback">
-                    <span>Aguardando entrada de dados...</span>
+                    <span>ℹ️ Campo livre para você digitar ou colar seus números.</span>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-                <button class="btn-action" onclick="executarAnaliseComInput()">🔍 Analisar Números</button>
-                <button class="btn-action" onclick="salvarHistoricoPersonalizado()" style="background: #059669;">💾 Salvar no Histórico</button>
-                <button class="btn-action" onclick="gerarDadosExemplo()" style="background: #0284c7;">🎲 Gerar Simulação de Teste</button>
+                <button class="btn-action" onclick="executarAnaliseComInput()">🔍 Analisar Meus Números</button>
+                <button class="btn-action" onclick="salvarHistoricoPersonalizado()" style="background: #059669;">💾 Salvar no Histórico Pessoal</button>
+                <button class="btn-action" onclick="gerarDadosExemplo()" style="background: #0284c7;">🎲 Gerar 50 Jogos de Teste</button>
             </div>
             
             <div id="dados-msg" style="margin-top: 15px;"></div>
         </div>
 
-        <!-- Tab 2: Gerador de Múltiplos Jogos (Com Exportação MD, TXT, PDF) -->
+        <!-- Tab 3: Gerador de Múltiplos Jogos (Com Opção Caixa ou Manual) -->
         <div id="jogos" class="tab-content">
-            <h2>🎲 Gerador de Múltiplos Jogos Inteligentes</h2>
+            <h2>🎲 Gerador de Composições e Palpites Inteligentes</h2>
             <p style="color: #64748b; margin-top: 4px; margin-bottom: 20px;">
-                Combinações balanceadas pelo <strong>Modelo Canônico 3.0 + MCP-MD 1.0</strong> (Score MCP, Estabilidade ICT e Fator de Recorrência).
+                Escolha o modo de composição desejado para montar suas apostas dentro das regras da <strong>{{ config.nome }}</strong>.
             </p>
+
+            <!-- Seletor dos 2 Modos -->
+            <div class="modo-selector-grid">
+                <div class="modo-card active" id="modo-card-auto" onclick="alternarModoGeracao('automatico')">
+                    <div class="modo-card-header">
+                        <span style="font-size: 1.5rem;">🔮</span>
+                        <strong>Modo 1: Baseado nos Últimos Sorteios da Caixa</strong>
+                    </div>
+                    <p>O Modelo Canônico analisa a estabilidade, convergência (ICT) e Score MCP dos sorteios oficiais para sugerir palpites ideais.</p>
+                </div>
+
+                <div class="modo-card" id="modo-card-manual" onclick="alternarModoGeracao('manual_pool')">
+                    <div class="modo-card-header">
+                        <span style="font-size: 1.5rem;">🎯</span>
+                        <strong>Modo 2: A Partir dos Meus Números (Fechamento)</strong>
+                    </div>
+                    <p>Você escolhe seu conjunto favorito de dezenas e o sistema gera as combinações selecionando exclusivamente dentro do seu grupo.</p>
+                </div>
+            </div>
+
+            <!-- Seção do Volante Interativo (Visível no Modo 2) -->
+            <div id="secao-volante-fechamento" class="volante-container" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <strong style="color: #1e293b; font-size: 1.05rem;">🎯 Selecione seus Números Favoritos no Volante:</strong>
+                        <div style="color: #64748b; font-size: 0.85rem; margin-top: 2px;">
+                            Clique nas dezenas abaixo ou digite no campo. O gerador combinará apenas os números que você marcar aqui.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-badge" onclick="selecionarMaisFrequentes()">⭐ Sugerir Mais Frequentes</button>
+                        <button type="button" class="btn-badge" onclick="limparVolante()">🧹 Limpar Volante</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 12px;">
+                    <input type="text" id="input-numeros-base" placeholder="Dezenas selecionadas (ex: 04 08 15 16 23 42 50)..." oninput="sincronizarInputComVolante()" style="width: 100%; padding: 10px 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: monospace;">
+                </div>
+
+                <div class="volante-grid" id="volante-selecao-grid">
+                    <!-- Gerado dinamicamente com 1 a universo -->
+                </div>
+
+                <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                    <span id="contador-volante" style="font-weight: 700; color: #4338ca;">0 dezenas selecionadas no seu grupo</span>
+                    <span style="color: #64748b;">(Mínimo necessário para gerar: <span id="volante-min-necessario">{{ config.minimo_aposta }}</span> dezenas)</span>
+                </div>
+            </div>
 
             <!-- Banner com limites oficiais da loteria -->
             <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
@@ -953,6 +1196,9 @@ Exemplo para {{ config.nome }}:
         const loteriaType = '{{ loteria.value }}';
         let analiseAtual = null;
         let ultimosJogosGerados = [];
+        let historicoCaixaOficial = [];
+        let modoGeracaoAtual = 'automatico';
+        const numerosBaseSelecionados = new Set();
 
         const CONFIG_LOTERIA = {
             universo: {{ config.universo }},
@@ -965,11 +1211,14 @@ Exemplo para {{ config.nome }}:
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+            const el = document.getElementById(tabId);
+            if (el) el.classList.add('active');
+            if (event && event.target && event.target.classList.contains('tab-btn')) {
+                event.target.classList.add('active');
+            }
         }
 
-        // Formata histórico para visualização limpa e amigável (1 concurso por linha: "06 11 25 45 48 58")
+        // Formata histórico para visualização limpa de apostas (1 jogo por linha: "06 11 25 45 48 58")
         function formatarHistoricoParaTexto(historico) {
             if (!historico || !Array.isArray(historico)) return '';
             return historico.map(concurso => {
@@ -988,8 +1237,386 @@ Exemplo para {{ config.nome }}:
             validarInputEmTempoReal();
         }
 
+        function carregarExemploNoInput() {
+            const exemplos = [];
+            for (let i = 0; i < 5; i++) {
+                const s = new Set();
+                while (s.size < CONFIG_LOTERIA.sorteados) {
+                    s.add(Math.floor(Math.random() * CONFIG_LOTERIA.universo) + 1);
+                }
+                exemplos.push(Array.from(s).sort((a,b)=>a-b));
+            }
+            document.getElementById('historico-input').value = formatarHistoricoParaTexto(exemplos);
+            validarInputEmTempoReal();
+        }
+
         function definirQtdJogos(n) {
             document.getElementById('qtd-jogos').value = n;
+        }
+
+        // ==========================================
+        // ABA 1: RESULTADOS OFICIAIS DA CAIXA
+        // ==========================================
+
+        async function carregarHistoricoSalvo() {
+            try {
+                const response = await fetch(`/api/carregar-historico/${loteriaType}`);
+                const result = await response.json();
+                
+                if (result.historico && result.historico.length > 0) {
+                    historicoCaixaOficial = result.historico;
+                    const meta = result.meta || {};
+                    
+                    const ultimoNum = meta.ultimo_concurso ? `#${meta.ultimo_concurso}` : `#${result.concursos_count}`;
+                    const dataApuracao = meta.data_apuracao ? ` em ${meta.data_apuracao}` : '';
+                    const atualizadoEm = meta.atualizado_em ? ` (Última sincronização: ${meta.atualizado_em})` : '';
+
+                    document.getElementById('caixa-status-texto').innerHTML = 
+                        `Último concurso oficial apurado: <strong>${ultimoNum}${dataApuracao}</strong> | <strong>${result.concursos_count} concursos</strong> no banco de dados${atualizadoEm}.`;
+                    
+                    // Renderiza a lista visual dos concursos da Caixa
+                    renderizarListaConcursosCaixa(result.historico, meta);
+
+                    // Executa a análise estatística em segundo plano para alimentar as abas canônicas
+                    realizarAnalise(result.historico);
+                } else {
+                    document.getElementById('caixa-status-texto').textContent = 'Nenhum histórico encontrado para esta modalidade. Clique em "Sincronizar Agora".';
+                    document.getElementById('lista-concursos-caixa').innerHTML = 
+                        '<div style="text-align: center; color: #64748b; padding: 40px;">Nenhum concurso catalogado. Clique em "Sincronizar Agora" acima.</div>';
+                }
+            } catch (e) {
+                console.error("Erro ao carregar histórico oficial:", e);
+            }
+        }
+
+        function renderizarListaConcursosCaixa(historico, meta) {
+            const container = document.getElementById('lista-concursos-caixa');
+            if (!container) return;
+            if (!historico || historico.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">Nenhum concurso catalogado.</div>';
+                return;
+            }
+
+            const ultimoNum = (meta && meta.ultimo_concurso) ? meta.ultimo_concurso : historico.length;
+            const total = historico.length;
+
+            let html = '';
+            // Ordem decrescente (concursos mais recentes no topo)
+            for (let i = total - 1; i >= 0; i--) {
+                const concursoNum = ultimoNum - (total - 1 - i);
+                const dezenas = historico[i];
+                
+                let bolasHtml = '<div class="bolas-caixa">';
+                dezenas.forEach(n => {
+                    bolasHtml += `<div class="bola-caixa">${n < 10 ? '0' + n : n}</div>`;
+                });
+                bolasHtml += '</div>';
+
+                html += `
+                    <div class="concurso-card" data-concurso="${concursoNum}" data-dezenas="${dezenas.join(' ')}">
+                        <div class="concurso-info-badge">
+                            <span class="concurso-num">Concurso #${concursoNum}</span>
+                            <span class="concurso-data">${i === total - 1 && meta && meta.data_apuracao ? 'Apuração: ' + meta.data_apuracao : ''}</span>
+                        </div>
+                        ${bolasHtml}
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+                            ${dezenas.length} dezenas
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function filtrarConcursosCaixa() {
+            const termo = (document.getElementById('filtro-concurso').value || '').toLowerCase().trim();
+            const cards = document.querySelectorAll('#lista-concursos-caixa .concurso-card');
+            cards.forEach(card => {
+                const num = card.dataset.concurso || '';
+                const dezenas = card.dataset.dezenas || '';
+                if (!termo || num.includes(termo) || dezenas.includes(termo)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        async function sincronizarComCaixaAgora() {
+            const badgeTexto = document.getElementById('caixa-status-texto');
+            badgeTexto.innerHTML = '🔄 <em>Sincronizando com a Caixa Econômica Federal em tempo real... Por favor aguarde.</em>';
+            
+            try {
+                const res = await fetch(`/api/sincronizar/${loteriaType}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`Sincronização concluída com sucesso! ${data.novos_concursos || 0} concursos processados.`);
+                    carregarHistoricoSalvo();
+                } else {
+                    alert('Aviso: ' + (data.erro || 'Não foi possível conectar com os servidores da Caixa.'));
+                    carregarHistoricoSalvo();
+                }
+            } catch (e) {
+                alert('Erro ao tentar sincronizar: ' + e.message);
+                carregarHistoricoSalvo();
+            }
+        }
+
+        // ==========================================
+        // ABA 2: MEUS NÚMEROS (MANUAL DO USUÁRIO)
+        // ==========================================
+
+        function validarInputEmTempoReal() {
+            const texto = document.getElementById('historico-input').value.trim();
+            const feedbackEl = document.getElementById('input-live-feedback');
+            if (!feedbackEl) return;
+
+            if (!texto) {
+                feedbackEl.className = 'input-live-feedback';
+                feedbackEl.innerHTML = '<span>ℹ️ Campo livre para você digitar ou colar suas apostas.</span>';
+                return;
+            }
+
+            const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let totalJogosValidos = 0;
+            let linhasComErro = [];
+            let numerosForaUniverso = [];
+
+            linhas.forEach((linha, idx) => {
+                if (linha === '[' || linha === ']' || linha === '],') return;
+
+                const matches = linha.match(/\d+/g);
+                if (!matches) {
+                    linhasComErro.push(`Linha ${idx + 1}: sem números identificáveis`);
+                    return;
+                }
+
+                const nums = matches.map(Number);
+                const unicos = Array.from(new Set(nums));
+                
+                const fora = unicos.filter(n => n < 1 || n > CONFIG_LOTERIA.universo);
+                if (fora.length > 0) {
+                    numerosForaUniverso.push(`Linha ${idx + 1}: número(s) [${fora.join(', ')}] fora do universo 1 a ${CONFIG_LOTERIA.universo}`);
+                }
+
+                if (unicos.length < CONFIG_LOTERIA.minimo_aposta || unicos.length > CONFIG_LOTERIA.maximo_aposta) {
+                    linhasComErro.push(`Linha ${idx + 1}: possui ${unicos.length} dezenas (o permitido para a ${CONFIG_LOTERIA.nome} é de ${CONFIG_LOTERIA.minimo_aposta} a ${CONFIG_LOTERIA.maximo_aposta})`);
+                } else {
+                    totalJogosValidos++;
+                }
+            });
+
+            if (numerosForaUniverso.length > 0) {
+                feedbackEl.className = 'input-live-feedback feedback-erro';
+                feedbackEl.innerHTML = `<span>❌ <strong>Atenção:</strong> ${numerosForaUniverso[0]}. Permitido na ${CONFIG_LOTERIA.nome}: 1 a ${CONFIG_LOTERIA.universo}.</span>`;
+            } else if (linhasComErro.length > 0) {
+                feedbackEl.className = 'input-live-feedback feedback-aviso';
+                feedbackEl.innerHTML = `<span>⚠️ <strong>Aviso:</strong> ${linhasComErro[0]}.</span>`;
+            } else {
+                feedbackEl.className = 'input-live-feedback feedback-valido';
+                feedbackEl.innerHTML = `<span>✅ <strong>${totalJogosValidos} jogos detectados!</strong> Todos em conformidade com as regras da ${CONFIG_LOTERIA.nome} (${CONFIG_LOTERIA.minimo_aposta} a ${CONFIG_LOTERIA.maximo_aposta} dezenas de 1 a ${CONFIG_LOTERIA.universo}).</span>`;
+            }
+        }
+
+        // Parser inteligente: converte texto simples, linhas, vírgulas ou JSON para lista de apostas
+        function interpretarNumeros(texto) {
+            if (!texto || !texto.trim()) return [];
+            
+            if (texto.trim().startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(texto);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed
+                            .map(c => Array.isArray(c) ? c.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo) : [])
+                            .filter(c => c.length >= CONFIG_LOTERIA.minimo_aposta);
+                    }
+                } catch (e) {}
+            }
+
+            const linhas = texto.split('\n');
+            const concursos = [];
+            for (const linha of linhas) {
+                const limpa = linha.trim();
+                if (!limpa || limpa === '[' || limpa === ']' || limpa === '],') continue;
+
+                const matches = limpa.match(/\d+/g);
+                if (matches && matches.length >= CONFIG_LOTERIA.minimo_aposta) {
+                    const nums = matches.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo);
+                    const unicos = Array.from(new Set(nums)).sort((a, b) => a - b);
+                    if (unicos.length >= CONFIG_LOTERIA.minimo_aposta) {
+                        concursos.push(unicos);
+                    }
+                }
+            }
+            return concursos;
+        }
+
+        async function salvarHistoricoPersonalizado() {
+            const input = document.getElementById('historico-input').value;
+            const historico = interpretarNumeros(input);
+            
+            if (historico.length === 0) {
+                mostrarMensagem('dados-msg', 'Nenhum número válido reconhecido. Digite ao menos 1 jogo completo.', 'error');
+                return;
+            }
+
+            const response = await fetch(`/api/salvar-historico/${loteriaType}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({historico})
+            });
+
+            const result = await response.json();
+            if (result.sucesso) {
+                mostrarMensagem('dados-msg', `${result.concursos_salvos} apostas salvas com sucesso!`, 'success');
+                realizarAnalise(historico);
+            } else {
+                mostrarMensagem('dados-msg', result.erro || 'Erro ao salvar histórico', 'error');
+            }
+        }
+
+        function gerarDadosExemplo() {
+            const cfg = { universo: CONFIG_LOTERIA.universo, sorteados: CONFIG_LOTERIA.sorteados };
+            const historico = [];
+            
+            for (let i = 0; i < 50; i++) {
+                const concurso = new Set();
+                while (concurso.size < cfg.sorteados) {
+                    concurso.add(Math.floor(Math.random() * cfg.universo) + 1);
+                }
+                historico.push(Array.from(concurso).sort((a,b) => a - b));
+            }
+            
+            document.getElementById('historico-input').value = formatarHistoricoParaTexto(historico);
+            validarInputEmTempoReal();
+            mostrarMensagem('dados-msg', '50 jogos de teste gerados no campo! Clique em "Analisar Meus Números".', 'success');
+        }
+
+        function mostrarMensagem(elementId, msg, tipo) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
+            setTimeout(() => el.innerHTML = '', 6000);
+        }
+
+        function executarAnaliseComInput() {
+            const input = document.getElementById('historico-input').value;
+            const historico = interpretarNumeros(input);
+            if (historico.length < 10) {
+                mostrarMensagem('dados-msg', 'São necessários ao menos 10 jogos para a análise estatística completa. Use o botão "Gerar 50 Jogos de Teste" se quiser testar.', 'error');
+                return;
+            }
+            realizarAnalise(historico);
+            showTab('analise');
+        }
+
+        // ==========================================
+        // ABA 3: GERADOR DE COMPOSIÇÕES (2 MODOS)
+        // ==========================================
+
+        function alternarModoGeracao(modo) {
+            modoGeracaoAtual = modo;
+            const cardAuto = document.getElementById('modo-card-auto');
+            const cardManual = document.getElementById('modo-card-manual');
+            const secaoVolante = document.getElementById('secao-volante-fechamento');
+
+            if (modo === 'automatico') {
+                cardAuto.classList.add('active');
+                cardManual.classList.remove('active');
+                secaoVolante.style.display = 'none';
+            } else {
+                cardManual.classList.add('active');
+                cardAuto.classList.remove('active');
+                secaoVolante.style.display = 'block';
+                if (document.getElementById('volante-selecao-grid').children.length === 0) {
+                    montarVolante();
+                }
+            }
+        }
+
+        function montarVolante() {
+            const grid = document.getElementById('volante-selecao-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= CONFIG_LOTERIA.universo; i++) {
+                const bola = document.createElement('div');
+                bola.className = 'volante-bola' + (numerosBaseSelecionados.has(i) ? ' selected' : '');
+                bola.textContent = i < 10 ? '0' + i : i;
+                bola.dataset.numero = i;
+                bola.onclick = () => alternarNumeroVolante(i);
+                grid.appendChild(bola);
+            }
+            atualizarContadorVolante();
+        }
+
+        function alternarNumeroVolante(num) {
+            if (numerosBaseSelecionados.has(num)) {
+                numerosBaseSelecionados.delete(num);
+            } else {
+                numerosBaseSelecionados.add(num);
+            }
+            sincronizarVolanteComSet();
+        }
+
+        function sincronizarVolanteComSet() {
+            const bolas = document.querySelectorAll('.volante-bola');
+            bolas.forEach(b => {
+                const n = parseInt(b.dataset.numero);
+                if (numerosBaseSelecionados.has(n)) {
+                    b.classList.add('selected');
+                } else {
+                    b.classList.remove('selected');
+                }
+            });
+
+            const ordenados = Array.from(numerosBaseSelecionados).sort((a,b)=>a-b);
+            const input = document.getElementById('input-numeros-base');
+            if (input) {
+                input.value = ordenados.map(n => n < 10 ? '0' + n : n).join(' ');
+            }
+            atualizarContadorVolante();
+        }
+
+        function sincronizarInputComVolante() {
+            const texto = document.getElementById('input-numeros-base').value;
+            const matches = texto.match(/\d+/g) || [];
+            numerosBaseSelecionados.clear();
+            matches.forEach(m => {
+                const n = parseInt(m);
+                if (n >= 1 && n <= CONFIG_LOTERIA.universo) {
+                    numerosBaseSelecionados.add(n);
+                }
+            });
+            sincronizarVolanteComSet();
+        }
+
+        function atualizarContadorVolante() {
+            const total = numerosBaseSelecionados.size;
+            const contador = document.getElementById('contador-volante');
+            if (contador) {
+                contador.textContent = `${total} dezenas selecionadas no seu grupo`;
+            }
+        }
+
+        function limparVolante() {
+            numerosBaseSelecionados.clear();
+            sincronizarVolanteComSet();
+        }
+
+        function selecionarMaisFrequentes() {
+            numerosBaseSelecionados.clear();
+            const qtd = Math.min(CONFIG_LOTERIA.minimo_aposta + 6, CONFIG_LOTERIA.universo);
+            if (analiseAtual && analiseAtual.analises_individuais) {
+                const sorted = [...analiseAtual.analises_individuais].sort((a,b) => b.score_mcp - a.score_mcp);
+                sorted.slice(0, qtd).forEach(item => {
+                    numerosBaseSelecionados.add(item.numero);
+                });
+            } else {
+                for (let i = 1; i <= qtd; i++) {
+                    numerosBaseSelecionados.add(i);
+                }
+            }
+            sincronizarVolanteComSet();
         }
 
         function montarChipsDezenas() {
@@ -1001,7 +1628,7 @@ Exemplo para {{ config.nome }}:
             const max = CONFIG_LOTERIA.maximo_aposta;
 
             if (min === max) {
-                container.innerHTML = `<span style="font-size: 0.85rem; color: #4338ca; font-weight: 600;">🔒 Aposta de tamanho fixo: ${min} dezenas</span>`;
+                container.innerHTML = `<span style="font-size: 0.85rem; color: #4338ca; font-weight: 600;">🔒 Aposta de tamanho único: ${min} dezenas</span>`;
                 return;
             }
 
@@ -1055,178 +1682,140 @@ Exemplo para {{ config.nome }}:
                     aviso.innerHTML = `Permitido na ${CONFIG_LOTERIA.nome}: Mínimo ${CONFIG_LOTERIA.minimo_aposta} | Máximo ${CONFIG_LOTERIA.maximo_aposta} dezenas.`;
                 }
             }
+
+            const minNecessario = document.getElementById('volante-min-necessario');
+            if (minNecessario) {
+                minNecessario.textContent = val;
+            }
         }
 
-        function validarInputEmTempoReal() {
-            const texto = document.getElementById('historico-input').value.trim();
-            const feedbackEl = document.getElementById('input-live-feedback');
-            if (!feedbackEl) return;
-
-            if (!texto) {
-                feedbackEl.className = 'input-live-feedback';
-                feedbackEl.innerHTML = '<span>ℹ️ Campo vazio. Digite/cole seus números acima ou clique em "Restaurar Caixa".</span>';
+        async function gerarMultiplosJogos() {
+            const qtdJogos = parseInt(document.getElementById('qtd-jogos').value) || 5;
+            const dezenasPorJogo = parseInt(document.getElementById('dezenas-jogo').value) || CONFIG_LOTERIA.minimo_aposta;
+            
+            if (dezenasPorJogo < CONFIG_LOTERIA.minimo_aposta || dezenasPorJogo > CONFIG_LOTERIA.maximo_aposta) {
+                alert(`Para a ${CONFIG_LOTERIA.nome}, a quantidade de dezenas por jogo deve ser entre ${CONFIG_LOTERIA.minimo_aposta} e ${CONFIG_LOTERIA.maximo_aposta}.`);
                 return;
             }
 
-            const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            let totalJogosValidos = 0;
-            let linhasComErro = [];
-            let numerosForaUniverso = [];
+            if (qtdJogos < 1 || qtdJogos > 100) {
+                alert('A quantidade de jogos permitida é de 1 a 100 por geração.');
+                return;
+            }
 
-            linhas.forEach((linha, idx) => {
-                if (linha === '[' || linha === ']' || linha === '],') return;
+            let numerosBasePayload = [];
+            if (modoGeracaoAtual === 'manual_pool') {
+                numerosBasePayload = Array.from(numerosBaseSelecionados);
+                if (numerosBasePayload.length < dezenasPorJogo) {
+                    alert(`Para gerar apostas de ${dezenasPorJogo} dezenas no modo personalizado, selecione ao menos ${dezenasPorJogo} números favoritos no volante acima.`);
+                    return;
+                }
+            }
 
-                const matches = linha.match(/\d+/g);
-                if (!matches) {
-                    linhasComErro.push(`Linha ${idx + 1}: sem números identificáveis`);
+            try {
+                const res = await fetch(`/api/gerar-multiplos-jogos/${loteriaType}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        quantidade_jogos: qtdJogos,
+                        dezenas_por_jogo: dezenasPorJogo,
+                        historico: historicoCaixaOficial,
+                        numeros_base: numerosBasePayload.length > 0 ? numerosBasePayload : undefined
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.erro || 'Erro ao gerar palpites');
                     return;
                 }
 
-                const nums = matches.map(Number);
-                const unicos = Array.from(new Set(nums));
-                
-                const fora = unicos.filter(n => n < 1 || n > CONFIG_LOTERIA.universo);
-                if (fora.length > 0) {
-                    numerosForaUniverso.push(`Linha ${idx + 1}: número(s) [${fora.join(', ')}] fora do universo 1 a ${CONFIG_LOTERIA.universo}`);
-                }
-
-                if (unicos.length < CONFIG_LOTERIA.sorteados) {
-                    linhasComErro.push(`Linha ${idx + 1}: possui apenas ${unicos.length} dezenas (mínimo necessário: ${CONFIG_LOTERIA.sorteados})`);
-                } else {
-                    totalJogosValidos++;
-                }
-            });
-
-            if (numerosForaUniverso.length > 0) {
-                feedbackEl.className = 'input-live-feedback feedback-erro';
-                feedbackEl.innerHTML = `<span>❌ <strong>Atenção:</strong> ${numerosForaUniverso[0]}. Permitido na ${CONFIG_LOTERIA.nome}: 1 a ${CONFIG_LOTERIA.universo}.</span>`;
-            } else if (linhasComErro.length > 0) {
-                feedbackEl.className = 'input-live-feedback feedback-aviso';
-                feedbackEl.innerHTML = `<span>⚠️ <strong>Aviso:</strong> ${linhasComErro[0]}. Para o cálculo da ${CONFIG_LOTERIA.nome}, use de ${CONFIG_LOTERIA.minimo_aposta} a ${CONFIG_LOTERIA.maximo_aposta} dezenas por linha.</span>`;
-            } else {
-                feedbackEl.className = 'input-live-feedback feedback-valido';
-                feedbackEl.innerHTML = `<span>✅ <strong>${totalJogosValidos} jogos detectados!</strong> Todos em conformidade com as regras da ${CONFIG_LOTERIA.nome} (1 a ${CONFIG_LOTERIA.universo}).</span>`;
-            }
-        }
-
-        // Parser inteligente: converte texto simples, linhas, vírgulas ou JSON para lista de sorteios
-        function interpretarNumeros(texto) {
-            if (!texto || !texto.trim()) return [];
-            
-            // Suporte retrocompatível a JSON se o usuário colar array
-            if (texto.trim().startsWith('[')) {
-                try {
-                    const parsed = JSON.parse(texto);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        return parsed
-                            .map(c => Array.isArray(c) ? c.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo) : [])
-                            .filter(c => c.length >= CONFIG_LOTERIA.sorteados);
-                    }
-                } catch (e) {}
-            }
-
-            // Parser linha por linha
-            const linhas = texto.split('\n');
-            const concursos = [];
-            for (const linha of linhas) {
-                const limpa = linha.trim();
-                if (!limpa || limpa === '[' || limpa === ']' || limpa === '],') continue;
-
-                const matches = limpa.match(/\d+/g);
-                if (matches && matches.length >= CONFIG_LOTERIA.sorteados) {
-                    const nums = matches.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo);
-                    const unicos = Array.from(new Set(nums)).sort((a, b) => a - b);
-                    if (unicos.length >= CONFIG_LOTERIA.sorteados) {
-                        concursos.push(unicos);
-                    }
-                }
-            }
-            return concursos;
-        }
-
-        async function carregarHistoricoSalvo() {
-            try {
-                const response = await fetch(`/api/carregar-historico/${loteriaType}`);
-                const result = await response.json();
-                
-                if (result.historico && result.historico.length > 0) {
-                    // Preenche o textarea em formato limpo, direto e legível
-                    document.getElementById('historico-input').value = formatarHistoricoParaTexto(result.historico);
-                    
-                    document.getElementById('caixa-status-texto').innerHTML = 
-                        `Base sincronizada com <strong>${result.concursos_count} concursos oficiais</strong> da Caixa Econômica Federal.`;
-                    
-                    validarInputEmTempoReal();
-
-                    // Executa a análise automaticamente com esses dados
-                    realizarAnalise(result.historico);
-                } else {
-                    document.getElementById('caixa-status-texto').textContent = 'Nenhum histórico encontrado para esta modalidade.';
-                    validarInputEmTempoReal();
-                }
+                ultimosJogosGerados = data.jogos;
+                exibirJogosGerados(data);
             } catch (e) {
-                console.error("Erro ao carregar histórico:", e);
+                alert('Erro ao conectar com o gerador: ' + e.message);
             }
         }
 
-        async function salvarHistoricoPersonalizado() {
-            const input = document.getElementById('historico-input').value;
-            const historico = interpretarNumeros(input);
-            
-            if (historico.length === 0) {
-                mostrarMensagem('dados-msg', 'Nenhum número válido reconhecido. Cole ao menos 1 concurso.', 'error');
-                return;
-            }
+        function exibirJogosGerados(data) {
+            const container = document.getElementById('jogos-resultado-container');
+            const lista = document.getElementById('lista-jogos-gerados');
+            container.style.display = 'block';
+            lista.innerHTML = '';
 
-            const response = await fetch(`/api/salvar-historico/${loteriaType}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({historico})
+            const rotuloModo = data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Modelo Canônico Oficial Caixa]';
+
+            document.getElementById('jogos-titulo-resultado').textContent = 
+                `${data.quantidade_jogos} Palpites Gerados (${data.dezenas_por_jogo} dezenas cada)${rotuloModo}`;
+
+            document.getElementById('jogos-metricas-resumo').textContent = 
+                `ICT Médio: ${data.metricas_gerais.ict_medio} | Entropia: ${data.metricas_gerais.entropia}`;
+
+            data.jogos.forEach((jogo, idx) => {
+                const card = document.createElement('div');
+                card.className = 'jogo-card';
+                
+                let bolasHtml = '<div class="bolas-grid">';
+                jogo.forEach(num => {
+                    bolasHtml += `<div class="bola">${num < 10 ? '0' + num : num}</div>`;
+                });
+                bolasHtml += '</div>';
+
+                card.innerHTML = `
+                    <div class="jogo-header">
+                        <strong>Jogo #${idx + 1 < 10 ? '0' + (idx + 1) : (idx + 1)}</strong>
+                        <span>${jogo.length} dezenas</span>
+                    </div>
+                    ${bolasHtml}
+                `;
+                lista.appendChild(card);
             });
 
-            const result = await response.json();
-            if (result.sucesso) {
-                mostrarMensagem('dados-msg', `${result.concursos_salvos} concursos salvos com sucesso no histórico!`, 'success');
-                realizarAnalise(historico);
-            } else {
-                mostrarMensagem('dados-msg', result.erro || 'Erro ao salvar histórico', 'error');
-            }
+            container.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function gerarDadosExemplo() {
-            const cfg = { universo: CONFIG_LOTERIA.universo, sorteados: CONFIG_LOTERIA.sorteados };
-            const historico = [];
-            
-            for (let i = 0; i < 50; i++) {
-                const concurso = new Set();
-                while (concurso.size < cfg.sorteados) {
-                    concurso.add(Math.floor(Math.random() * cfg.universo) + 1);
-                }
-                historico.push(Array.from(concurso).sort((a,b) => a - b));
-            }
-            
-            document.getElementById('historico-input').value = formatarHistoricoParaTexto(historico);
-            validarInputEmTempoReal();
-            mostrarMensagem('dados-msg', '50 concursos de teste gerados com sucesso!', 'success');
-            realizarAnalise(historico);
-        }
-
-        function mostrarMensagem(elementId, msg, tipo) {
-            const el = document.getElementById(elementId);
-            el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
-            setTimeout(() => el.innerHTML = '', 5000);
-        }
-
-        function executarAnaliseComInput() {
-            const input = document.getElementById('historico-input').value;
-            const historico = interpretarNumeros(input);
-            if (historico.length < 10) {
-                mostrarMensagem('dados-msg', 'São necessários ao menos 10 concursos para a análise matemática canônica.', 'error');
+        // Exportar Jogos em .TXT ou .MD
+        async function baixarJogosGerados(formato) {
+            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
+                alert('Gere os jogos primeiro antes de exportar.');
                 return;
             }
-            realizarAnalise(historico);
-            showTab('analise');
+
+            try {
+                const res = await fetch(`/download/jogos/${loteriaType}/${formato}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ jogos: ultimosJogosGerados })
+                });
+
+                if (!res.ok) throw new Error('Erro ao gerar arquivo');
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `palpites_${loteriaType}_${ultimosJogosGerados.length}jogos.${formato}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Falha no download: ' + e.message);
+            }
         }
+
+        // Imprimir / Salvar em PDF
+        function imprimirJogosPDF() {
+            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
+                alert('Gere os jogos primeiro antes de imprimir.');
+                return;
+            }
+            window.print();
+        }
+
+        // ==========================================
+        // ANÁLISE CANÔNICA E TABELA
+        // ==========================================
 
         async function realizarAnalise(historicoCustom = null) {
             let historico = historicoCustom;
@@ -1234,6 +1823,8 @@ Exemplo para {{ config.nome }}:
                 const input = document.getElementById('historico-input').value;
                 historico = interpretarNumeros(input);
             }
+
+            if (!historico || historico.length === 0) return;
 
             document.getElementById('analise-loading').style.display = 'block';
             document.getElementById('analise-resultado').style.display = 'none';
@@ -1249,7 +1840,6 @@ Exemplo para {{ config.nome }}:
                 document.getElementById('analise-loading').style.display = 'none';
 
                 if (result.erro) {
-                    alert(result.erro);
                     return;
                 }
 
@@ -1333,7 +1923,7 @@ Exemplo para {{ config.nome }}:
         }
 
         function filtrarTabela() {
-            const filtro = document.getElementById('filtro-numero').value.toLowerCase();
+            const filtro = (document.getElementById('filtro-numero').value || '').toLowerCase();
             const linhas = document.querySelectorAll('#tabela-numeros-body tr');
             linhas.forEach(linha => {
                 const texto = linha.textContent.toLowerCase();
@@ -1341,123 +1931,10 @@ Exemplo para {{ config.nome }}:
             });
         }
 
-        // Gerar Múltiplos Jogos
-        async function gerarMultiplosJogos() {
-            const qtdJogos = parseInt(document.getElementById('qtd-jogos').value) || 5;
-            const dezenasPorJogo = parseInt(document.getElementById('dezenas-jogo').value) || CONFIG_LOTERIA.minimo_aposta;
-            
-            if (dezenasPorJogo < CONFIG_LOTERIA.minimo_aposta || dezenasPorJogo > CONFIG_LOTERIA.maximo_aposta) {
-                alert(`Para a ${CONFIG_LOTERIA.nome}, a quantidade de dezenas por jogo deve ser entre ${CONFIG_LOTERIA.minimo_aposta} e ${CONFIG_LOTERIA.maximo_aposta}.`);
-                return;
-            }
+        // ==========================================
+        // INICIALIZAÇÃO
+        // ==========================================
 
-            if (qtdJogos < 1 || qtdJogos > 100) {
-                alert('A quantidade de jogos permitida é de 1 a 100 por geração.');
-                return;
-            }
-
-            const input = document.getElementById('historico-input').value;
-            const historico = interpretarNumeros(input);
-
-            try {
-                const res = await fetch(`/api/gerar-multiplos-jogos/${loteriaType}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        quantidade_jogos: qtdJogos,
-                        dezenas_por_jogo: dezenasPorJogo,
-                        historico: historico
-                    })
-                });
-
-                const data = await res.json();
-                if (!res.ok) {
-                    alert(data.erro || 'Erro ao gerar palpites');
-                    return;
-                }
-
-                ultimosJogosGerados = data.jogos;
-                exibirJogosGerados(data);
-            } catch (e) {
-                alert('Erro ao conectar com o gerador: ' + e.message);
-            }
-        }
-
-        function exibirJogosGerados(data) {
-            const container = document.getElementById('jogos-resultado-container');
-            const lista = document.getElementById('lista-jogos-gerados');
-            container.style.display = 'block';
-            lista.innerHTML = '';
-
-            document.getElementById('jogos-titulo-resultado').textContent = 
-                `${data.quantidade_jogos} Palpites Gerados (${data.dezenas_por_jogo} dezenas cada)`;
-
-            document.getElementById('jogos-metricas-resumo').textContent = 
-                `ICT Médio: ${data.metricas_gerais.ict_medio} | Entropia: ${data.metricas_gerais.entropia}`;
-
-            data.jogos.forEach((jogo, idx) => {
-                const card = document.createElement('div');
-                card.className = 'jogo-card';
-                
-                let bolasHtml = '<div class="bolas-grid">';
-                jogo.forEach(num => {
-                    bolasHtml += `<div class="bola">${num < 10 ? '0' + num : num}</div>`;
-                });
-                bolasHtml += '</div>';
-
-                card.innerHTML = `
-                    <div class="jogo-header">
-                        <strong>Jogo #${idx + 1 < 10 ? '0' + (idx + 1) : (idx + 1)}</strong>
-                        <span>${jogo.length} dezenas</span>
-                    </div>
-                    ${bolasHtml}
-                `;
-                lista.appendChild(card);
-            });
-
-            container.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Exportar Jogos em .TXT ou .MD
-        async function baixarJogosGerados(formato) {
-            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
-                alert('Gere os jogos primeiro antes de exportar.');
-                return;
-            }
-
-            try {
-                const res = await fetch(`/download/jogos/${loteriaType}/${formato}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ jogos: ultimosJogosGerados })
-                });
-
-                if (!res.ok) throw new Error('Erro ao gerar arquivo');
-
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `palpites_${loteriaType}_${ultimosJogosGerados.length}jogos.${formato}`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } catch (e) {
-                alert('Falha no download: ' + e.message);
-            }
-        }
-
-        // Imprimir / Salvar em PDF
-        function imprimirJogosPDF() {
-            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
-                alert('Gere os jogos primeiro antes de imprimir.');
-                return;
-            }
-            window.print();
-        }
-
-        // Inicialização automática ao carregar a página
         window.addEventListener('DOMContentLoaded', () => {
             montarChipsDezenas();
             carregarHistoricoSalvo();
