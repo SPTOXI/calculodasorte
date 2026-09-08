@@ -519,23 +519,19 @@ class ValidaçãoCamada7:
         """
         import random
         
+        # Pré-calcular scores de cada elemento para evitar recálculos desnecessários
+        analises_atuais = self.modelo.analisar_todos_elementos()
+        scores_map = {a.numero: a.score_mcp for a in analises_atuais}
+        score_atual = statistics.mean([a.score_mcp for a in analises_atuais])
+        
         resultados_simulados = []
+        universo = list(range(1, self.modelo.N + 1))
+        k = self.modelo.k
         
         for _ in range(simulacoes):
             # Simular sorteio aleatório
-            sorteio = random.sample(range(1, self.modelo.N + 1), self.modelo.k)
-            
-            # Calcular score médio do sorteio simulado
-            scores = []
-            for numero in sorteio:
-                analise = self.modelo.analisar_elemento(numero)
-                scores.append(analise.score_mcp)
-            
-            resultados_simulados.append(statistics.mean(scores))
-        
-        # Calcular percentil do score atual
-        analises_atuais = self.modelo.analisar_todos_elementos()
-        score_atual = statistics.mean([a.score_mcp for a in analises_atuais])
+            sorteio = random.sample(universo, k)
+            resultados_simulados.append(sum(scores_map[numero] for numero in sorteio) / k)
         
         percentil = sum(1 for s in resultados_simulados if s >= score_atual) / simulacoes
         

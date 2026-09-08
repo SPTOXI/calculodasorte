@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo | Calculadora da Sorte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .top-navbar {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 16px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .badge-role {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .btn-nav {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.25);
+            cursor: pointer;
+        }
+
+        .btn-nav:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1300px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* Notice Banner */
+        .alert-banner {
+            background: #fffbeb;
+            border-left: 6px solid #f59e0b;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .alert-banner strong {
+            color: #92400e;
+        }
+
+        .alert-banner p {
+            color: #78350f;
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* Tabs Navigation */
+        .tabs-header {
+            display: flex;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            padding: 14px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: #4f46e5;
+        }
+
+        .tab-btn.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+            background: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards and Tables */
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 26px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .card-header h3 {
+            font-size: 1.25rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.93;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        /* Table Styling */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 18px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-info {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        /* Action Buttons */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-sync-sm {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        .btn-sync-sm:hover {
+            background: #c7d2fe;
+        }
+
+        .btn-edit-sm {
+            background: #f1f5f9;
+            color: #334155;
+        }
+        .btn-edit-sm:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-block-sm {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+        .btn-block-sm:hover {
+            background: #fed7aa;
+        }
+
+        .btn-delete-sm {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .btn-delete-sm:hover {
+            background: #fecaca;
+        }
+
+        /* Form Controls */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #4f46e5;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            color: #1e293b;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .close-btn:hover {
+            color: #1e293b;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 14px 22px;
+            border-radius: 10px;
+            background: white;
+            color: #1e293b;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 5px solid #4f46e5;
+            animation: slideIn 0.3s ease-out;
+            min-width: 300px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.warning { border-left-color: #f59e0b; }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="top-navbar">
+        <div class="brand">
+            <span>🎲</span> Calculadora da Sorte — Painel Admin
+        </div>
+        <div class="user-nav">
+            <div>
+                <strong>{{ user.email }}</strong>
+                <span class="badge-role">{{ user.role }}</span>
+            </div>
+            <a href="/" class="btn-nav">🌐 Ver Site</a>
+            <a href="/logout" class="btn-nav">🚪 Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Banner para primeiro login com senha padrão -->
+        {% if user.must_change_password %}
+        <div class="alert-banner">
+            <div>
+                <strong>⚠️ Alteração de Senha Recomendada!</strong>
+                <p>Você está utilizando a senha padrão inicial (123456). Por segurança, defina uma nova senha na aba <strong>Minha Conta / Segurança</strong>.</p>
+            </div>
+            <button class="btn-secondary" onclick="ativarAba('tab-seguranca')">Alterar Senha Agora</button>
+        </div>
+        {% endif %}
+
+        <!-- Abas -->
+        <div class="tabs-header">
+            <button class="tab-btn active" onclick="ativarAba('tab-loterias')">
+                <span>🔄</span> Atualização das Loterias
+            </button>
+            <button class="tab-btn" onclick="ativarAba('tab-usuarios')">
+                <span>👥</span> Controle de Usuários
+            </button>
+            <button class="tab-btn" onclick="ativarAba('tab-seguranca')">
+                <span>🛡️</span> Minha Conta / Segurança
+            </button>
+        </div>
+
+        <!-- ABA 1: ATUALIZAÇÃO DAS LOTERIAS -->
+        <div id="tab-loterias" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3><span>📊</span> Status de Sincronização com a Caixa</h3>
+                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Resultados oficiais consultados via API oficial da Caixa Econômica Federal.</p>
+                    </div>
+                    <div>
+                        <button class="btn-primary" id="btn-sync-all" onclick="sincronizarTodasLoterias()">
+                            <span id="sync-all-icon">🔄</span> Sincronizar Todas as 9 Loterias
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modalidade</th>
+                                <th>Concursos Locais</th>
+                                <th>Último Local</th>
+                                <th>Último Caixa</th>
+                                <th>Data Apuração</th>
+                                <th>Situação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-loterias-body">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">
+                                    Carregando status das loterias...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card com Logs Recentes -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><span>📜</span> Últimas Atividades de Sincronização</h3>
+                    <button class="btn-secondary" onclick="carregarStatusLoterias()">Atualizar Lista</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Horário</th>
+                                <th>Loteria</th>
+                                <th>Concurso</th>
+                                <th>Data Sorteio</th>
+                                <th>Status</th>
+                                <th>Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-logs-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #64748b;">Nenhum registro recente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: GESTÃO DE USUÁRIOS -->
+        <div id="tab-usuarios" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3><span>👥</span> Gerenciamento de Usuários do Sistema</h3>
+                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Controle de criação, edição, bloqueio e permissões de acesso.</p>
+                    </div>
+                    <div>
+                        <button class="btn-primary" onclick="abrirModalNovoUsuario()">
+                            <span>➕</span> Novo Usuário
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>E-mail</th>
+                                <th>Perfil</th>
+                                <th>Status</th>
+                                <th>Data Cadastro</th>
+                                <th>Último Acesso</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-usuarios-body">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">
+                                    Carregando usuários...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: MINHA CONTA / SEGURANÇA -->
+        <div id="tab-seguranca" class="tab-content">
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
+                <div class="card-header">
+                    <h3><span>🔑</span> Alterar Minha Senha</h3>
+                </div>
+                <form id="form-alterar-senha" onsubmit="salvarNovaSenha(event)">
+                    <div class="form-group">
+                        <label for="senha-nova">Nova Senha</label>
+                        <input type="password" id="senha-nova" placeholder="Mínimo de 6 caracteres" required minlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="senha-confirma">Confirmar Nova Senha</label>
+                        <input type="password" id="senha-confirma" placeholder="Digite novamente a nova senha" required minlength="4">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                        Atualizar Senha
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOVO USUÁRIO -->
+    <div id="modal-novo-usuario" class="modal-backdrop">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Criar Novo Usuário</h3>
+                <button class="close-btn" onclick="fecharModais()">&times;</button>
+            </div>
+            <form id="form-novo-usuario" onsubmit="criarUsuario(event)">
+                <div class="form-group">
+                    <label for="novo-email">E-mail</label>
+                    <input type="email" id="novo-email" placeholder="usuario@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="novo-senha">Senha Inicial</label>
+                    <input type="password" id="novo-senha" placeholder="••••••••" required minlength="4">
+                </div>
+                <div class="form-group">
+                    <label for="novo-role">Perfil de Acesso</label>
+                    <select id="novo-role">
+                        <option value="user">Usuário Padrão</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="fecharModais()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Criar Conta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR USUÁRIO -->
+    <div id="modal-editar-usuario" class="modal-backdrop">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Editar Usuário</h3>
+                <button class="close-btn" onclick="fecharModais()">&times;</button>
+            </div>
+            <form id="form-editar-usuario" onsubmit="salvarEdicaoUsuario(event)">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label for="edit-email">E-mail</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-senha">Redefinir Senha (opcional)</label>
+                    <input type="password" id="edit-senha" placeholder="Deixe em branco para não alterar">
+                </div>
+                <div class="form-group">
+                    <label for="edit-role">Perfil de Acesso</label>
+                    <select id="edit-role">
+                        <option value="user">Usuário Padrão</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="fecharModais()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Container de Notificações Toast -->
+    <div id="toast-container"></div>
+
+    <script>
+        const currentUserId = {{ user.id }};
+
+        // Gerenciamento de Abas
+        function ativarAba(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => 
+                b.getAttribute('onclick').includes(tabId)
+            );
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const content = document.getElementById(tabId);
+            if (content) content.classList.add('active');
+
+            if (tabId === 'tab-loterias') carregarStatusLoterias();
+            if (tabId === 'tab-usuarios') carregarUsuarios();
+        }
+
+        // Toasts
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️');
+            toast.innerHTML = `<span>${icon}</span> <div>${msg}</div>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Modais
+        function fecharModais() {
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+        }
+
+        function abrirModalNovoUsuario() {
+            document.getElementById('form-novo-usuario').reset();
+            document.getElementById('modal-novo-usuario').classList.add('active');
+        }
+
+        // LOTERIAS: Carregar Status
+        async function carregarStatusLoterias() {
+            try {
+                const res = await fetch('/api/admin/loterias/status');
+                const data = await res.json();
+                
+                const tbody = document.getElementById('tabela-loterias-body');
+                tbody.innerHTML = '';
+
+                data.status.forEach(item => {
+                    let badgeClass = 'badge-warning';
+                    if (item.situacao === 'Atualizado') badgeClass = 'badge-success';
+                    else if (item.situacao === 'Sem histórico') badgeClass = 'badge-danger';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${item.nome}</strong></td>
+                        <td>${item.total_local} concursos</td>
+                        <td>#${item.ultimo_local}</td>
+                        <td>#${item.ultimo_caixa}</td>
+                        <td>${item.data_apuracao || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${item.situacao}</span></td>
+                        <td>
+                            <button class="btn-sm btn-sync-sm" id="btn-sync-${item.loteria_type}" onclick="sincronizarLoteria('${item.loteria_type}')">
+                                🔄 Sincronizar
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Carregar logs
+                const logsBody = document.getElementById('tabela-logs-body');
+                if (data.logs && data.logs.length > 0) {
+                    logsBody.innerHTML = '';
+                    data.logs.forEach(log => {
+                        const tr = document.createElement('tr');
+                        const statusBadge = log.status === 'SUCESSO' ? 'badge-success' : 'badge-danger';
+                        tr.innerHTML = `
+                            <td>${log.created_at}</td>
+                            <td><strong>${log.loteria_type}</strong></td>
+                            <td>${log.concurso ? '#' + log.concurso : '-'}</td>
+                            <td>${log.data_sorteio || '-'}</td>
+                            <td><span class="badge ${statusBadge}">${log.status}</span></td>
+                            <td style="font-size: 0.85rem; color: #64748b;">${log.mensagem}</td>
+                        `;
+                        logsBody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                showToast('Erro ao carregar dados das loterias: ' + e.message, 'error');
+            }
+        }
+
+        // Sincronizar Uma Loteria
+        async function sincronizarLoteria(loteriaType) {
+            const btn = document.getElementById(`btn-sync-${loteriaType}`);
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="spinner"></span> Atualizando...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/admin/loterias/sincronizar/${loteriaType}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    showToast(`${loteriaType}: ${data.novos_concursos} concursos sincronizados! (Último #${data.ultimo_concurso})`, 'success');
+                    carregarStatusLoterias();
+                } else {
+                    showToast(`Erro ao sincronizar ${loteriaType}: ${data.erro}`, 'error');
+                }
+            } catch (e) {
+                showToast('Falha na requisição: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Sincronizar Todas as Loterias
+        async function sincronizarTodasLoterias() {
+            const btn = document.getElementById('btn-sync-all');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<span class="spinner"></span> Sincronizando Todas...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/loterias/sincronizar-todas', { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    showToast(`Sincronização em lote concluída! ${data.total_novos} novos concursos importados.`, 'success');
+                    carregarStatusLoterias();
+                } else {
+                    showToast(`Concluído com avisos: ${data.erros.join(', ')}`, 'warning');
+                    carregarStatusLoterias();
+                }
+            } catch (e) {
+                showToast('Erro na sincronização: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // USUÁRIOS: Carregar Lista
+        async function carregarUsuarios() {
+            try {
+                const res = await fetch('/api/admin/usuarios');
+                const users = await res.json();
+
+                const tbody = document.getElementById('tabela-usuarios-body');
+                tbody.innerHTML = '';
+
+                users.forEach(u => {
+                    const statusBadge = u.is_blocked 
+                        ? '<span class="badge badge-danger">Bloqueado</span>' 
+                        : '<span class="badge badge-success">Ativo</span>';
+
+                    const roleBadge = u.role === 'admin'
+                        ? '<span class="badge badge-info">Admin</span>'
+                        : '<span class="badge" style="background:#f1f5f9; color:#475569;">Usuário</span>';
+
+                    const isSelf = u.id === currentUserId;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${u.id}</td>
+                        <td>
+                            <strong>${u.email}</strong>
+                            ${isSelf ? ' <span style="color:#6366f1; font-size:0.8rem;">(você)</span>' : ''}
+                        </td>
+                        <td>${roleBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${u.created_at || '-'}</td>
+                        <td>${u.last_login || 'Nunca'}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-sm btn-edit-sm" onclick="abrirModalEditarUsuario(${u.id}, '${u.email}', '${u.role}')">
+                                    ✏️ Editar
+                                </button>
+                                <button class="btn-sm btn-block-sm" ${isSelf ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="alternarBloqueioUsuario(${u.id}, ${u.is_blocked})">
+                                    ${u.is_blocked ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                                </button>
+                                <button class="btn-sm btn-delete-sm" ${isSelf ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} onclick="deletarUsuario(${u.id}, '${u.email}')">
+                                    🗑️ Excluir
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                showToast('Erro ao carregar usuários: ' + e.message, 'error');
+            }
+        }
+
+        // Criar Usuário
+        async function criarUsuario(e) {
+            e.preventDefault();
+            const email = document.getElementById('novo-email').value;
+            const password = document.getElementById('novo-senha').value;
+            const role = document.getElementById('novo-role').value;
+
+            try {
+                const res = await fetch('/api/admin/usuarios', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password, role })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Usuário ${data.email} criado com sucesso!`, 'success');
+                    fecharModais();
+                    carregarUsuarios();
+                } else {
+                    showToast(data.erro || 'Falha ao criar usuário', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // Abrir Modal Editar
+        function abrirModalEditarUsuario(id, email, role) {
+            document.getElementById('edit-user-id').value = id;
+            document.getElementById('edit-email').value = email;
+            document.getElementById('edit-senha').value = '';
+            document.getElementById('edit-role').value = role;
+            document.getElementById('modal-editar-usuario').classList.add('active');
+        }
+
+        // Salvar Edição
+        async function salvarEdicaoUsuario(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-user-id').value;
+            const email = document.getElementById('edit-email').value;
+            const password = document.getElementById('edit-senha').value;
+            const role = document.getElementById('edit-role').value;
+
+            const body = { email, role };
+            if (password.trim()) body.password = password.trim();
+
+            try {
+                const res = await fetch(`/api/admin/usuarios/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('Usuário atualizado com sucesso!', 'success');
+                    fecharModais();
+                    carregarUsuarios();
+                } else {
+                    showToast(data.erro || 'Falha ao atualizar usuário', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // Alternar Bloqueio
+        async function alternarBloqueioUsuario(id, estaBloqueado) {
+            const acao = estaBloqueado ? 'desbloquear' : 'bloquear';
+            if (!confirm(`Deseja realmente ${acao} este usuário?`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/usuarios/${id}/bloquear`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Usuário ${data.bloqueado ? 'bloqueado' : 'desbloqueado'} com sucesso!`, 'success');
+                    carregarUsuarios();
+                } else {
+                    showToast(data.erro || 'Erro ao alternar bloqueio', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // Deletar Usuário
+        async function deletarUsuario(id, email) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR permanentemente o usuário ${email}? Esta ação não pode ser desfeita.`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/usuarios/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Usuário ${email} excluído com sucesso!`, 'success');
+                    carregarUsuarios();
+                } else {
+                    showToast(data.erro || 'Erro ao excluir usuário', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // Alterar Própria Senha
+        async function salvarNovaSenha(e) {
+            e.preventDefault();
+            const nova = document.getElementById('senha-nova').value;
+            const confirma = document.getElementById('senha-confirma').value;
+
+            if (nova !== confirma) {
+                showToast('A confirmação da nova senha não coincide.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/alterar-senha', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nova_senha: nova })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('Senha alterada com sucesso!', 'success');
+                    document.getElementById('form-alterar-senha').reset();
+                    // Ocultar banner se existia
+                    const banner = document.querySelector('.alert-banner');
+                    if (banner) banner.style.display = 'none';
+                } else {
+                    showToast(data.erro || 'Falha ao alterar senha', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // Carregamento inicial ao abrir a página
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarStatusLoterias();
+        });
+    </script>
+</body>
+</html>

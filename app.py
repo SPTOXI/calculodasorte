@@ -1,12 +1,18 @@
 """
 Aplicação Web Flask para Análise Estatística de Loterias
 Baseada no Modelo Canônico 3.0 + MCP-MD 1.0
+Com Painel Administrativo, Gestão de Usuários e Atualizador Diário Caixa
 """
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from functools import wraps
 import json
 import os
 from datetime import datetime
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from werkzeug.security import check_password_hash
+
+import database
+import updater
 from core import (
     ModeloCanonico30, 
     ValidaçãoCamada7, 
@@ -16,28 +22,72 @@ from core import (
 )
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'loteria-canonical-key-2024'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'loteria-canonical-secret-2026-key')
+
+# Inicializar Banco de Dados e Agendador de Loterias
+database.init_db()
+updater.iniciar_agendador()
 
 # Diretório para armazenar dados
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
+# ==========================================
+# DECORATORS DE AUTENTICAÇÃO E PERMISSÃO
+# ==========================================
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login', next=request.url))
+        user = database.get_user_by_id(session['user_id'])
+        if not user or user['is_blocked']:
+            session.clear()
+            return redirect(url_for('login', erro='Sessão expirada ou usuário bloqueado.'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({'erro': 'Autenticação necessária'}), 401
+            return redirect(url_for('login', next=request.url))
+        user = database.get_user_by_id(session['user_id'])
+        if not user or user['is_blocked']:
+            session.clear()
+            if request.path.startswith('/api/'):
+                return jsonify({'erro': 'Usuário bloqueado'}), 403
+            return redirect(url_for('login', erro='Usuário bloqueado.'))
+        if user['role'] != 'admin':
+            if request.path.startswith('/api/'):
+                return jsonify({'erro': 'Acesso exclusivo para administradores'}), 403
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ==========================================
+# FUNÇÕES DE PERSISTÊNCIA DE HISTÓRICO
+# ==========================================
+
 def carregar_historico(loteria_type: str) -> list:
     """Carregar histórico de concursos do arquivo JSON"""
-    arquivo = os.path.join(DATA_DIR, f'{loteria_type}_historico.json')
-    if os.path.exists(arquivo):
-        with open(arquivo, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
+    return updater.carregar_historico_local(loteria_type)
 
 
 def salvar_historico(loteria_type: str, historico: list):
     """Salvar histórico de concursos no arquivo JSON"""
-    arquivo = os.path.join(DATA_DIR, f'{loteria_type}_historico.json')
-    with open(arquivo, 'w', encoding='utf-8') as f:
-        json.dump(historico, f, indent=2, ensure_ascii=False)
+    updater.salvar_historico_local(loteria_type, historico)
 
+
+# ==========================================
+# ROTAS PÚBLICAS E PÁGINAS PRINCIPAIS
+# ==========================================
 
 @app.route('/')
 def index():
@@ -50,7 +100,10 @@ def index():
         }
         for loteria, config in LOTERIAS_CONFIG.items()
     ]
-    return render_template('index.html', loterias=loterias)
+    current_user = None
+    if 'user_id' in session:
+        current_user = database.get_user_by_id(session['user_id'])
+    return render_template('index.html', loterias=loterias, current_user=current_user)
 
 
 @app.route('/analise/<loteria_type>')
@@ -65,6 +118,191 @@ def analise_page(loteria_type: str):
     return render_template('analise.html', loteria=loteria, config=config)
 
 
+# ==========================================
+# ROTAS DE AUTENTICAÇÃO (LOGIN / LOGOUT)
+# ==========================================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Tela de login de usuários e administradores"""
+    if 'user_id' in session:
+        user = database.get_user_by_id(session['user_id'])
+        if user and not user['is_blocked']:
+            return redirect(url_for('admin_dashboard') if user['role'] == 'admin' else url_for('index'))
+
+    erro = request.args.get('erro')
+    sucesso = request.args.get('sucesso')
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+
+        user = database.get_user_by_email(email)
+        if not user or not check_password_hash(user['password_hash'], password):
+            return render_template('login.html', erro='E-mail ou senha incorretos.', email=email)
+
+        if user['is_blocked']:
+            return render_template('login.html', erro='Esta conta está bloqueada pelo administrador.', email=email)
+
+        # Autenticar sessão
+        session['user_id'] = user['id']
+        session['user_email'] = user['email']
+        session['user_role'] = user['role']
+        database.record_login(user['id'])
+
+        next_url = request.args.get('next')
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
+
+        if user['role'] == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('index'))
+
+    return render_template('login.html', erro=erro, sucesso=sucesso)
+
+
+@app.route('/logout')
+def logout():
+    """Encerrar sessão"""
+    session.clear()
+    return redirect(url_for('login', sucesso='Você saiu da sua conta.'))
+
+
+# ==========================================
+# PAINEL ADMINISTRATIVO E GESTÃO DE USUÁRIOS
+# ==========================================
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    """Dashboard do painel administrativo"""
+    user = database.get_user_by_id(session['user_id'])
+    return render_template('admin.html', user=user)
+
+
+@app.route('/admin/alterar-senha', methods=['POST'])
+@login_required
+def alterar_senha_propria():
+    """Permite ao usuário logado alterar sua própria senha"""
+    dados = request.get_json() or {}
+    nova_senha = dados.get('nova_senha', '').strip()
+
+    if len(nova_senha) < 4:
+        return jsonify({'erro': 'A nova senha deve conter pelo menos 4 caracteres'}), 400
+
+    user_id = session['user_id']
+    database.update_password(user_id, nova_senha)
+    return jsonify({'sucesso': True, 'mensagem': 'Senha alterada com sucesso!'})
+
+
+@app.route('/api/admin/usuarios', methods=['GET'])
+@admin_required
+def api_admin_listar_usuarios():
+    """Listar todos os usuários cadastrados"""
+    usuarios = database.get_all_users()
+    return jsonify(usuarios)
+
+
+@app.route('/api/admin/usuarios', methods=['POST'])
+@admin_required
+def api_admin_criar_usuario():
+    """Criar novo usuário"""
+    dados = request.get_json() or {}
+    email = dados.get('email', '').strip()
+    password = dados.get('password', '')
+    role = dados.get('role', 'user')
+
+    if not email or '@' not in email:
+        return jsonify({'erro': 'E-mail válido é obrigatório'}), 400
+    if len(password) < 4:
+        return jsonify({'erro': 'A senha deve conter ao menos 4 caracteres'}), 400
+
+    if database.get_user_by_email(email):
+        return jsonify({'erro': 'Já existe um usuário com este e-mail'}), 409
+
+    try:
+        user = database.create_user(email, password, role)
+        return jsonify(user), 201
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 400
+
+
+@app.route('/api/admin/usuarios/<int:user_id>', methods=['PUT'])
+@admin_required
+def api_admin_editar_usuario(user_id: int):
+    """Editar usuário existente"""
+    dados = request.get_json() or {}
+    email = dados.get('email')
+    password = dados.get('password')
+    role = dados.get('role')
+
+    try:
+        user = database.update_user(user_id, email=email, password=password, role=role)
+        return jsonify(user)
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 400
+
+
+@app.route('/api/admin/usuarios/<int:user_id>/bloquear', methods=['POST'])
+@admin_required
+def api_admin_bloquear_usuario(user_id: int):
+    """Alternar status de bloqueio do usuário"""
+    if user_id == session.get('user_id'):
+        return jsonify({'erro': 'Você não pode bloquear a sua própria conta'}), 400
+
+    try:
+        esta_bloqueado = database.toggle_block_user(user_id)
+        return jsonify({'sucesso': True, 'bloqueado': esta_bloqueado})
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 400
+
+
+@app.route('/api/admin/usuarios/<int:user_id>', methods=['DELETE'])
+@admin_required
+def api_admin_deletar_usuario(user_id: int):
+    """Excluir usuário do sistema"""
+    if user_id == session.get('user_id'):
+        return jsonify({'erro': 'Você não pode excluir a sua própria conta'}), 400
+
+    sucesso = database.delete_user(user_id)
+    if sucesso:
+        return jsonify({'sucesso': True})
+    return jsonify({'erro': 'Usuário não encontrado'}), 404
+
+
+# ==========================================
+# APIS DE ATUALIZAÇÃO E SINCRONIZAÇÃO CAIXA
+# ==========================================
+
+@app.route('/api/admin/loterias/status', methods=['GET'])
+@admin_required
+def api_admin_loterias_status():
+    """Retorna status e logs recentes das 9 loterias"""
+    status = updater.obter_status_loterias()
+    logs = database.get_latest_sync_logs(15)
+    return jsonify({'status': status, 'logs': logs})
+
+
+@app.route('/api/admin/loterias/sincronizar/<loteria_type>', methods=['POST'])
+@admin_required
+def api_admin_sincronizar_loteria(loteria_type: str):
+    """Sincroniza uma loteria específica"""
+    res = updater.sincronizar_loteria(loteria_type, n_historico=50)
+    return jsonify(res)
+
+
+@app.route('/api/admin/loterias/sincronizar-todas', methods=['POST'])
+@admin_required
+def api_admin_sincronizar_todas():
+    """Sincroniza todas as 9 loterias da Caixa"""
+    res = updater.sincronizar_todas(n_historico=50)
+    return jsonify(res)
+
+
+# ==========================================
+# APIS ESTATÍSTICAS DO MODELO CANÔNICO 3.0
+# ==========================================
+
 @app.route('/api/analise/<loteria_type>', methods=['POST'])
 def api_analise(loteria_type: str):
     """API para realizar análise estatística completa"""
@@ -73,7 +311,6 @@ def api_analise(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    # Obter dados do request
     dados = request.get_json() or {}
     historico_input = dados.get('historico', [])
     
@@ -83,7 +320,7 @@ def api_analise(loteria_type: str):
     
     if len(historico_input) < 10:
         return jsonify({
-            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários.',
+            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários. Use a opção de sincronização ou gere dados de exemplo.',
             'concursos_atuais': len(historico_input)
         }), 400
     
@@ -119,7 +356,6 @@ def api_salvar_historico(loteria_type: str):
     if not historico:
         return jsonify({'erro': 'Histórico vazio'}), 400
     
-    # Validar formato do histórico
     for concurso in historico:
         if not isinstance(concurso, list) or len(concurso) == 0:
             return jsonify({'erro': 'Formato de concurso inválido'}), 400
@@ -194,7 +430,6 @@ def comparar_concursos(loteria_type: str):
     modelo = ModeloCanonico30(historico_input, loteria)
     analises = modelo.analisar_todos_elementos()
     
-    # Calcular score médio do concurso atual
     scores_concurso = []
     numeros_analisados = []
     
@@ -224,4 +459,5 @@ def comparar_concursos(loteria_type: str):
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
