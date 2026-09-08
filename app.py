@@ -25,6 +25,25 @@ from core import (
     LOTERIAS_CONFIG
 )
 
+def _carregar_env():
+    """Carrega variáveis do arquivo .env local se existir"""
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k and v:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+_carregar_env()
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'loteria-canonical-secret-2026-key')
 

@@ -13,8 +13,32 @@ import json
 import requests
 from typing import Dict, List, Optional, Any
 
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+def _carregar_env():
+    """Carrega variáveis do arquivo .env local se existir"""
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k and v:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+_carregar_env()
+
+def _get_gemini_key() -> Optional[str]:
+    _carregar_env()
+    return os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+
+def _get_claude_key() -> Optional[str]:
+    _carregar_env()
+    return os.environ.get('ANTHROPIC_API_KEY')
 
 PROMPT_SISTEMA_CONSULTOR = """
 Você é o Agente Consultor da Calculadora da Sorte, um especialista sênior em probabilidade, estatística estocástica e análise de loterias da Caixa Econômica Federal (Mega-Sena, Lotofácil, Quina, etc.).
@@ -31,10 +55,11 @@ Diretrizes:
 
 def _chamar_gemini(prompt: str) -> Optional[str]:
     """Chama a API do Google Gemini via REST puro (sem dependências externas)"""
-    if not GEMINI_API_KEY:
+    gemini_key = _get_gemini_key()
+    if not gemini_key:
         return None
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "system_instruction": {"parts": [{"text": PROMPT_SISTEMA_CONSULTOR}]},
@@ -62,12 +87,13 @@ def _chamar_gemini(prompt: str) -> Optional[str]:
 
 def _chamar_claude(prompt: str) -> Optional[str]:
     """Chama a API da Anthropic Claude via REST"""
-    if not ANTHROPIC_API_KEY:
+    claude_key = _get_claude_key()
+    if not claude_key:
         return None
 
     url = "https://api.anthropic.com/v1/messages"
     headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
+        "x-api-key": claude_key,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json"
     }
