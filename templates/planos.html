@@ -140,6 +140,12 @@
             font-size: 0.75rem;
             padding: 4px 12px;
             border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .plan-header-box {
+            min-height: 64px;
         }
 
         .plan-price {
@@ -147,6 +153,11 @@
             font-weight: 900;
             margin: 16px 0 24px;
             color: white;
+            min-height: 52px;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         .plan-price span {
@@ -158,15 +169,19 @@
         .plan-features {
             list-style: none;
             margin-bottom: 30px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .plan-features li {
-            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 10px;
             font-size: 0.95rem;
             color: #cbd5e1;
+            line-height: 1.4;
         }
 
         .btn-checkout {
@@ -296,9 +311,11 @@
             <!-- Opção 1: VIP Mensal -->
             <div class="plan-card highlight">
                 <div class="plan-ribbon">⭐ Mais Vantajoso</div>
-                <div>
-                    <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Plano VIP Mensal</h3>
-                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Acesso total, livre e ilimitado por 30 dias</p>
+                <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                    <div class="plan-header-box">
+                        <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Plano VIP Mensal</h3>
+                        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Acesso total, livre e ilimitado por 30 dias</p>
+                    </div>
                     <div class="plan-price">
                         R$ 29,90 <span>/ mês</span>
                     </div>
@@ -321,9 +338,12 @@
 
             <!-- Opção 2: Análise Avulsa -->
             <div class="plan-card">
-                <div>
-                    <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Análise Avulsa</h3>
-                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Preço Único de R$ 5,00 para qualquer loteria</p>
+                <div class="plan-ribbon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;">🪙 Preço Único</div>
+                <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                    <div class="plan-header-box">
+                        <h3 style="font-size: 1.5rem; font-weight: 800; color: white;">Análise Avulsa</h3>
+                        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Preço Único de R$ 5,00 para qualquer loteria</p>
+                    </div>
                     <div class="plan-price">
                         R$ 5,00 <span>/ crédito</span>
                     </div>
