@@ -568,7 +568,7 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
     import random
     import string
     txid = 'PIX' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
-    pix_copia_cola = f"00020126580014br.gov.bcb.pix0136silvio.luis.morais@gmail.com520400005303986540{valor:.2f}5802BR5920Calculadora da Sorte6009Sao Paulo62070503***6304{txid[-4:]}"
+    pix_copia_cola = f"00020126580014br.gov.bcb.pix0136silvio.luis.morais@gmail.com520400005303986540{valor:.2f}5802BR5916Calculo da Sorte6009Sao Paulo62070503***6304{txid[-4:]}"
     
     with get_db_connection() as conn:
         cursor = conn.cursor()

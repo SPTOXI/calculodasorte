@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise - {{ config.nome }} | Loteria Canônica</title>
+    <title>Análise - {{ config.nome }} | Cálculo da Sorte</title>
     <style>
         * {
             margin: 0;
@@ -2768,7 +2768,7 @@ Exemplo para {{ config.nome }}:
             let extensao = formato;
 
             if (formato === 'txt') {
-                conteudo = `CALCULADORA DA SORTE - APOSTAS SALVAS\n`;
+                conteudo = `CÁLCULO DA SORTE - APOSTAS SALVAS\n`;
                 conteudo += `Loteria: ${CONFIG_LOTERIA.nome}\n`;
                 conteudo += `Título: ${aposta.titulo || 'Apostas'}\n`;
                 conteudo += `Data: ${aposta.created_at || ''}\n`;
@@ -2779,7 +2779,7 @@ Exemplo para {{ config.nome }}:
                     conteudo += `Jogo #${String(idx + 1).padStart(2, '0')}: [ ${dezenas} ]\n`;
                 });
             } else if (formato === 'md') {
-                conteudo = `# Calculadora da Sorte - Apostas Salvas\n\n`;
+                conteudo = `# Cálculo da Sorte - Apostas Salvas\n\n`;
                 conteudo += `**Loteria:** ${CONFIG_LOTERIA.nome}  \n`;
                 conteudo += `**Título:** ${aposta.titulo || 'Apostas'}  \n`;
                 conteudo += `**Data:** ${aposta.created_at || ''}  \n`;
@@ -2870,7 +2870,7 @@ Exemplo para {{ config.nome }}:
                 if (data.sucesso && data.parecer) {
                     const p = data.parecer;
                     if (tagEl) {
-                        tagEl.textContent = `IA: ${p.provedor_ia || 'Calculadora da Sorte IA'}`;
+                        tagEl.textContent = `IA: ${p.provedor_ia || 'Cálculo da Sorte IA'}`;
                     }
                     textoEl.innerHTML = p.parecer_texto ? p.parecer_texto.replace(/\n/g, '<br>') : 'Análise realizada com sucesso.';
                     

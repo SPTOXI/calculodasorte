@@ -854,10 +854,10 @@ def api_checkout_infinitepay():
     tipo = dados.get('tipo', 'vip_mensal')
     if tipo == 'vip_mensal':
         valor = 29.90
-        descricao = "Plano VIP Mensal (30 dias) - Calculadora da Sorte"
+        descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
     else:
         valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
-        descricao = "Recarga de Análise Avulsa (R$ 5,00) - Calculadora da Sorte"
+        descricao = "Recarga de Análise Avulsa (R$ 5,00) - Cálculo da Sorte"
     loteria_type = dados.get('loteria_type')
 
     user_id = session['user_id']
