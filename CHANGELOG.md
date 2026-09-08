@@ -5,6 +5,22 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 
 ---
 
+### [v1.6.0] - 2026-09-08 — Integração InfinitePay (Taxa Zero & D+0 Instantâneo) e Gestão de Pagamentos no Admin
+#### 🚀 Novas Funcionalidades
+- **Checkout Oficial InfinitePay Integrado (`api.checkout.infinitepay.io`):**
+  - Integração nativa com a InfinitePay utilizando o handle do administrador (`silvio_morais_`).
+  - **Taxa Zero no PIX (0% de comissão)** e recebimento **imediato na hora (D+0)** na conta InfinitePay.
+  - Suporte tanto a PIX quanto a Cartão de Crédito em até 12x para os apostadores.
+  - Redirecionamento seguro para a página de checkout oficial com retorno automático para `/planos?checkout=sucesso`.
+- **Webhook Automatizado de Pagamentos (`POST /api/webhook/infinitepay`):**
+  - Confirmação em tempo real de transações pagas.
+  - Liberação instantânea do Plano VIP (30 dias) ou créditos de análise para o apostador sem intervenção manual.
+- **Painel Administrativo — Nova Aba "💰 Gestão de Pagamentos PIX & InfinitePay":**
+  - Visualização de todas as transações registradas no sistema (ID, nome/e-mail do apostador, modalidade, valor, status e data).
+  - Botão de aprovação manual com 1 clique para qualquer transação pendente.
+
+---
+
 ### [v1.5.0] - 2026-09-08 — Landing Page de Alta Conversão, Cadastro Obrigatório, Monetização PIX & Agente Consultor IA
 #### 🚀 Novas Funcionalidades
 - **Landing Page de Alta Conversão (`/`):**

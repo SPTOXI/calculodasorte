@@ -12,6 +12,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
 from werkzeug.security import check_password_hash
 
+import requests
 import database
 import updater
 import ai_agent
@@ -775,6 +776,137 @@ def api_confirmar_pix(payment_id: int):
             'access': access
         })
     return jsonify({'erro': 'Pagamento não encontrado ou já processado'}), 400
+
+
+# ==========================================
+# INTEGRAÇÃO INFINITEPAY (TAXA ZERO & D+0)
+# ==========================================
+
+INFINITEPAY_HANDLE = os.environ.get('INFINITEPAY_HANDLE', 'silvio_morais_')
+
+
+@app.route('/api/checkout/infinitepay', methods=['POST'])
+@login_required
+def api_checkout_infinitepay():
+    """Gera link de checkout oficial da InfinitePay (Taxa Zero no PIX e Liberação Imediata)"""
+    dados = request.get_json() or {}
+    tipo = dados.get('tipo', 'vip_mensal')
+    if tipo == 'vip_mensal':
+        valor = 29.90
+        descricao = "Plano VIP Mensal (30 dias) - Calculadora da Sorte"
+    else:
+        valor = float(dados.get('valor', 5.0))
+        descricao = "Recarga de Análise - Calculadora da Sorte"
+    loteria_type = dados.get('loteria_type')
+
+    user_id = session['user_id']
+    user = database.get_user_by_id(user_id)
+    pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
+    payment_id = pagamento['id']
+
+    base_url = request.host_url.rstrip('/')
+
+    payload = {
+        "handle": INFINITEPAY_HANDLE,
+        "order_nsu": str(payment_id),
+        "webhook_url": f"{base_url}/api/webhook/infinitepay",
+        "redirect_url": f"{base_url}/planos?checkout=sucesso&payment_id={payment_id}",
+        "items": [
+            {
+                "quantity": 1,
+                "price": int(round(valor * 100)),
+                "description": descricao
+            }
+        ]
+    }
+    if user:
+        payload["customer"] = {
+            "name": user.get('name') or 'Apostador',
+            "email": user.get('email') or ''
+        }
+
+    try:
+        resp = requests.post("https://api.checkout.infinitepay.io/links", json=payload, timeout=12)
+        if resp.status_code == 200:
+            data_inf = resp.json()
+            checkout_url = data_inf.get('url')
+            return jsonify({
+                'sucesso': True,
+                'checkout_url': checkout_url,
+                'payment_id': payment_id,
+                'valor': valor,
+                'tipo': tipo,
+                'handle': INFINITEPAY_HANDLE
+            })
+        else:
+            print(f"[INFINITEPAY] Erro na API ({resp.status_code}): {resp.text}")
+            return jsonify({
+                'sucesso': False,
+                'erro': f'Falha ao gerar link na InfinitePay ({resp.status_code})',
+                'detalhes': resp.text
+            }), 400
+    except Exception as e:
+        print(f"[INFINITEPAY] Exceção na conexão: {e}")
+        return jsonify({'sucesso': False, 'erro': str(e)}), 500
+
+
+@app.route('/api/webhook/infinitepay', methods=['POST'])
+def api_webhook_infinitepay():
+    """Webhook para confirmação automática em tempo real de pagamentos da InfinitePay"""
+    dados = request.get_json(silent=True) or request.form.to_dict() or {}
+    print(f"[INFINITEPAY WEBHOOK] Dados recebidos: {dados}")
+
+    order_nsu = dados.get('order_nsu')
+    if not order_nsu:
+        return jsonify({'erro': 'order_nsu não informado'}), 400
+
+    try:
+        payment_id = int(str(order_nsu).replace('P', '').strip())
+    except ValueError:
+        return jsonify({'erro': 'order_nsu inválido'}), 400
+
+    sucesso = database.approve_payment(payment_id)
+    if sucesso:
+        print(f"[INFINITEPAY WEBHOOK] Pagamento #{payment_id} aprovado com sucesso! Acesso liberado.")
+        return jsonify({'sucesso': True, 'payment_id': payment_id, 'status': 'aprovado'}), 200
+    else:
+        return jsonify({'sucesso': True, 'mensagem': 'Pagamento já processado ou inexistente'}), 200
+
+
+@app.route('/api/checkout/status/<int:payment_id>', methods=['GET'])
+@login_required
+def api_checkout_status(payment_id: int):
+    """Consulta o status atual de um pagamento"""
+    pagamento = database.get_payment_by_id(payment_id)
+    if not pagamento:
+        return jsonify({'erro': 'Pagamento não encontrado'}), 404
+
+    access = database.check_user_access(session['user_id'])
+    return jsonify({
+        'sucesso': True,
+        'status': pagamento.get('status'),
+        'is_approved': pagamento.get('status') == 'aprovado',
+        'access': access
+    })
+
+
+@app.route('/api/admin/pagamentos', methods=['GET'])
+@admin_required
+def api_admin_pagamentos():
+    """Lista todos os pagamentos para o painel admin"""
+    pagamentos = database.get_all_payments()
+    return jsonify({'sucesso': True, 'pagamentos': pagamentos, 'total': len(pagamentos)})
+
+
+@app.route('/api/admin/pagamentos/<int:payment_id>/aprovar', methods=['POST'])
+@admin_required
+def api_admin_aprovar_pagamento(payment_id: int):
+    """Aprova manualmente um pagamento no painel admin"""
+    sucesso = database.approve_payment(payment_id)
+    if sucesso:
+        return jsonify({'sucesso': True, 'mensagem': f'Pagamento #{payment_id} aprovado com sucesso!'})
+    return jsonify({'erro': 'Pagamento não encontrado ou já aprovado'}), 400
+
 
 
 # ==========================================

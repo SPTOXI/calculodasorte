@@ -293,8 +293,82 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertFalse(data['sucesso'])
         self.assertTrue(data.get('precisa_plano'))
 
+    def test_14_infinitepay_checkout_e_webhook(self):
+        """Testa geração de link InfinitePay (com handle silvio_morais_) e aprovação via Webhook"""
+        import uuid
+        import database
+        email = f"infpay_{uuid.uuid4().hex[:8]}@teste.com"
+        user = database.create_user(email, 'senha123', name='Cliente InfinitePay')
+        user_id = user['id']
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # 1. Gerar link de checkout InfinitePay
+        res_link = self.client.post('/api/checkout/infinitepay',
+            data=json.dumps({'tipo': 'vip_mensal'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_link.status_code, 200)
+        data_link = res_link.get_json()
+        self.assertTrue(data_link['sucesso'])
+        self.assertIn('checkout_url', data_link)
+        self.assertIn('checkout.infinitepay.io/silvio_morais_', data_link['checkout_url'])
+        payment_id = data_link['payment_id']
+
+        # 2. Simular disparo do Webhook da InfinitePay
+        res_webhook = self.client.post('/api/webhook/infinitepay',
+            data=json.dumps({
+                'order_nsu': str(payment_id),
+                'transaction_nsu': 'inf_tx_99998888',
+                'capture_method': 'pix',
+                'slug': 'calc-sorte-vip'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(res_webhook.status_code, 200)
+        data_wh = res_webhook.get_json()
+        self.assertTrue(data_wh['sucesso'])
+
+        # 3. Verificar se o usuário agora tem plano VIP ativado
+        access = database.check_user_access(user_id)
+        self.assertTrue(access['is_vip'])
+        self.assertTrue(access['has_access'])
+
+        # 4. Checar rota de status
+        res_status = self.client.get(f'/api/checkout/status/{payment_id}')
+        self.assertEqual(res_status.status_code, 200)
+        self.assertTrue(res_status.get_json()['is_approved'])
+
+    def test_15_admin_gestao_pagamentos(self):
+        """Testa listagem e aprovação manual de pagamentos no painel administrativo"""
+        import uuid
+        import database
+        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        self.assertIsNotNone(admin)
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = admin['id']
+
+        # Criar pagamento pendente auxiliar
+        pagamento = database.create_payment(user_id=admin['id'], tipo='avulso', valor=5.00)
+        p_id = pagamento['id']
+
+        # Listar pagamentos
+        res_list = self.client.get('/api/admin/pagamentos')
+        self.assertEqual(res_list.status_code, 200)
+        data_l = res_list.get_json()
+        self.assertTrue(data_l['sucesso'])
+        self.assertGreaterEqual(data_l['total'], 1)
+
+        # Aprovar manualmente
+        res_aprov = self.client.post(f'/api/admin/pagamentos/{p_id}/aprovar')
+        self.assertEqual(res_aprov.status_code, 200)
+        self.assertTrue(res_aprov.get_json()['sucesso'])
+
 
 if __name__ == '__main__':
     unittest.main()
+
 
 

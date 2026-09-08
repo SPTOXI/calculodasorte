@@ -503,6 +503,9 @@
             <button class="tab-btn" onclick="ativarAba('tab-usuarios')">
                 <span>👥</span> Controle de Usuários
             </button>
+            <button class="tab-btn" onclick="ativarAba('tab-pagamentos')">
+                <span>💰</span> Pagamentos PIX & InfinitePay
+            </button>
             <button class="tab-btn" onclick="ativarAba('tab-seguranca')">
                 <span>🛡️</span> Minha Conta / Segurança
             </button>
@@ -615,7 +618,50 @@
             </div>
         </div>
 
-        <!-- ABA 3: MINHA CONTA / SEGURANÇA -->
+        <!-- ABA 3: GESTÃO DE PAGAMENTOS PIX & INFINITEPAY -->
+        <div id="tab-pagamentos" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3><span>💰</span> Histórico de Pagamentos PIX & InfinitePay</h3>
+                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">
+                            Monitoramento em tempo real das transações. Vendas via InfinitePay são aprovadas instantaneamente pelo Webhook (Taxa 0% e D+0). Você também pode aprovar manualmente qualquer transação pendente.
+                        </p>
+                    </div>
+                    <div>
+                        <button class="btn-primary" onclick="carregarPagamentos()">
+                            <span>🔄</span> Atualizar Pagamentos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Apostador</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Referência / TXID</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-pagamentos-body">
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: #64748b; padding: 30px;">
+                                    Carregando histórico de pagamentos...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 4: MINHA CONTA / SEGURANÇA -->
         <div id="tab-seguranca" class="tab-content">
             <div class="card" style="max-width: 600px; margin: 0 auto;">
                 <div class="card-header">
@@ -722,6 +768,7 @@
 
             if (tabId === 'tab-loterias') carregarStatusLoterias();
             if (tabId === 'tab-usuarios') carregarUsuarios();
+            if (tabId === 'tab-pagamentos') carregarPagamentos();
         }
 
         // Toasts
@@ -1031,6 +1078,83 @@
                     if (banner) banner.style.display = 'none';
                 } else {
                     showToast(data.erro || 'Falha ao alterar senha', 'error');
+                }
+            } catch (e) {
+                showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // ==========================================
+        // GESTÃO DE PAGAMENTOS PIX & INFINITEPAY
+        // ==========================================
+
+        async function carregarPagamentos() {
+            const tbody = document.getElementById('tabela-pagamentos-body');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 25px;">Carregando pagamentos...</td></tr>';
+
+            try {
+                const res = await fetch('/api/admin/pagamentos');
+                const data = await res.json();
+                if (!res.ok || !data.sucesso) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc2626;">Erro: ${data.erro || 'Falha ao carregar'}</td></tr>`;
+                    return;
+                }
+
+                if (!data.pagamentos || data.pagamentos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 30px;">Nenhum pagamento registrado ainda.</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                data.pagamentos.forEach(p => {
+                    const statusClass = p.status === 'aprovado' ? 'badge-success' : 'badge-warning';
+                    const statusTexto = p.status === 'aprovado' ? '✅ Aprovado' : '⏳ Pendente';
+                    const tipoLabel = p.tipo === 'vip_mensal' ? '👑 VIP Mensal (30d)' : '🪙 Recarga Avulsa';
+                    const dataFormatada = p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : '-';
+                    const apostador = p.user_email ? `${p.user_name || 'Apostador'} <br><small style="color: #64748b;">${p.user_email}</small>` : `Usuário #${p.user_id}`;
+
+                    let acaoBtn = '';
+                    if (p.status !== 'aprovado') {
+                        acaoBtn = `
+                            <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background: #059669;" onclick="aprovarPagamentoAdmin(${p.id})">
+                                ✅ Aprovar
+                            </button>
+                        `;
+                    } else {
+                        acaoBtn = '<span style="color: #10b981; font-weight: 600; font-size: 0.85rem;">Liberado</span>';
+                    }
+
+                    html += `
+                        <tr>
+                            <td><strong>#${p.id}</strong></td>
+                            <td>${apostador}</td>
+                            <td><span style="font-weight: 600;">${tipoLabel}</span></td>
+                            <td><strong>R$ ${Number(p.valor || 0).toFixed(2).replace('.', ',')}</strong></td>
+                            <td><span class="badge ${statusClass}">${statusTexto}</span></td>
+                            <td style="font-size: 0.85rem; color: #64748b;">${dataFormatada}</td>
+                            <td style="font-family: monospace; font-size: 0.8rem; color: #0284c7;">${p.pix_txid || p.order_nsu || '-'}</td>
+                            <td>${acaoBtn}</td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc2626;">Falha de conexão: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function aprovarPagamentoAdmin(paymentId) {
+            if (!confirm(`Deseja aprovar manualmente o pagamento #${paymentId} e liberar o acesso imediatamente?`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/pagamentos/${paymentId}/aprovar`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.sucesso) {
+                    showToast(data.mensagem, 'success');
+                    carregarPagamentos();
+                } else {
+                    showToast(data.erro || 'Erro ao aprovar', 'error');
                 }
             } catch (e) {
                 showToast('Erro: ' + e.message, 'error');

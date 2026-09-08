@@ -609,3 +609,16 @@ def approve_payment(payment_id: int) -> bool:
     return True
 
 
+def get_all_payments() -> List[Dict[str, Any]]:
+    """Listar todos os pagamentos com dados do usuário para o painel admin"""
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT p.*, u.email as user_email, u.name as user_name
+            FROM payments p
+            LEFT JOIN users u ON p.user_id = u.id
+            ORDER BY p.id DESC
+        ''').fetchall()
+        return [dict(r) for r in rows]
+
+
+

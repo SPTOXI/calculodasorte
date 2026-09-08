@@ -311,8 +311,11 @@
                         <li>👑 <strong>Histórico permanente de todos os seus jogos</strong></li>
                     </ul>
                 </div>
-                <button class="btn-checkout btn-gold" onclick="iniciarCheckoutPix('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')">
-                    ⚡ Ativar VIP por R$ 29,90 via PIX
+                <button class="btn-checkout btn-gold" id="btn-infinite-vip" onclick="iniciarCheckoutInfinitePay('vip_mensal', 29.90, 'btn-infinite-vip')">
+                    ⚡ Ativar VIP por R$ 29,90 (InfinitePay PIX / Cartão)
+                </button>
+                <button onclick="iniciarCheckoutPix('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; margin-top: 10px; width: 100%;">
+                    Ou pagar com QR Code Copia e Cola
                 </button>
             </div>
 
@@ -333,8 +336,11 @@
                         <li>✅ Sem compromisso de mensalidade</li>
                     </ul>
                 </div>
-                <button class="btn-checkout btn-green" onclick="iniciarCheckoutPix('avulso', 5.00, '1 Crédito de Análise Avulsa')">
-                    🪙 Comprar 1 Crédito (R$ 5,00) via PIX
+                <button class="btn-checkout btn-green" id="btn-infinite-avulso" onclick="iniciarCheckoutInfinitePay('avulso', 5.00, 'btn-infinite-avulso')">
+                    🪙 Comprar 1 Crédito por R$ 5,00 (InfinitePay PIX / Cartão)
+                </button>
+                <button onclick="iniciarCheckoutPix('avulso', 5.00, '1 Crédito de Análise Avulsa')" style="background: none; border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; margin-top: 10px; width: 100%;">
+                    Ou pagar com QR Code Copia e Cola
                 </button>
             </div>
         </div>
@@ -395,6 +401,41 @@
     <script>
         let pagamentoAtualId = null;
 
+        // Checkout Oficial InfinitePay (Taxa Zero & D+0 Instantâneo)
+        async function iniciarCheckoutInfinitePay(tipo, valor, btnId) {
+            const btn = document.getElementById(btnId);
+            const textoOriginal = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ <em>Gerando checkout InfinitePay...</em>';
+            }
+
+            try {
+                const res = await fetch('/api/checkout/infinitepay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo, valor })
+                });
+                const data = await res.json();
+                if (data.sucesso && data.checkout_url) {
+                    // Redireciona o apostador diretamente para a página de pagamento seguro da InfinitePay
+                    window.location.href = data.checkout_url;
+                } else {
+                    alert('Erro ao conectar com InfinitePay: ' + (data.erro || 'Tente novamente.'));
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = textoOriginal;
+                    }
+                }
+            } catch (e) {
+                alert('Falha na requisição: ' + e.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                }
+            }
+        }
+
         async function iniciarCheckoutPix(tipo, valor, titulo) {
             document.getElementById('pix-titulo').textContent = titulo;
             document.getElementById('pix-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
@@ -449,6 +490,29 @@
         function fecharModalPix() {
             document.getElementById('pix-modal').style.display = 'none';
         }
+
+        // Detecta retorno após pagamento concluído na InfinitePay
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('checkout') === 'sucesso') {
+                const pId = urlParams.get('payment_id');
+                if (pId) {
+                    // Consulta o backend para confirmar ativação
+                    fetch(`/api/checkout/status/${pId}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seu acesso está liberado.');
+                            window.location.href = '/dashboard';
+                        })
+                        .catch(() => {
+                            window.location.href = '/dashboard';
+                        });
+                } else {
+                    alert('🎉 Pagamento concluído com sucesso!');
+                    window.location.href = '/dashboard';
+                }
+            }
+        });
     </script>
 
 </body>
