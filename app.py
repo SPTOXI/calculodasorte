@@ -8,7 +8,7 @@ from functools import wraps
 import json
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
 from werkzeug.security import check_password_hash
 
 import database
@@ -17,6 +17,7 @@ from core import (
     ModeloCanonico30, 
     ValidaçãoCamada7, 
     gerar_jogo_sugerido,
+    gerar_multiplos_jogos,
     LoteriaType, 
     LOTERIAS_CONFIG
 )
@@ -407,6 +408,181 @@ def gerar_jogo(loteria_type: str):
             'entropia': modelo.obter_resumo_analise()['camada_informacional']['entropia']
         }
     })
+
+
+@app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
+def api_gerar_multiplos_jogos(loteria_type: str):
+    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0"""
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    dados = request.get_json() or {}
+    quantidade_jogos = int(dados.get('quantidade_jogos', 5))
+    quantidade_jogos = max(1, min(100, quantidade_jogos))
+
+    dezenas = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
+    dezenas = max(config.minimo_aposta, min(config.maximo_aposta, dezenas))
+
+    historico_input = dados.get('historico', [])
+    if not historico_input:
+        historico_input = carregar_historico(loteria_type)
+
+    if len(historico_input) < 10:
+        return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
+
+    modelo = ModeloCanonico30(historico_input, loteria)
+    jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas)
+
+    return jsonify({
+        'sucesso': True,
+        'loteria': config.nome,
+        'quantidade_jogos': len(jogos),
+        'dezenas_por_jogo': dezenas,
+        'jogos': jogos,
+        'metricas_gerais': {
+            'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
+            'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
+        }
+    })
+
+
+@app.route('/download/historico/<loteria_type>/<formato>', methods=['GET'])
+def download_historico(loteria_type: str, formato: str):
+    """Download do histórico oficial em formato .md ou .txt"""
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    historico = carregar_historico(loteria_type)
+    meta = updater.carregar_meta(loteria_type)
+    ultimo = meta.get('ultimo_concurso', len(historico))
+    data_apuracao = meta.get('data_apuracao', 'Recente')
+    atualizado_em = meta.get('atualizado_em', datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
+
+    if formato == 'md':
+        linhas = [
+            f"# Histórico Oficial de Sorteios — {config.nome}",
+            f"**Última Atualização:** {atualizado_em}  ",
+            f"**Último Concurso Caixa:** #{ultimo} ({data_apuracao})  ",
+            f"**Total de Concursos Catalogados:** {len(historico)}  ",
+            "",
+            "| Concurso Histórico | Dezenas Sorteadas |",
+            "| :---: | :--- |"
+        ]
+        for idx, sorteio in enumerate(reversed(historico), 1):
+            dezenas_str = ", ".join(f"{n:02d}" for n in sorteio)
+            linhas.append(f"| #{len(historico) - idx + 1} | {dezenas_str} |")
+        
+        conteudo = "\n".join(linhas)
+        mimetype = 'text/markdown; charset=utf-8'
+        extensao = 'md'
+    elif formato == 'txt':
+        linhas = [
+            "=" * 60,
+            f"HISTÓRICO OFICIAL DE SORTEIOS — {config.nome.upper()}",
+            f"Última Atualização: {atualizado_em}",
+            f"Último Concurso Caixa: #{ultimo} ({data_apuracao})",
+            f"Total de Concursos Catalogados: {len(historico)}",
+            "=" * 60,
+            ""
+        ]
+        for idx, sorteio in enumerate(reversed(historico), 1):
+            dezenas_str = " ".join(f"{n:02d}" for n in sorteio)
+            linhas.append(f"Concurso #{len(historico) - idx + 1:04d}: [ {dezenas_str} ]")
+        
+        conteudo = "\n".join(linhas)
+        mimetype = 'text/plain; charset=utf-8'
+        extensao = 'txt'
+    else:
+        return jsonify({'erro': 'Formato não suportado (use md ou txt)'}), 400
+
+    nome_arquivo = f"historico_{loteria_type}_{ultimo}.{extensao}"
+    return Response(
+        conteudo,
+        mimetype=mimetype,
+        headers={'Content-Disposition': f'attachment; filename="{nome_arquivo}"'}
+    )
+
+
+@app.route('/download/jogos/<loteria_type>/<formato>', methods=['POST'])
+def download_jogos(loteria_type: str, formato: str):
+    """Exportar apostas calculadas em formato .md ou .txt"""
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    dados = request.get_json() or {}
+    jogos = dados.get('jogos', [])
+
+    if not jogos:
+        return jsonify({'erro': 'Nenhum jogo fornecido para download'}), 400
+
+    data_hora = datetime.now().strftime('%d/%m/%Y às %H:%M:%S')
+
+    if formato == 'md':
+        linhas = [
+            f"# Palpites Gerados — {config.nome}",
+            "**Metodologia:** Modelo Canônico 3.0 (MCP-MD 1.0)  ",
+            f"**Data de Geração:** {data_hora}  ",
+            f"**Total de Jogos:** {len(jogos)}  ",
+            "",
+            "| Jogo | Dezenas Recomendadas | Total Dezenas |",
+            "| :---: | :--- | :---: |"
+        ]
+        for i, j in enumerate(jogos, 1):
+            dezenas_str = ", ".join(f"{n:02d}" for n in j)
+            linhas.append(f"| **Jogo {i:02d}** | {dezenas_str} | {len(j)} |")
+
+        conteudo = "\n".join(linhas)
+        mimetype = 'text/markdown; charset=utf-8'
+        extensao = 'md'
+    elif formato == 'txt':
+        linhas = [
+            "=" * 60,
+            f"PALPITES GERADOS — {config.nome.upper()}",
+            f"Modelo Canônico 3.0 + MCP-MD 1.0 (AGENTE LLN ICT FR)",
+            f"Data: {data_hora}",
+            f"Total de Combinações: {len(jogos)}",
+            "=" * 60,
+            ""
+        ]
+        for i, j in enumerate(jogos, 1):
+            dezenas_str = " ".join(f"{n:02d}" for n in j)
+            linhas.append(f"Jogo {i:02d}: [ {dezenas_str} ] ({len(j)} dezenas)")
+        
+        linhas.extend([
+            "",
+            "=" * 60,
+            "Boa sorte nas suas apostas!",
+            "=" * 60
+        ])
+        conteudo = "\n".join(linhas)
+        mimetype = 'text/plain; charset=utf-8'
+        extensao = 'txt'
+    else:
+        return jsonify({'erro': 'Formato inválido'}), 400
+
+    nome_arquivo = f"palpites_{loteria_type}_{len(jogos)}jogos.{extensao}"
+    return Response(
+        conteudo,
+        mimetype=mimetype,
+        headers={'Content-Disposition': f'attachment; filename="{nome_arquivo}"'}
+    )
+
+
+@app.route('/api/cron/atualizar', methods=['GET', 'POST'])
+def cron_atualizar():
+    """Endpoint chamado pelo Vercel Cron Job às 23:59h"""
+    print("[CRON] Executando sincronização diária oficial da Caixa às 23:59h...")
+    res = updater.sincronizar_todas(n_historico=50)
+    return jsonify(res)
 
 
 @app.route('/comparar-concursos/<loteria_type>', methods=['POST'])

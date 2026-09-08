@@ -679,6 +679,58 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
     return sorted(list(sugeridos))[:quantidade_numeros]
 
 
+def gerar_multiplos_jogos(
+    modelo: ModeloCanonico30, 
+    quantidade_jogos: int, 
+    quantidade_numeros: int
+) -> List[List[int]]:
+    """
+    Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 3.0.
+    Garante que não haja jogos duplicados e respeita os limites da loteria.
+    """
+    import random
+
+    analises = modelo.analisar_todos_elementos()
+    universo = list(range(1, modelo.N + 1))
+    
+    # Calcular pesos estatísticos para cada número
+    pesos = {}
+    for a in analises:
+        estabilidade = max(0.0, 1.0 - a.ict)
+        harmonia = max(0.0, 1.0 - abs(a.fr - 1.0))
+        peso = (a.score_mcp * 1.5) + (estabilidade * 1.0) + (harmonia * 0.8)
+        pesos[a.numero] = max(0.05, peso)
+
+    jogos_gerados = []
+    jogos_set = set()
+    tentativas = 0
+    max_tentativas = quantidade_jogos * 100
+
+    while len(jogos_gerados) < quantidade_jogos and tentativas < max_tentativas:
+        tentativas += 1
+        jogo = set()
+        
+        # 1. 50% dos números vindos dos melhores scores com rotação
+        top_candidatos = sorted(analises, key=lambda x: pesos[x.numero], reverse=True)[:max(quantidade_numeros * 2, 15)]
+        qtd_top = min(len(top_candidatos), max(1, int(quantidade_numeros * 0.5)))
+        amostra_top = random.sample([c.numero for c in top_candidatos], qtd_top)
+        jogo.update(amostra_top)
+        
+        # 2. Completar com amostragem ponderada pelos pesos canônicos
+        while len(jogo) < quantidade_numeros:
+            candidatos_restantes = [n for n in universo if n not in jogo]
+            pesos_restantes = [pesos[n] for n in candidatos_restantes]
+            escolhido = random.choices(candidatos_restantes, weights=pesos_restantes, k=1)[0]
+            jogo.add(escolhido)
+
+        jogo_ordenado = tuple(sorted(list(jogo)))
+        if jogo_ordenado not in jogos_set:
+            jogos_set.add(jogo_ordenado)
+            jogos_gerados.append(list(jogo_ordenado))
+
+    return jogos_gerados
+
+
 if __name__ == "__main__":
     # Exemplo de uso
     print("Modelo Canônico 3.0 + MCP-MD 1.0")

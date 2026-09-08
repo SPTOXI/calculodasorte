@@ -12,6 +12,12 @@
       "dest": "app.py"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/atualizar",
+      "schedule": "59 23 * * *"
+    }
+  ],
   "env": {
     "FLASK_ENV": "production"
   }

@@ -9,7 +9,7 @@ import time
 import threading
 import urllib3
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import database
 
@@ -358,18 +358,32 @@ def sincronizar_todas(n_historico: int = 50) -> Dict[str, Any]:
 # Thread Agendadora para Execução Diária Automática em Background
 _scheduler_started = False
 
+def calcular_segundos_ate_2359() -> float:
+    """Calcula os segundos restantes até as 23:59:00 do dia atual ou do dia seguinte"""
+    agora = datetime.now()
+    alvo = agora.replace(hour=23, minute=59, second=0, microsecond=0)
+    if agora >= alvo:
+        alvo += timedelta(days=1)
+    segundos = (alvo - agora).total_seconds()
+    return max(1.0, segundos)
+
+
 def _loop_agendador_diario():
-    """Loop que executa a sincronização diária a cada 6 horas ou após as 21h"""
-    print("[UPDATER] Serviço de sincronização diária em background iniciado.")
+    """Loop que executa a sincronização diária pontualmente às 23:59h"""
+    print("[UPDATER] Serviço de sincronização diária agendado para às 23:59h.")
     while True:
         try:
-            # Dorme 6 horas (21600 segundos) entre verificações automáticas
-            time.sleep(21600)
-            print("[UPDATER] Executando verificação automática periódica das loterias...")
+            segundos_espera = calcular_segundos_ate_2359()
+            horas = segundos_espera / 3600
+            print(f"[UPDATER] Próxima atualização automática programada para 23:59h (em {horas:.2f} horas / {int(segundos_espera)}s).")
+            time.sleep(segundos_espera)
+            print("[UPDATER] 23:59h atingido! Executando sincronização diária de todas as loterias...")
             sincronizar_todas(n_historico=50)
+            # Aguarda 120s para garantir avanço para o próximo dia
+            time.sleep(120)
         except Exception as e:
-            print(f"[UPDATER] Erro no loop de agendamento: {e}")
-            time.sleep(600)
+            print(f"[UPDATER] Erro no loop de agendamento das 23:59h: {e}")
+            time.sleep(60)
 
 
 def iniciar_agendador():
