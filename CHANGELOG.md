@@ -5,6 +5,25 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 
 ---
 
+### [v1.7.0] - 2026-09-08 — Preço Único de R$ 5,00 para Análise Avulsa & Padrões de Privacidade LGPD (Lei nº 13.709/2018)
+#### 🚀 Novas Funcionalidades
+- **Preço Único de R$ 5,00 para Análise Avulsa:**
+  - Padronização do valor da recarga avulsa para **R$ 5,00 fixo para qualquer loteria** da Caixa Econômica Federal (Mega-Sena, Lotofácil, Quina, etc.), eliminando disparidades de preço e simplificando o funil de conversão.
+  - Enforced no backend (`/api/checkout/pix` e `/api/checkout/infinitepay`) e nas interfaces (`landing.html` e `planos.html`).
+- **Conformidade Completa com a LGPD (Lei nº 13.709/2018):**
+  - **Consentimento Explícito no Cadastro (`/cadastro`):** Checkbox obrigatório de concordância com os Termos de Uso e Política de Privacidade e declaração de maioridade (+18 anos), gravando `accepted_terms_at` no banco SQLite.
+  - **Página de Política de Privacidade (`/privacidade`):** Documento jurídico completo indicando Encarregado pelo Tratamento de Dados (DPO Silvio Luis Morais, `silvio.luis.morais@gmail.com`), bases legais (Art. 7º), segurança criptográfica e finalidades.
+  - **Página de Termos de Uso e Jogo Responsável (`/termos`):** Definição da natureza estocástica/matemática do Modelo Canônico 3.0, isenção de promessa de ganhos fáceis, política de entretenimento e alerta contra vício em apostas.
+  - **Portabilidade de Dados Pessoais (`GET /api/usuario/exportar-dados`):** Implementação do Art. 18, V da LGPD com download em JSON estruturado do cadastro e histórico de apostas.
+  - **Eliminação e Direito ao Esquecimento (`POST /api/usuario/excluir-conta`):** Implementação do Art. 18, VI da LGPD com exclusão definitiva de conta e apostas, e anonimização de registros fiscais de pagamentos (Art. 16, I).
+  - **Banner de Cookies LGPD:** Componente flutuante com persistência em `localStorage` para avisar sobre cookies de sessão essenciais.
+  - **Rodapé Institucional com Links de Transparência:** Links diretos para Termos, Privacidade e Canal do DPO em `landing.html`, `index.html` e `planos.html`.
+
+#### 🧪 Testes Automatizados
+- Adicionados testes 16, 17, 18 e 19 em `test_features.py` cobrindo validação de consentimento, rotas institucionais, portabilidade, exclusão de dados e garantia do preço único de R$ 5,00 (19/19 testes passando).
+
+---
+
 ### [v1.6.0] - 2026-09-08 — Integração InfinitePay (Taxa Zero & D+0 Instantâneo) e Gestão de Pagamentos no Admin
 #### 🚀 Novas Funcionalidades
 - **Checkout Oficial InfinitePay Integrado (`api.checkout.infinitepay.io`):**

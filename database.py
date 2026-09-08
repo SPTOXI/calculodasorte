@@ -66,6 +66,8 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 1")
         if 'vip_expires_at' not in colunas_existentes:
             conn.execute("ALTER TABLE users ADD COLUMN vip_expires_at TIMESTAMP")
+        if 'accepted_terms_at' not in colunas_existentes:
+            conn.execute("ALTER TABLE users ADD COLUMN accepted_terms_at TIMESTAMP")
         
         # Tabela de Histórico de Sincronizações
         cursor.execute('''
@@ -178,9 +180,10 @@ def create_user(
     role: str = 'user', 
     plan: str = 'free',
     credits: int = 1,
-    must_change_password: int = 0
+    must_change_password: int = 0,
+    accepted_terms: bool = True
 ) -> Dict[str, Any]:
-    """Criar novo usuário no sistema com crédito de degustação gratuito"""
+    """Criar novo usuário no sistema com crédito de degustação gratuito e registro de consentimento LGPD"""
     email_clean = email.strip().lower()
     if not email_clean or '@' not in email_clean:
         raise ValueError("E-mail inválido")
@@ -190,12 +193,14 @@ def create_user(
 
     name_clean = (name or 'Apostador').strip()
     pwd_hash = generate_password_hash(password)
+    terms_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S') if accepted_terms else None
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO users (email, name, password_hash, role, plan, credits, is_blocked, must_change_password)
-            VALUES (?, ?, ?, ?, ?, ?, 0, ?)
-        ''', (email_clean, name_clean, pwd_hash, role, plan, credits, must_change_password))
+            INSERT INTO users (email, name, password_hash, role, plan, credits, is_blocked, must_change_password, accepted_terms_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+        ''', (email_clean, name_clean, pwd_hash, role, plan, credits, must_change_password, terms_date))
         conn.commit()
         user_id = cursor.lastrowid
         
@@ -619,6 +624,47 @@ def get_all_payments() -> List[Dict[str, Any]]:
             ORDER BY p.id DESC
         ''').fetchall()
         return [dict(r) for r in rows]
+
+
+# ==========================================
+# CONFORMIDADE LGPD (LEI Nº 13.709/2018)
+# ==========================================
+
+def export_user_data(user_id: int) -> Dict[str, Any]:
+    """Portabilidade de dados (Art. 18, V da LGPD)"""
+    user = get_user_by_id(user_id)
+    if not user:
+        return {}
+    
+    # Sanitizar dados removendo hashes internos
+    user_sanitized = {k: v for k, v in user.items() if k not in ('password_hash',)}
+    bets = listar_apostas(user_id=user_id)
+    
+    return {
+        'lgpd_declaracao': 'Relatório Oficial de Portabilidade de Dados Pessoais — Art. 18, V da LGPD',
+        'data_solicitacao': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'titular': user_sanitized,
+        'total_apostas_registradas': len(bets),
+        'historico_apostas': bets
+    }
+
+
+def delete_user_and_data(user_id: int) -> bool:
+    """Direito à eliminação dos dados pessoais / Esquecimento (Art. 18, VI da LGPD)"""
+    with get_db_connection() as conn:
+        # 1. Excluir todas as apostas do titular
+        conn.execute('DELETE FROM user_bets WHERE user_id = ?', (user_id,))
+        # 2. Anonimizar pagamentos para fins de auditoria fiscal/contábil (Art. 16, I da LGPD)
+        conn.execute('''
+            UPDATE payments 
+            SET user_id = NULL, pix_copia_cola = 'ANONIMIZADO_LGPD' 
+            WHERE user_id = ?
+        ''', (user_id,))
+        # 3. Excluir conta do usuário
+        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.commit()
+    return True
+
 
 
 

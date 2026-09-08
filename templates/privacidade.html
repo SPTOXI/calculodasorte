@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade e LGPD — Calculadora da Sorte</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --gold: #f59e0b;
+            --dark: #0f172a;
+            --dark-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0b1120;
+            color: var(--text-light);
+            line-height: 1.7;
+            padding: 40px 20px;
+            background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.12) 0%, #0b1120 70%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 45px 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-back {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .btn-back:hover {
+            color: white;
+        }
+
+        .header-title {
+            margin-bottom: 30px;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .badge-lgpd {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--primary-light);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .last-update {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            color: var(--primary-light);
+            margin: 35px 0 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 8px;
+        }
+
+        p, ul {
+            margin-bottom: 18px;
+            color: #cbd5e1;
+            font-size: 0.98rem;
+        }
+
+        ul {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        strong {
+            color: white;
+        }
+
+        .highlight-box {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 25px 0;
+            font-size: 0.95rem;
+        }
+
+        .actions-box {
+            background: #0f172a;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 35px 0;
+            text-align: center;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 8px;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.35);
+        }
+
+        footer {
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="top-nav">
+            <a href="/" class="btn-back">← Voltar para a Página Inicial</a>
+            <div style="font-weight: 700; color: var(--primary-light);">🎲 Calculadora da Sorte</div>
+        </div>
+
+        <div class="header-title">
+            <span class="badge-lgpd">🛡️ Conformidade Lei nº 13.709/2018 (LGPD)</span>
+            <h1>Política de Privacidade e Proteção de Dados</h1>
+            <div class="last-update">Última atualização: Setembro de 2026 | Versão 1.7.0</div>
+        </div>
+
+        <div class="highlight-box">
+            <strong>Compromisso com a sua Privacidade:</strong> A Calculadora da Sorte tem o compromisso absoluto de proteger a privacidade, a integridade e os direitos fundamentais de liberdade de todos os seus usuários, em estrita observância à Lei Geral de Proteção de Dados Pessoais (LGPD).
+        </div>
+
+        <h2>1. Identificação do Controlador e Encarregado de Dados (DPO)</h2>
+        <p>O Controlador responsável pelas decisões referentes ao tratamento de dados pessoais no âmbito da Calculadora da Sorte é gerido sob a coordenação do Encarregado pelo Tratamento de Dados Pessoais (DPO):</p>
+        <ul>
+            <li><strong>Encarregado / DPO:</strong> Silvio Luis Morais</li>
+            <li><strong>Canal Oficial de Atendimento ao Titular:</strong> <a href="mailto:silvio.luis.morais@gmail.com" style="color: var(--primary-light);">silvio.luis.morais@gmail.com</a></li>
+            <li><strong>Finalidade do Canal:</strong> Esclarecer dúvidas, receber requisições de titulares de dados e solicitações de portabilidade ou eliminação.</li>
+        </ul>
+
+        <h2>2. Dados Pessoais Coletados</h2>
+        <p>Coletamos estritamente os dados necessários para o fornecimento seguro e funcional de nossos serviços:</p>
+        <ul>
+            <li><strong>Dados Cadastrais:</strong> Nome completo e endereço de e-mail (necessários para login e personalização da conta).</li>
+            <li><strong>Segurança e Credenciais:</strong> Senha criptografada através de hash irreversível de alta segurança (Werkzeug / PBKDF2/SHA-256). Nunca armazenamos nem temos acesso à sua senha em texto claro.</li>
+            <li><strong>Histórico de Apostas e Palpites:</strong> Registros das combinações numéricas geradas, conferências e jogos salvos exclusivamente pelo próprio titular da conta.</li>
+            <li><strong>Dados de Transações e Pagamentos:</strong> Identificador do pagamento (order_nsu), modalidade (VIP ou avulso), valor e data. <em>Nota: Não armazenamos números de cartão de crédito ou chaves bancárias sigilosas. Os pagamentos são processados pela plataforma credenciada InfinitePay em ambiente isolado e certificado.</em></li>
+            <li><strong>Dados de Acesso Técnico:</strong> Data e horário do último acesso e registros exigidos pelo Art. 15 do Marco Civil da Internet (Lei nº 12.965/2014).</li>
+        </ul>
+
+        <h2>3. Finalidades e Bases Legais do Tratamento (Art. 7º da LGPD)</h2>
+        <p>O tratamento de dados pessoais é fundamentado nas seguintes bases legais:</p>
+        <ul>
+            <li><strong>Execução de Contrato (Art. 7º, V):</strong> Para disponibilizar o acesso ao sistema, gerenciar créditos de análise, permitir a geração de jogos pelo Modelo Canônico 3.0 e ativar planos VIP.</li>
+            <li><strong>Consentimento do Titular (Art. 7º, I):</strong> Manifestado de forma livre, informada e inequívoca no ato da criação da conta através de checkbox obrigatório.</li>
+            <li><strong>Cumprimento de Obrigação Legal e Regulatória (Art. 7º, II):</strong> Manutenção de registros de login e faturamento conforme o Marco Civil da Internet e a legislação fiscal.</li>
+            <li><strong>Legítimo Interesse e Segurança (Art. 7º, IX):</strong> Prevenção a fraudes, monitoramento de integridade e defesa contra acessos não autorizados.</li>
+        </ul>
+
+        <h2>4. Direitos do Titular de Dados (Art. 18 da LGPD)</h2>
+        <p>Como titular dos seus dados pessoais, você possui os seguintes direitos garantidos pela lei:</p>
+        <ul>
+            <li><strong>Confirmação e Acesso:</strong> Direito de saber se seus dados estão sendo tratados e acessá-los a qualquer momento.</li>
+            <li><strong>Correção:</strong> Direito de solicitar a correção de dados incompletos, inexatos ou desatualizados.</li>
+            <li><strong>Portabilidade (Art. 18, V):</strong> Direito de baixar e exportar integralmente seu relatório de dados cadastrais e histórico de apostas em formato aberto JSON.</li>
+            <li><strong>Eliminação e Direito ao Esquecimento (Art. 18, VI):</strong> Direito de solicitar a exclusão total da sua conta e remoção de suas apostas. Registros contábeis de faturamento são anonimizados nos termos do Art. 16, I da LGPD.</li>
+        </ul>
+
+        {% if session.get('user_id') %}
+        <div class="actions-box">
+            <h3 style="color: white; margin-bottom: 12px;">Gerenciar Seus Direitos de Titular</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Você está autenticado no sistema. Utilize as ações automáticas abaixo:</p>
+            <a href="/api/usuario/exportar-dados" target="_blank" class="btn-action btn-export">
+                📥 Exportar Meus Dados Pessoais (JSON)
+            </a>
+            <button onclick="solicitarExclusaoConta()" class="btn-action btn-delete">
+                🗑️ Solicitar Exclusão da Minha Conta
+            </button>
+        </div>
+        {% endif %}
+
+        <h2>5. Compartilhamento de Dados</h2>
+        <p>A Calculadora da Sorte <strong>não vende, não aluga e não compartilha</strong> dados pessoais de seus usuários com terceiros para fins de publicidade ou marketing. O compartilhamento ocorre única e exclusivamente:</p>
+        <ul>
+            <li>Com o processador oficial de pagamentos (InfinitePay / CloudWalk), apenas com os dados estritamente necessários para emitir a cobrança PIX/cartão solicitada pelo usuário.</li>
+            <li>Mediante ordem judicial expedida por autoridade brasileira competente, em conformidade com a legislação aplicável.</li>
+        </ul>
+
+        <h2>6. Segurança da Informação</h2>
+        <p>Adotamos medidas técnicas e administrativas aptas a proteger seus dados contra acessos não autorizados e contra situações acidentais ou ilícitas de destruição, perda, alteração ou comunicação:</p>
+        <ul>
+            <li>Criptografia em trânsito com protocolo TLS/HTTPS.</li>
+            <li>Hashing seguro e com sal para todas as senhas de usuários.</li>
+            <li>Isolamento de banco de dados SQLite com controle estrito de permissões.</li>
+        </ul>
+
+        <h2>7. Restrição Etária (+18 Anos)</h2>
+        <p>A Calculadora da Sorte é um serviço estritamente reservado a <strong>maiores de 18 anos</strong>. Não coletamos intencionalmente dados de menores. Caso seja identificado cadastro de menor de idade, a conta será sumariamente encerrada e os dados excluídos.</p>
+
+        <h2>8. Contato do Encarregado</h2>
+        <p>Para qualquer dúvida ou solicitação relacionada aos seus dados pessoais e ao exercício de seus direitos sob a LGPD, envie uma mensagem para o nosso Encarregado de Proteção de Dados:</p>
+        <p style="font-size: 1.05rem;">📧 <strong>E-mail:</strong> <a href="mailto:silvio.luis.morais@gmail.com" style="color: var(--primary-light);">silvio.luis.morais@gmail.com</a></p>
+
+        <footer>
+            © 2026 Calculadora da Sorte — Em estrita conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+        </footer>
+    </div>
+
+    <script>
+        async function solicitarExclusaoConta() {
+            if (!confirm('ATENÇÃO: Deseja realmente excluir permanentemente a sua conta e todas as suas apostas salvas?\n\nEsta ação é irreversível conforme o Art. 18 da LGPD.')) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/usuario/excluir-conta', { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('Sua conta e seus dados foram excluídos com sucesso. Você será redirecionado para a página inicial.');
+                    window.location.href = '/';
+                } else {
+                    alert('Erro ao excluir conta: ' + (data.erro || 'Tente novamente'));
+                }
+            } catch (e) {
+                alert('Falha na comunicação: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

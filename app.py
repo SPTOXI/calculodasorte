@@ -172,6 +172,7 @@ def cadastro():
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         plano_desejado = request.form.get('plano_desejado', 'free')
+        termos_lgpd = request.form.get('termos_lgpd')
 
         if not nome:
             erro = 'Por favor, informe seu nome completo.'
@@ -181,6 +182,8 @@ def cadastro():
             erro = 'A senha deve conter pelo menos 4 caracteres.'
         elif password != confirm_password:
             erro = 'As senhas digitadas não coincidem.'
+        elif not termos_lgpd:
+            erro = 'Você deve concordar com os Termos de Uso e Política de Privacidade (LGPD) para se cadastrar.'
         elif database.get_user_by_email(email):
             erro = 'Este e-mail já está cadastrado. Faça login para continuar.'
 
@@ -192,7 +195,8 @@ def cadastro():
                     name=nome,
                     role='user',
                     plan='free',
-                    credits=1 # 1 crédito de degustação gratuito!
+                    credits=1, # 1 crédito de degustação gratuito!
+                    accepted_terms=True
                 )
                 session['user_id'] = user['id']
                 session['user_email'] = user['email']
@@ -257,6 +261,44 @@ def logout():
     """Encerrar sessão"""
     session.clear()
     return redirect(url_for('login', sucesso='Você saiu da sua conta.'))
+
+
+# ==========================================
+# ROTAS LGPD E PRIVACIDADE (LEI Nº 13.709/2018)
+# ==========================================
+
+@app.route('/privacidade')
+def privacidade():
+    """Página institucional de Política de Privacidade e Direitos do Titular (LGPD)"""
+    return render_template('privacidade.html')
+
+
+@app.route('/termos')
+def termos():
+    """Página institucional de Termos de Uso e Jogo Responsável (+18 anos)"""
+    return render_template('termos.html')
+
+
+@app.route('/api/usuario/exportar-dados', methods=['GET'])
+@login_required
+def api_usuario_exportar_dados():
+    """Portabilidade de dados cadastrais e apostas em formato JSON (Art. 18, V da LGPD)"""
+    user_id = session['user_id']
+    dados_portabilidade = database.export_user_data(user_id)
+    return jsonify(dados_portabilidade)
+
+
+@app.route('/api/usuario/excluir-conta', methods=['POST'])
+@login_required
+def api_usuario_excluir_conta():
+    """Eliminação dos dados pessoais / Direito ao Esquecimento (Art. 18, VI da LGPD)"""
+    user_id = session['user_id']
+    database.delete_user_and_data(user_id)
+    session.clear()
+    return jsonify({
+        'sucesso': True,
+        'mensagem': 'Conta e dados pessoais excluídos com sucesso em estrita conformidade com a LGPD.'
+    })
 
 
 # ==========================================
@@ -739,13 +781,13 @@ def api_gerar_multiplos_jogos(loteria_type: str):
 @app.route('/api/checkout/pix', methods=['POST'])
 @login_required
 def api_checkout_pix():
-    """Gera cobrança PIX para assinatura VIP ou recarga avulsa"""
+    """Gera cobrança PIX para assinatura VIP ou recarga avulsa (Preço Único R$ 5,00)"""
     dados = request.get_json() or {}
     tipo = dados.get('tipo', 'avulso')
     if tipo == 'vip_mensal':
         valor = 29.90
     else:
-        valor = float(dados.get('valor', 5.0))
+        valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
     loteria_type = dados.get('loteria_type')
 
     user_id = session['user_id']
@@ -795,8 +837,8 @@ def api_checkout_infinitepay():
         valor = 29.90
         descricao = "Plano VIP Mensal (30 dias) - Calculadora da Sorte"
     else:
-        valor = float(dados.get('valor', 5.0))
-        descricao = "Recarga de Análise - Calculadora da Sorte"
+        valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
+        descricao = "Recarga de Análise Avulsa (R$ 5,00) - Calculadora da Sorte"
     loteria_type = dados.get('loteria_type')
 
     user_id = session['user_id']

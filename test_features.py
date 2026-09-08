@@ -11,6 +11,7 @@ import unittest
 import json
 from app import app
 import updater
+import database
 
 class TestNovasFuncionalidades(unittest.TestCase):
 
@@ -177,7 +178,8 @@ class TestNovasFuncionalidades(unittest.TestCase):
             'nome': 'Apostador Teste',
             'email': email_teste,
             'password': 'senha123teste',
-            'confirm_password': 'senha123teste'
+            'confirm_password': 'senha123teste',
+            'termos_lgpd': 'on'
         }, follow_redirects=True)
         self.assertEqual(res.status_code, 200)
         self.assertIn(b'dashboard', res.request.path.encode() or b'')
@@ -365,6 +367,107 @@ class TestNovasFuncionalidades(unittest.TestCase):
         res_aprov = self.client.post(f'/api/admin/pagamentos/{p_id}/aprovar')
         self.assertEqual(res_aprov.status_code, 200)
         self.assertTrue(res_aprov.get_json()['sucesso'])
+
+    def test_16_lgpd_paginas_institucionais(self):
+        """Testa disponibilidade das páginas de Política de Privacidade e Termos de Uso (LGPD)"""
+        # 1. Página de Privacidade
+        res_priv = self.client.get('/privacidade')
+        self.assertEqual(res_priv.status_code, 200)
+        texto_priv = res_priv.get_data(as_text=True)
+        self.assertIn('Política de Privacidade', texto_priv)
+        self.assertIn('Lei nº 13.709/2018', texto_priv)
+        self.assertIn('silvio.luis.morais@gmail.com', texto_priv)
+        self.assertIn('Art. 18', texto_priv)
+
+        # 2. Página de Termos
+        res_termos = self.client.get('/termos')
+        self.assertEqual(res_termos.status_code, 200)
+        texto_termos = res_termos.get_data(as_text=True)
+        self.assertIn('Termos de Uso', texto_termos)
+        self.assertIn('Jogo Responsável', texto_termos)
+        self.assertIn('18 anos', texto_termos)
+        self.assertIn('R$ 5,00', texto_termos)
+
+    def test_17_lgpd_cadastro_consentimento(self):
+        """Testa validação de consentimento obrigatório LGPD no formulário de cadastro"""
+        import uuid
+        email_teste_sem_lgpd = f"sem_lgpd_{uuid.uuid4().hex[:6]}@teste.com"
+        email_teste_com_lgpd = f"com_lgpd_{uuid.uuid4().hex[:6]}@teste.com"
+
+        # 1. Tentar cadastro sem marcar o checkbox de termos LGPD (deve falhar)
+        res_falha = self.client.post('/cadastro', data={
+            'nome': 'Apostador Sem Consentimento',
+            'email': email_teste_sem_lgpd,
+            'password': 'senha1234teste',
+            'confirm_password': 'senha1234teste'
+            # 'termos_lgpd' omitido propositalmente
+        })
+        self.assertEqual(res_falha.status_code, 200)
+        texto_falha = res_falha.get_data(as_text=True)
+        self.assertIn('Você deve concordar com os Termos de Uso e Política de Privacidade (LGPD)', texto_falha)
+
+        # 2. Cadastro com checkbox LGPD marcado (deve suceder)
+        res_sucesso = self.client.post('/cadastro', data={
+            'nome': 'Apostador Com Consentimento',
+            'email': email_teste_com_lgpd,
+            'password': 'senha1234teste',
+            'confirm_password': 'senha1234teste',
+            'termos_lgpd': 'on'
+        }, follow_redirects=True)
+        self.assertEqual(res_sucesso.status_code, 200)
+        user_db = database.get_user_by_email(email_teste_com_lgpd)
+        self.assertIsNotNone(user_db)
+        self.assertIsNotNone(user_db.get('accepted_terms_at'), "accepted_terms_at deve ser gravado")
+
+    def test_18_lgpd_portabilidade_e_exclusao(self):
+        """Testa endpoints de Direitos do Titular LGPD: Exportação (Art. 18, V) e Eliminação (Art. 18, VI)"""
+        import uuid
+        email_titular = f"titular_lgpd_{uuid.uuid4().hex[:6]}@teste.com"
+        user = database.create_user(email_titular, 'senha1234', 'Titular de Teste LGPD', accepted_terms=True)
+        user_id = user['id']
+
+        # Salvar aposta simulada
+        database.salvar_aposta('mega_sena', 'manual', [[5, 10, 15, 20, 25, 30]], 6, user_id=user_id, titulo='Aposta do Titular')
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # 1. Portabilidade de dados (Art. 18, V)
+        res_exp = self.client.get('/api/usuario/exportar-dados')
+        self.assertEqual(res_exp.status_code, 200)
+        data_exp = res_exp.get_json()
+        self.assertIn('Relatório Oficial de Portabilidade', data_exp['lgpd_declaracao'])
+        self.assertEqual(data_exp['titular']['email'], email_titular)
+        self.assertNotIn('password_hash', data_exp['titular'], "Hashes confidenciais não devem vazar na portabilidade")
+        self.assertEqual(data_exp['total_apostas_registradas'], 1)
+
+        # 2. Eliminação dos dados / Esquecimento (Art. 18, VI)
+        res_del = self.client.post('/api/usuario/excluir-conta')
+        self.assertEqual(res_del.status_code, 200)
+        self.assertTrue(res_del.get_json()['sucesso'])
+
+        # Verificar se o usuário e suas apostas foram completamente eliminados do banco
+        user_apos_exclusao = database.get_user_by_id(user_id)
+        self.assertIsNone(user_apos_exclusao)
+        apostas_apos = database.listar_apostas(user_id=user_id)
+        self.assertEqual(len(apostas_apos), 0)
+
+    def test_19_preco_unico_analise_avulsa(self):
+        """Testa garantia de Preço Único de R$ 5,00 para qualquer análise avulsa"""
+        import uuid
+        email_pagador = f"pagador_{uuid.uuid4().hex[:6]}@teste.com"
+        user = database.create_user(email_pagador, 'senha1234', 'Pagador Teste')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user['id']
+
+        # Mesmo solicitando outro valor, o backend deve padronizar rigorosamente para R$ 5,00
+        res_pix = self.client.post('/api/checkout/pix',
+            data=json.dumps({'tipo': 'avulso', 'valor': 2.50, 'loteria_type': 'quina'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_pix.status_code, 200)
+        data_pix = res_pix.get_json()
+        self.assertEqual(data_pix['valor'], 5.00, "Preço único de análise avulsa deve ser estritamente R$ 5,00")
 
 
 if __name__ == '__main__':

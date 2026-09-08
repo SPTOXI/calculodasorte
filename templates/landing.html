@@ -728,30 +728,69 @@
                 <div>
                     <h3 class="pricing-title">Análise Avulsa</h3>
                     <div class="pricing-subtitle">Pague apenas quando for registrar seus jogos</div>
-                    <div class="pricing-price">R$ 3,00 <span>a R$ 5,00 / análise</span></div>
+                    <div class="pricing-price">R$ 5,00 <span>/ análise (Preço Único)</span></div>
                     <ul class="pricing-features">
-                        <li>✅ <strong>Valor correspondente à aposta oficial da loteria</strong></li>
-                        <li>✅ Mega-Sena: R$ 5,00 por análise</li>
-                        <li>✅ Lotofácil: R$ 3,00 por análise</li>
-                        <li>✅ Quina: R$ 2,50 por análise</li>
-                        <li>✅ Pagamento instantâneo via PIX</li>
-                        <li>✅ Geração de jogos para a rodada escolhida</li>
+                        <li>✅ <strong>Preço Único de R$ 5,00 para Qualquer Loteria</strong></li>
+                        <li>✅ Válido para Mega-Sena, Lotofácil, Quina e mais</li>
+                        <li>✅ Liberação Imediata via PIX InfinitePay (D+0)</li>
+                        <li>✅ Geração de palpites harmônicos e fechamentos</li>
+                        <li>✅ Parecer estatístico do Agente IA</li>
+                        <li>✅ Sem mensalidade ou taxas ocultas</li>
                     </ul>
                 </div>
-                <a href="/cadastro?plano=avulso" class="btn-secondary" style="text-align: center;">Comprar Análise Avulsa</a>
+                <a href="/cadastro?plano=avulso" class="btn-secondary" style="text-align: center;">Comprar Análise Avulsa (R$ 5,00)</a>
             </div>
         </div>
     </section>
 
     <!-- Rodapé -->
     <footer class="footer">
+        <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 0.9rem;">
+            <a href="/termos" style="color: #94a3b8; text-decoration: none; font-weight: 600;">Termos de Uso</a>
+            <span style="color: #475569;">•</span>
+            <a href="/privacidade" style="color: #94a3b8; text-decoration: none; font-weight: 600;">Política de Privacidade (LGPD)</a>
+            <span style="color: #475569;">•</span>
+            <a href="mailto:silvio.luis.morais@gmail.com" style="color: #94a3b8; text-decoration: none; font-weight: 600;">Encarregado LGPD (DPO)</a>
+        </div>
         <p class="footer-disclaimer">
             <strong>Aviso de Responsabilidade e Transparência:</strong> A Calculadora da Sorte é uma plataforma de pesquisa e análise probabilística baseada em modelos matemáticos e estatísticos (Modelo Canônico MCSCE 3.0 e inteligência artificial). Loterias são jogos de prognósticos estocásticos e dependem de sorteio oficial realizado pela Caixa Econômica Federal. Nossos cálculos otimizam combinações estatísticas, mas não garantem prêmios fixos. Jogue com responsabilidade. Proibido para menores de 18 anos.
         </p>
         <p class="footer-copy">
-            © 2026 Calculadora da Sorte — Todos os direitos reservados.
+            © 2026 Calculadora da Sorte — Todos os direitos reservados. Em conformidade com a LGPD (Lei nº 13.709/2018).
         </p>
     </footer>
+
+    <!-- Banner de Consentimento de Cookies LGPD -->
+    <div id="lgpd-cookie-banner" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 900px; margin: 0 auto; background: #1e293b; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 14px; padding: 20px 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); z-index: 9999; backdrop-filter: blur(10px);">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 280px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+                🍪 <strong>Privacidade e Cookies (LGPD):</strong> Utilizamos cookies essenciais para manter sua sessão segura e aprimorar sua experiência. Ao continuar navegando, você concorda com nossos <a href="/termos" target="_blank" style="color: var(--primary-light); text-decoration: underline;">Termos de Uso</a> e nossa <a href="/privacidade" target="_blank" style="color: var(--primary-light); text-decoration: underline;">Política de Privacidade</a>.
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/privacidade" target="_blank" style="color: #94a3b8; font-size: 0.85rem; text-decoration: none; padding: 8px 14px;">Saiba Mais</a>
+                <button onclick="aceitarCookiesLGPD()" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);">
+                    Concordar e Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gestão de Consentimento LGPD com persistência local
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!localStorage.getItem('lgpd_cookie_consent_v1')) {
+                document.getElementById('lgpd-cookie-banner').style.display = 'block';
+            }
+        });
+
+        function aceitarCookiesLGPD() {
+            localStorage.setItem('lgpd_cookie_consent_v1', 'accepted');
+            const banner = document.getElementById('lgpd-cookie-banner');
+            banner.style.opacity = '0';
+            banner.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => { banner.style.display = 'none'; }, 300);
+        }
+    </script>
 
 </body>
 </html>
