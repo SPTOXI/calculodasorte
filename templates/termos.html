@@ -48,6 +48,26 @@
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 12px;
+        }
+
+        .nav-brand-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 1.05rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .nav-brand-pill .brand-highlight {
+            color: #34d399;
         }
 
         .btn-back {
@@ -150,6 +170,21 @@
                 padding: 24px 16px;
                 border-radius: 12px;
             }
+            .top-nav {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }
+            .btn-back {
+                font-size: 0.85rem;
+            }
+            .nav-brand-pill {
+                font-size: 0.88rem;
+                padding: 5px 10px;
+            }
             h1 {
                 font-size: 1.6rem;
                 line-height: 1.25;
@@ -161,8 +196,11 @@
 
     <div class="container">
         <div class="top-nav">
-            <a href="/" class="btn-back">← Voltar para a Página Inicial</a>
-            <div style="font-weight: 700; color: var(--primary-light);">🎲 Cálculo da Sorte</div>
+            <a href="/" class="btn-back">← Voltar ao Início</a>
+            <div class="nav-brand-pill">
+                <span>🎲</span>
+                <span>Cálculo da <span class="brand-highlight">Sorte</span></span>
+            </div>
         </div>
 
         <div class="header-title">

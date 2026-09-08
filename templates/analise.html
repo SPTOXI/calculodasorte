@@ -1173,6 +1173,21 @@
             }
 
             /* Chat Flutuante IA - Mobile Bottom Sheet Drawer */
+            header {
+                margin-bottom: 16px;
+            }
+
+            header h1 {
+                font-size: 1.65rem;
+                margin-bottom: 4px;
+            }
+
+            header p {
+                font-size: 0.82rem;
+                padding: 0 10px;
+                line-height: 1.35;
+            }
+
             #ai-chat-floating-btn {
                 bottom: 16px !important;
                 right: 16px !important;
@@ -1222,8 +1237,11 @@
     <div class="container">
         <!-- Barra de Navegação e Status do Usuário -->
         <div class="nav-top-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <a href="/dashboard" class="btn-voltar">← Escolher Outra Loteria</a>
+                <a href="/dashboard" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 800; color: white; font-size: 0.95rem; background: rgba(0,0,0,0.25); padding: 7px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); white-space: nowrap; flex-shrink: 0;">
+                    <span>🎲</span> <span>Cálculo da <strong style="color: #34d399;">Sorte</strong></span>
+                </a>
                 {% if current_user %}
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #cbd5e1;">
                     <span>👤 <strong>{{ current_user.name or current_user.email }}</strong></span>
@@ -1260,6 +1278,9 @@
         </div>
         
         <header>
+            <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #a7f3d0; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 4px 12px; border-radius: 20px; margin-bottom: 8px;">
+                <span>🎲</span> Cálculo da Sorte Oficial
+            </div>
             <h1>{{ config.nome }}</h1>
             <p>Modelo Canônico 3.0 + MCP-MD 1.0 | Sincronizado com Resultados Oficiais</p>
         </header>

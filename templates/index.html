@@ -23,20 +23,55 @@
             margin: 0 auto;
         }
 
-        header {
+        header.app-main-header {
             text-align: center;
             color: white;
-            margin-bottom: 40px;
+            margin: 20px 0 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .app-header-brand {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            white-space: nowrap;
         }
 
-        header p {
-            font-size: 1.1em;
+        .app-header-icon {
+            font-size: 2.3rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .app-header-title {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1.15;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .app-header-title .app-title-highlight {
+            color: #34d399;
+            background: linear-gradient(135deg, #34d399 0%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-header-subtitle {
+            font-size: 1.05rem;
             opacity: 0.9;
+            margin: 0;
+            color: #e2e8f0;
         }
 
         .loterias-grid {
@@ -192,6 +227,37 @@
                 margin-top: 20px;
                 font-size: 0.88rem;
             }
+
+            header.app-main-header {
+                margin: 15px 0 24px;
+            }
+
+            .app-header-brand {
+                gap: 8px;
+            }
+
+            .app-header-icon {
+                font-size: 1.6rem;
+            }
+
+            .app-header-title {
+                font-size: 1.65rem;
+            }
+
+            .app-header-subtitle {
+                font-size: 0.84rem;
+                padding: 0 10px;
+                line-height: 1.35;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-header-title {
+                font-size: 1.45rem;
+            }
+            .app-header-icon {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
@@ -224,9 +290,12 @@
                 </a>
             </div>
         </div>
-        <header>
-            <h1>🎲 Cálculo da Sorte</h1>
-            <p>Modelo Canônico 3.0 + MCP-MD 1.0 | AGENTE LLN ICT FR</p>
+        <header class="app-main-header">
+            <div class="app-header-brand">
+                <span class="app-header-icon">🎲</span>
+                <h1 class="app-header-title">Cálculo da <span class="app-title-highlight">Sorte</span></h1>
+            </div>
+            <p class="app-header-subtitle">Modelo Canônico 3.0 + MCP-MD 1.0 &bull; Análise Estatística Oficial Caixa</p>
         </header>
 
         <div class="modelo-info">

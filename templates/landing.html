@@ -46,30 +46,44 @@
         }
 
         .logo {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: white;
             text-decoration: none;
             letter-spacing: -0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .logo span {
+        .logo-text {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 5px;
+            line-height: 1;
+        }
+
+        .logo-text .logo-highlight {
             color: var(--primary-light);
+            font-weight: 800;
         }
 
         .logo-icon {
             width: 40px;
             height: 40px;
+            min-width: 40px;
+            min-height: 40px;
             background: linear-gradient(135deg, var(--primary), var(--gold));
             border-radius: 10px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 1.3rem;
+            line-height: 1;
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+            flex-shrink: 0;
         }
 
         .nav-links {
@@ -501,6 +515,15 @@
             }
             .logo {
                 font-size: 1.15rem;
+                gap: 10px;
+            }
+            .logo-icon {
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+                min-height: 34px;
+                font-size: 1.1rem;
+                border-radius: 8px;
             }
             .nav-actions {
                 gap: 8px;
@@ -509,6 +532,7 @@
             .nav-actions .btn-primary {
                 padding: 7px 12px;
                 font-size: 0.82rem;
+                white-space: nowrap;
             }
             .hero {
                 padding: 40px 16px;
@@ -519,6 +543,10 @@
             }
             .hero p {
                 font-size: 0.95rem;
+            }
+            .section-header h2 {
+                font-size: 1.55rem;
+                line-height: 1.25;
             }
             .hero-cta-group {
                 flex-direction: column;
@@ -564,10 +592,22 @@
 
         @media (max-width: 480px) {
             .navbar {
-                padding: 10px 12px;
+                padding: 10px 14px;
             }
             .logo {
                 font-size: 1.05rem;
+                gap: 8px;
+            }
+            .logo-icon {
+                width: 30px;
+                height: 30px;
+                min-width: 30px;
+                min-height: 30px;
+                font-size: 0.95rem;
+                border-radius: 7px;
+            }
+            .nav-actions .btn-primary {
+                display: none;
             }
             .hero h1 {
                 font-size: 1.6rem;
@@ -575,6 +615,9 @@
             .badge-pill {
                 font-size: 0.75rem;
                 padding: 6px 12px;
+            }
+            .section-header h2 {
+                font-size: 1.3rem;
             }
         }
     </style>
@@ -585,7 +628,7 @@
     <nav class="navbar">
         <a href="/" class="logo">
             <div class="logo-icon">🎲</div>
-            Cálculo da <span>Sorte</span>
+            <span class="logo-text">Cálculo da <span class="logo-highlight">Sorte</span></span>
         </a>
         <div class="nav-links">
             <a href="#loterias">Loterias</a>
