@@ -1282,7 +1282,7 @@
                 <span>🎲</span> Cálculo da Sorte Oficial
             </div>
             <h1>{{ config.nome }}</h1>
-            <p>Modelo Canônico 3.0 + MCP-MD 1.0 | Sincronizado com Resultados Oficiais</p>
+            <p>Painel de Análise e Palpites • Sincronizado com Resultados Oficiais da Caixa</p>
         </header>
 
         <!-- Banner Informativo de Regras e Limites Oficiais da Loteria -->
@@ -1334,9 +1334,8 @@
             <button class="tab-btn" onclick="showTab('meus-numeros')">✍️ Meus Números (Manual)</button>
             <button class="tab-btn" onclick="showTab('jogos')">🎲 Gerador de Jogos</button>
             <button class="tab-btn" onclick="showTab('salvos')">📋 Meus Jogos Salvos <span id="badge-total-salvos" style="display:none; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 6px; font-weight: 800;">0</span></button>
-            <button class="tab-btn" onclick="showTab('analise')">🔍 Análise Canônica</button>
-            <button class="tab-btn" onclick="showTab('numeros')">📈 Tabela de Números</button>
-            <button class="tab-btn" onclick="showTab('validacao')">✓ Validação Estatística</button>
+            <button class="tab-btn" onclick="showTab('analise')">📊 Estatísticas Gerais</button>
+            <button class="tab-btn" onclick="showTab('numeros')">📈 Frequência das Dezenas</button>
         </div>
 
         <!-- Tab 1: Resultados Oficiais da Caixa (Somente Informativo) -->
@@ -1365,7 +1364,7 @@
             <div class="info-box-instrucoes" style="border-left-color: #059669; background: #ecfdf5;">
                 <h4 style="color: #065f46;">ℹ️ Informações sobre os Resultados Oficiais:</h4>
                 <p style="margin: 0; font-size: 0.9rem; color: #047857; line-height: 1.5;">
-                    Estes números são <strong>estritamente informativos para sua conferência e consulta</strong>. Eles são extraídos diretamente da base de dados oficial da Caixa Econômica Federal e alimentam automaticamente o motor estatístico (Modelo Canônico 3.0 + MCP-MD) em segundo plano.
+                    Estes números são <strong>estritamente informativos para sua conferência e consulta</strong>. Eles são extraídos diretamente da base de dados oficial da Caixa Econômica Federal e sincronizados em tempo real com nossos servidores.
                 </p>
             </div>
 
@@ -1390,7 +1389,7 @@
                 <ul>
                     <li><strong>Área de trabalho pessoal:</strong> Digite ou cole suas combinações abaixo (um jogo por linha, ex: <code>06 11 25 45 48 58</code>).</li>
                     <li><strong>Regras da {{ config.nome }}:</strong> De <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} dezenas</strong> por linha, com números entre <strong>1 e {{ config.universo }}</strong>.</li>
-                    <li><strong>Análise Estatística:</strong> Ao clicar em <strong>"Analisar Meus Números"</strong>, o sistema calculará o ICT, estabilidade e maturidade estatística exclusiva das suas sequências.</li>
+                    <li><strong>Análise Personalizada:</strong> Ao clicar em <strong>"Analisar Meus Números"</strong>, o sistema processará o histórico de saídas, distribuição e frequência das suas dezenas selecionadas.</li>
                 </ul>
             </div>
 
@@ -1437,7 +1436,7 @@ Exemplo para {{ config.nome }}:
                         <span style="font-size: 1.5rem;">🔮</span>
                         <strong>Modo 1: Baseado nos Últimos Sorteios da Caixa</strong>
                     </div>
-                    <p>O Modelo Canônico analisa a estabilidade, convergência (ICT) e Score MCP dos sorteios oficiais para sugerir palpites ideais.</p>
+                    <p>O gerador inteligente cruza o histórico oficial de sorteios da Caixa para criar combinações balanceadas e otimizadas para seus jogos.</p>
                 </div>
 
                 <div class="modo-card" id="modo-card-manual" onclick="alternarModoGeracao('manual_pool')">
@@ -1633,58 +1632,22 @@ Exemplo para {{ config.nome }}:
             </div>
         </div>
 
-        <!-- Tab 3: Análise Canônica Completa -->
+        <!-- Tab 3: Estatísticas Gerais -->
         <div id="analise" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
                 <div>
-                    <h2>Análise Estatística Completa — Modelo Canônico 3.0</h2>
+                    <h2>Estatísticas Históricas Oficiais</h2>
                     <p style="color: #64748b; font-size: 0.95rem; margin-top: 4px;">
-                        Métricas estocásticas processadas através do histórico oficial da Caixa Econômica Federal.
+                        Panorama consolidado com base em todos os concursos realizados pela Caixa Econômica Federal.
                     </p>
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn-action" onclick="realizarAnalise()">🔍 Atualizar Análise</button>
-                    <button class="btn-action" onclick="toggleGuiaMatematico()" style="background: #475569;">
-                        📖 Guia das Métricas
-                    </button>
-                </div>
-            </div>
-
-            <!-- Guia Expansível das Métricas e Modelos Matemáticos -->
-            <div id="guia-metricas-box" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="color: #1e293b; margin-bottom: 12px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                    <span>📐</span> Entenda as Métricas do Modelo Canônico 3.0 (MCSCE + MCP-MD)
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 0.9rem; color: #475569;">
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⏱️ ICT (Índice de Convergência Temporal)</strong>
-                        <span>Mede a regularidade do número ao longo do tempo. Valores baixos (≤ 0.25) indicam alta estabilidade. Valores altos (> 0.75) indicam comportamento volátil.</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">📊 FR (Fator de Recorrência)</strong>
-                        <span>Razão entre a frequência real de saídas e a probabilidade teórica esperada (μ = k/N). FR próximo de 1.0 representa perfeito equilíbrio estatístico.</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⚖️ HI (Desvio de Harmonia)</strong>
-                        <span>Calculado como |FR - 1|. Quanto menor o HI, mais harmônica é a dezena em relação ao ciclo assintótico da Lei dos Grandes Números.</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⚡ Score MCP-MD 1.0</strong>
-                        <span>Pontuação microdinâmica que combina aceleração recente em janelas curtas (W1=100) com persistência global ponderada pelo fator adaptativo γ.</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">🌐 Entropia de Shannon</strong>
-                        <span>Mede a complexidade informacional do sistema de sorteios. Uma entropia balanceada indica distribuição dispersa sem vícios mecânicos no globo.</span>
-                    </div>
-                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">🏷️ Classes de Estabilidade (A, B, C, D)</strong>
-                        <span><strong>Classe A:</strong> Mais estáveis (ICT ≤ 0.25); <strong>Classe B:</strong> Sustentação (0.25 a 0.50); <strong>Classe C:</strong> Intermediária (0.50 a 0.75); <strong>Classe D:</strong> Menor estabilidade (> 0.75).</span>
-                    </div>
+                    <button class="btn-action" onclick="realizarAnalise()">🔍 Atualizar Estatísticas</button>
                 </div>
             </div>
             
             <div id="analise-loading" class="loading" style="display: none;">
-                Processando análise estatística... Aguarde.
+                Processando estatísticas históricas... Aguarde.
             </div>
 
             <div id="analise-resultado" style="display: none;">
@@ -1695,148 +1658,74 @@ Exemplo para {{ config.nome }}:
                         <div class="label">Total catalogado</div>
                     </div>
                     <div class="stat-card">
-                        <h4>ICT Médio</h4>
-                        <div class="value" id="stat-ict">-</div>
-                        <div class="label">Convergência Temporal</div>
+                        <h4>Dezenas no Universo</h4>
+                        <div class="value" id="stat-universo">{{ config.universo }}</div>
+                        <div class="label">Total de números possíveis</div>
                     </div>
                     <div class="stat-card">
-                        <h4>Entropia</h4>
-                        <div class="value" id="stat-entropia">-</div>
-                        <div class="label">Camada Informacional</div>
+                        <h4>Sorteados por Concurso</h4>
+                        <div class="value" id="stat-sorteados">{{ config.sorteados }}</div>
+                        <div class="label">Dezenas por sorteio</div>
                     </div>
                     <div class="stat-card">
-                        <h4>Compressibilidade</h4>
-                        <div class="value" id="stat-compress">-</div>
-                        <div class="label">Regularidade Estrutural</div>
+                        <h4>Base de Dados</h4>
+                        <div class="value" style="color: #059669; font-size: 1.4rem;">Oficial Caixa</div>
+                        <div class="label">100% Sincronizada</div>
                     </div>
                 </div>
 
                 <div class="resultado-section">
-                    <h3>Distribuição por Classes (ICT)</h3>
+                    <h3>Distribuição de Frequência das Dezenas</h3>
                     <div class="stats-grid">
                         <div class="stat-card classe-A">
-                            <h4>Classe A</h4>
+                            <h4>Alta Frequência</h4>
                             <div class="value" id="classe-a">-</div>
-                            <div class="label">Mais estáveis (ICT ≤ 0.25)</div>
+                            <div class="label">Dezenas mais frequentes</div>
                         </div>
                         <div class="stat-card classe-B">
-                            <h4>Classe B</h4>
+                            <h4>Boa Frequência</h4>
                             <div class="value" id="classe-b">-</div>
-                            <div class="label">Intermediária (0.25 a 0.50)</div>
+                            <div class="label">Frequência acima da média</div>
                         </div>
                         <div class="stat-card classe-C">
-                            <h4>Classe C</h4>
+                            <h4>Frequência Regular</h4>
                             <div class="value" id="classe-c">-</div>
-                            <div class="label">Intermediária (0.50 a 0.75)</div>
+                            <div class="label">Frequência equilibrada</div>
                         </div>
                         <div class="stat-card classe-D">
-                            <h4>Classe D</h4>
+                            <h4>Menor Frequência</h4>
                             <div class="value" id="classe-d">-</div>
-                            <div class="label">Menos estáveis (ICT > 0.75)</div>
+                            <div class="label">Dezenas em atraso / menor saída</div>
                         </div>
                     </div>
-                </div>
-
-                <div class="resultado-section">
-                    <h3>Maturidade Estatística</h3>
-                    <div id="maturidade-stats"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Tab 4: Números Individuais -->
+        <!-- Tab 4: Frequência Individual das Dezenas -->
         <div id="numeros" class="tab-content">
-            <h2>Análise Individual dos Números</h2>
-            <input type="text" id="filtro-numero" placeholder="Filtrar por número..." 
+            <h2>Frequência Individual das Dezenas</h2>
+            <p style="color: #64748b; font-size: 0.95rem; margin-top: 4px; margin-bottom: 15px;">
+                Histórico completo de saídas e percentual de ocorrência de cada número nos sorteios oficiais.
+            </p>
+            <input type="text" id="filtro-numero" placeholder="Filtrar por dezena..." 
                    onkeyup="filtrarTabela()" style="padding: 10px; width: 100%; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px;">
             
             <div style="overflow-x: auto;">
                 <table id="tabela-numeros">
                     <thead>
                         <tr>
-                            <th>Número</th>
-                            <th>Contagem</th>
-                            <th>Frequência</th>
-                            <th>FR</th>
-                            <th>HI</th>
-                            <th>ICT</th>
-                            <th>Classe</th>
-                            <th>Maturidade</th>
-                            <th>Score MCP</th>
+                            <th>Dezena</th>
+                            <th>Total de Saídas</th>
+                            <th>Frequência Real</th>
+                            <th>Nível de Ocorrência</th>
+                            <th>Status Histórico</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-numeros-body">
-                        <tr><td colspan="9" style="text-align: center; color: #64748b; padding: 25px;">Carregando dados dos números...</td></tr>
+                        <tr><td colspan="5" style="text-align: center; color: #64748b; padding: 25px;">Carregando dados das dezenas...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Tab 5: Validação (Camada 7) -->
-        <div id="validacao" class="tab-content">
-            <div style="margin-bottom: 18px;">
-                <h2>Validação Científica — Camada 7 (Falsificabilidade Empírica)</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-top: 4px;">
-                    Protocolo estatístico rigoroso que submete o Modelo Canônico a três baterias de testes empíricos para atestar que os resultados superam o acaso.
-                </p>
-            </div>
-
-            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 14px 18px; margin-bottom: 22px; font-size: 0.9rem; color: #166534; line-height: 1.5;">
-                💡 <strong>Critério Científico de Aprovação:</strong> O sistema apenas classifica o modelo como <em>"MCP-MD Válido"</em> quando o Teste de Monte Carlo obtém percentil <strong>p &lt; 0.01</strong> (probabilidade de casualidade pura inferior a 1%), o Fator de Bayes atinge <strong>BF &gt; 10</strong> (evidência estatística forte) e o Backtest demonstra performance relativa <strong>&gt; 1.20</strong> contra a média esperada.
-            </div>
-            
-            <div id="validacao-resultado" class="resultado-section" style="display: none;">
-                <h3>Teste de Monte Carlo (10.000 iterações)</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Simulações</h4>
-                        <div class="value" id="mc-simulacoes">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Percentil</h4>
-                        <div class="value" id="mc-percentil">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Significativo</h4>
-                        <div class="value" id="mc-significativo">-</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 30px;">Análise Bayesiana</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Chi-Quadrado</h4>
-                        <div class="value" id="bayes-chi2">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Bayes Factor</h4>
-                        <div class="value" id="bayes-factor">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Evidência Forte</h4>
-                        <div class="value" id="bayes-evidencia">-</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-top: 30px;">Backtest</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Taxa de Acerto</h4>
-                        <div class="value" id="bt-acerto">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Taxa Esperada</h4>
-                        <div class="value" id="bt-esperada">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Performance Relativa</h4>
-                        <div class="value" id="bt-performance">-</div>
-                    </div>
-                </div>
-
-                <div class="alert alert-success" style="margin-top: 20px;">
-                    <strong>Conclusão da Validação:</strong> <span id="validacao-conclusao">-</span>
-                </div>
             </div>
         </div>
     </div>
@@ -2410,13 +2299,13 @@ Exemplo para {{ config.nome }}:
             container.style.display = 'block';
             lista.innerHTML = '';
 
-            const rotuloModo = data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Modelo Canônico Oficial Caixa]';
+            const rotuloModo = data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Gerador Otimizado Oficial Caixa]';
 
             document.getElementById('jogos-titulo-resultado').textContent = 
                 `${data.quantidade_jogos} Palpites Gerados (${data.dezenas_por_jogo} dezenas cada)${rotuloModo}`;
 
             document.getElementById('jogos-metricas-resumo').textContent = 
-                `ICT Médio: ${data.metricas_gerais.ict_medio} | Entropia: ${data.metricas_gerais.entropia}`;
+                'Combinações com distribuição estatística balanceada e fechamento combinatório.';
 
             data.jogos.forEach((jogo, idx) => {
                 const card = document.createElement('div');
@@ -2522,71 +2411,39 @@ Exemplo para {{ config.nome }}:
             document.getElementById('analise-resultado').style.display = 'block';
             
             document.getElementById('stat-concursos').textContent = result.total_concursos;
-            document.getElementById('stat-ict').textContent = result.estatisticas_gerais.ict_medio.toFixed(4);
-            document.getElementById('stat-entropia').textContent = result.camada_informacional.entropia.toFixed(4);
-            document.getElementById('stat-compress').textContent = result.camada_informacional.compressibilidade.toFixed(4);
             
             document.getElementById('classe-a').textContent = result.distribuicao_classes.A;
             document.getElementById('classe-b').textContent = result.distribuicao_classes.B;
             document.getElementById('classe-c').textContent = result.distribuicao_classes.C;
             document.getElementById('classe-d').textContent = result.distribuicao_classes.D;
             
-            let maturidadeHtml = '<div class="stats-grid">';
-            for (const [maturidade, count] of Object.entries(result.distribuicao_maturidade)) {
-                maturidadeHtml += `
-                    <div class="stat-card">
-                        <div class="value">${count}</div>
-                        <div class="label">${maturidade}</div>
-                    </div>
-                `;
-            }
-            maturidadeHtml += '</div>';
-            document.getElementById('maturidade-stats').innerHTML = maturidadeHtml;
-            
-            // Tabela
+            // Tabela de Frequência das Dezenas
             const tbody = document.getElementById('tabela-numeros-body');
             tbody.innerHTML = '';
             
             result.analises_individuais.forEach(a => {
                 const tr = document.createElement('tr');
+                const freqPct = (a.frequencia * 100).toFixed(2) + '%';
+                let classeBadge = '';
+                if (a.classe === 'A') {
+                    classeBadge = '<span style="background: rgba(16,185,129,0.15); color: #059669; border: 1px solid #10b981; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Alta Frequência</span>';
+                } else if (a.classe === 'B') {
+                    classeBadge = '<span style="background: rgba(59,130,246,0.15); color: #2563eb; border: 1px solid #3b82f6; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Boa Frequência</span>';
+                } else if (a.classe === 'C') {
+                    classeBadge = '<span style="background: rgba(245,158,11,0.15); color: #d97706; border: 1px solid #f59e0b; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Frequência Média</span>';
+                } else {
+                    classeBadge = '<span style="background: rgba(100,116,139,0.15); color: #475569; border: 1px solid #94a3b8; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Menor Frequência</span>';
+                }
+                const maturidadeLegivel = (a.maturidade || 'Equilibrado').replace('_', ' ');
                 tr.innerHTML = `
-                    <td><strong>${a.numero}</strong></td>
-                    <td>${a.contagem}</td>
-                    <td>${a.frequencia}</td>
-                    <td>${a.fr}</td>
-                    <td>${a.hi}</td>
-                    <td>${a.ict}</td>
-                    <td><span class="classe-${a.classe}" style="padding: 4px 8px; border-radius: 4px; font-weight: bold;">${a.classe}</span></td>
-                    <td>${a.maturidade}</td>
-                    <td>${a.score_mcp}</td>
+                    <td><span class="bola-numero" style="display: inline-flex; width: 32px; height: 32px; font-size: 0.95rem; font-weight: 800;">${String(a.numero).padStart(2, '0')}</span></td>
+                    <td><strong style="color: #0f172a; font-size: 1.05rem;">${a.contagem}</strong> saídas</td>
+                    <td><span style="font-weight: 600; color: #059669;">${freqPct}</span></td>
+                    <td>${classeBadge}</td>
+                    <td><span style="text-transform: capitalize; color: #475569; font-size: 0.88rem;">${maturidadeLegivel}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
-            
-            // Validação Camada 7
-            if (result.validacao_camada7) {
-                const v = result.validacao_camada7;
-                document.getElementById('mc-simulacoes').textContent = v.monte_carlo.simulacoes;
-                document.getElementById('mc-percentil').textContent = v.monte_carlo.percentil.toFixed(4);
-                document.getElementById('mc-significativo').textContent = v.monte_carlo.significativo ? 'Sim' : 'Não';
-                
-                document.getElementById('bayes-chi2').textContent = v.bayesiana.chi_quadrado.toFixed(2);
-                document.getElementById('bayes-factor').textContent = v.bayesiana.bayes_factor.toExponential(4);
-                document.getElementById('bayes-evidencia').textContent = v.bayesiana.evidencia_forte ? 'Sim' : 'Não';
-                
-                if (v.backtest && v.backtest.taxa_acerto !== undefined) {
-                    document.getElementById('bt-acerto').textContent = (v.backtest.taxa_acerto * 100).toFixed(2) + '%';
-                    document.getElementById('bt-esperada').textContent = (v.backtest.taxa_esperada * 100).toFixed(2) + '%';
-                    document.getElementById('bt-performance').textContent = v.backtest.performance_relativa.toFixed(2) + 'x';
-                } else {
-                    document.getElementById('bt-acerto').textContent = 'N/A';
-                    document.getElementById('bt-esperada').textContent = 'N/A';
-                    document.getElementById('bt-performance').textContent = 'N/A';
-                }
-                
-                document.getElementById('validacao-conclusao').textContent = v.conclusao;
-                document.getElementById('validacao-resultado').style.display = 'block';
-            }
         }
 
         function filtrarTabela() {
@@ -3047,7 +2904,7 @@ Exemplo para {{ config.nome }}:
             <div style="font-size: 3.2rem; margin-bottom: 14px;">🔒</div>
             <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 8px;">Créditos de Análise Esgotados</h3>
             <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
-                Você utilizou seu crédito promocional. Para continuar gerando palpites baseados no <strong>Modelo Canônico 3.0</strong> e consultando o <strong>Agente IA</strong>, escolha uma opção:
+                Você utilizou seu crédito promocional. Para continuar gerando palpites otimizados e consultando o <strong>Agente IA</strong>, escolha uma opção:
             </p>
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <a href="/planos" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 20px; border-radius: 10px; font-weight: 800; font-size: 1.05rem; text-decoration: none; box-shadow: 0 4px 14px rgba(245,158,11,0.35);">
@@ -3073,7 +2930,7 @@ Exemplo para {{ config.nome }}:
                 <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
                 <div>
                     <strong style="color: #f8fafc; font-size: 0.95rem; display: block;">Consultor Estatístico IA</strong>
-                    <span style="color: #94a3b8; font-size: 0.75rem;">{{ config.nome }} &bull; Modelo Canônico 3.0</span>
+                    <span style="color: #94a3b8; font-size: 0.75rem;">{{ config.nome }} &bull; Consultoria Estratégica</span>
                 </div>
             </div>
             <button onclick="alternarChatIA()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
@@ -3082,7 +2939,7 @@ Exemplo para {{ config.nome }}:
         <!-- Sugestões Rápidas -->
         <div style="padding: 8px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; gap: 6px; overflow-x: auto; white-space: nowrap;">
             <button onclick="enviarPerguntaChat('Qual a melhor estratégia para o próximo concurso?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Estratégia</button>
-            <button onclick="enviarPerguntaChat('Como funciona a divisão por classes A, B, C e D?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Classes ICT</button>
+            <button onclick="enviarPerguntaChat('Como montar apostas balanceadas com base na frequência histórica?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Apostas Equilibradas</button>
             <button onclick="enviarPerguntaChat('Por que evitar sequências óbvias na aposta?')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; cursor: pointer;">Evitar Vícios</button>
         </div>
 
@@ -3091,7 +2948,7 @@ Exemplo para {{ config.nome }}:
             <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; border-top-left-radius: 2px; padding: 12px; color: #e2e8f0; font-size: 0.88rem; line-height: 1.5;">
                 Olá! Sou o seu <strong>Consultor Estatístico IA</strong> para a {{ config.nome }}.
                 <br><br>
-                Posso analisar as dezenas geradas, tirar dúvidas sobre o Modelo Canônico 3.0 ou sugerir ajustes estratégicos. Em que posso ajudar?
+                Posso analisar as dezenas geradas, dar orientações sobre equilíbrio de jogos ou sugerir fechamentos inteligentes. Em que posso ajudar?
             </div>
         </div>
 

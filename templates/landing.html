@@ -361,119 +361,6 @@
             line-height: 1.6;
         }
 
-        /* Seção Modelos Matemáticos e 7 Camadas */
-        .camadas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 22px;
-            margin-bottom: 45px;
-        }
-
-        .camada-card {
-            background: var(--dark-card);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 26px 22px;
-            transition: all 0.25s ease;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .camada-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(52, 211, 153, 0.45);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
-        }
-
-        .camada-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .camada-badge {
-            background: rgba(5, 150, 105, 0.2);
-            color: var(--primary-light);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            font-size: 0.75rem;
-            font-weight: 800;
-            padding: 3px 10px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .camada-card h3 {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 10px;
-            line-height: 1.3;
-        }
-
-        .formula-chip {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 7px 12px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 0.84rem;
-            color: #38bdf8;
-            margin-bottom: 12px;
-            display: inline-block;
-        }
-
-        .camada-card p {
-            color: var(--text-muted);
-            font-size: 0.92rem;
-            line-height: 1.55;
-            margin-bottom: 12px;
-        }
-
-        .camada-beneficio {
-            margin-top: auto;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 0.84rem;
-            color: #a7f3d0;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Cards de Transparência Técnica */
-        .transparencia-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 22px;
-            margin-top: 25px;
-        }
-
-        .transparencia-card {
-            background: linear-gradient(145deg, #13272f 0%, var(--dark-card) 100%);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 16px;
-            padding: 28px 24px;
-        }
-
-        .transparencia-card h3 {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .transparencia-card p {
-            color: #cbd5e1;
-            font-size: 0.92rem;
-            line-height: 1.6;
-        }
-
         /* Seção FAQ */
         .faq-grid {
             display: grid;
@@ -711,8 +598,6 @@
             .loterias-grid,
             .features-grid,
             .pricing-grid,
-            .camadas-grid,
-            .transparencia-grid,
             .faq-grid {
                 grid-template-columns: 1fr;
                 gap: 18px;
@@ -786,7 +671,6 @@
         </a>
         <div class="nav-links">
             <a href="#loterias">Loterias</a>
-            <a href="#modelo-matematico">Modelos Matemáticos</a>
             <a href="#diferenciais">Como Funciona</a>
             <a href="#planos">Planos & Preços</a>
             <a href="#faq">Dúvidas Frequentes</a>
@@ -800,14 +684,14 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="badge-pill">
-            <span>✨ Tecnologia Canônica 3.0 + Agente IA Oficial</span>
+            <span>✨ Inteligência para Loterias + Agente IA Oficial</span>
         </div>
         <h1>
             Pare de Apostar no Escuro.<br>
-            Transforme <span class="gradient-text">Sorte em Ciência Estatística</span>.
+            Transforme seus Jogos com <span class="gradient-text">Inteligência Estruturada</span>.
         </h1>
         <p>
-            O primeiro software do Brasil que combina o <strong>Modelo Canônico MCSCE 3.0</strong>, microdinâmica estocástica e <strong>Inteligência Artificial</strong> sincronizada aos sorteios oficiais da Caixa Econômica Federal.
+            A plataforma definitiva para quem joga nas loterias da Caixa: geração de palpites inteligentes, fechamentos práticos no volante, conferência automática e <strong>Inteligência Artificial</strong> sincronizada diariamente aos sorteios oficiais.
         </p>
 
         <div class="hero-cta-group">
@@ -829,8 +713,8 @@
                 <span>Sincronização diária com a Caixa</span>
             </div>
             <div class="metric-item">
-                <strong>7 Camadas</strong>
-                <span>Do Modelo Canônico MCSCE</span>
+                <strong>Fechamentos</strong>
+                <span>Matrizes inteligentes no volante</span>
             </div>
             <div class="metric-item">
                 <strong>100% Privado</strong>
@@ -843,7 +727,7 @@
     <section id="loterias" class="section">
         <div class="section-header">
             <h2>As 9 Loterias Oficiais da Caixa Suportadas</h2>
-            <p>Selecione a sua modalidade preferida e descubra as tendências de convergência matemática de cada sorteio.</p>
+            <p>Selecione a sua modalidade preferida para gerar palpites inteligentes e consultar os resultados oficiais de cada sorteio.</p>
         </div>
 
         <div class="loterias-grid">
@@ -951,177 +835,19 @@
         </div>
     </section>
 
-    <!-- Modelos Matemáticos Aplicados (MCSCE 3.0 em 7 Camadas) -->
-    <section id="modelo-matematico" class="section" style="background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.12) 0%, rgba(15, 23, 42, 0.9) 70%);">
-        <div class="section-header">
-            <div class="badge-pill" style="margin-bottom: 14px;">
-                <span>🔬 Ciência de Dados & Modelagem Estocástica</span>
-            </div>
-            <h2>Os Modelos Matemáticos Aplicados (MCSCE 3.0)</h2>
-            <p style="max-width: 820px; margin: 0 auto;">
-                Apostar sem base matemática é depender de pura aleatoriedade com viés desfavorável. O <strong>Cálculo da Sorte</strong> decompõe cada concurso oficial da Caixa Econômica Federal em <strong>7 camadas analíticas determinísticas e estocásticas</strong>:
-            </p>
-        </div>
-
-        <div class="camadas-grid">
-            <!-- Camada 1 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 1</span>
-                    <span style="font-size: 1.4rem;">📊</span>
-                </div>
-                <h3>Convergência Temporal & LLN</h3>
-                <div class="formula-chip">f_i(T) = c_i / T &bull; FR_i = f_i(T) / &mu;</div>
-                <p>
-                    Fundamentada na <strong>Lei dos Grandes Números (LLN)</strong>, calcula a frequência observada de cada dezena contra a probabilidade teórica uniforme (&mu; = k/N). O <strong>Fator de Recorrência (FR)</strong> mensura se a dezena está em ciclo de retorno assintótico.
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Detecta anomalias de longo prazo e desvios estatísticos acumulados.
-                </div>
-            </div>
-
-            <!-- Camada 2 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 2</span>
-                    <span style="font-size: 1.4rem;">⏱️</span>
-                </div>
-                <h3>Estabilidade Estocástica (ICT)</h3>
-                <div class="formula-chip">ICT = min(2 &times; CV, 1.0) &bull; CV = &sigma; / &mu;</div>
-                <p>
-                    O <strong>Índice de Convergência Temporal (ICT)</strong> avalia a variância da frequência por janelas móveis temporais de concursos. Quanto mais próximo de zero for o ICT, mais estável e constante é a presença da dezena ao longo da história da Caixa.
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Filtra números com trajetória consistente contra picos erráticos transitórios.
-                </div>
-            </div>
-
-            <!-- Camada 3 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 3</span>
-                    <span style="font-size: 1.4rem;">🏷️</span>
-                </div>
-                <h3>Saturação e Classes A, B, C, D</h3>
-                <div class="formula-chip">H_i = |FR_i - 1| &bull; ISEG = 1 / (1 + H_i)</div>
-                <p>
-                    Mapeia o <strong>Desvio de Harmonia (H_i)</strong> e o <strong>Índice de Saturação Global (ISEG)</strong>, dividindo o volante em 4 classes de maturidade: <strong>Classe A</strong> (alta estabilidade, ICT &le; 0.25), <strong>Classe B</strong> (sustentação), <strong>Classe C</strong> (transição) e <strong>Classe D</strong> (ruído transitório).
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Garante o balanço canônico ideal entre dezenas consolidadas e dezenas em maturação.
-                </div>
-            </div>
-
-            <!-- Camada 4 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 4</span>
-                    <span style="font-size: 1.4rem;">⚡</span>
-                </div>
-                <h3>Microdinâmica Temporal (MCP-MD)</h3>
-                <div class="formula-chip">IMC_i = &Delta;1 + &Delta;2 &bull; &gamma; = (&sigma;_W1 / &sigma;_hist)&sup2;</div>
-                <p>
-                    Analisa janelas temporais assimétricas de curto prazo (W1 = 100) e médio prazo (W2 = 150 concursos). Calcula a aceleração ou desaceleração recente (&Delta;1, &Delta;2) ponderada pelo fator adaptativo de variância &gamma;, gerando o <strong>Score MCP-MD</strong>.
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Captura o momento e a velocidade de saída recente de cada dezena.
-                </div>
-            </div>
-
-            <!-- Camada 5 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 5</span>
-                    <span style="font-size: 1.4rem;">🌐</span>
-                </div>
-                <h3>Entropia Informacional de Shannon</h3>
-                <div class="formula-chip">H(X) = -&sum; p_i &times; log&sub2;(p_i) &bull; Comp = 1 - (H/H_max)</div>
-                <p>
-                    Aplica a <strong>Teoria da Informação de Claude Shannon</strong> para medir o grau de incerteza, complexidade e compressibilidade da distribuição dos números. Identifica se o ecossistema do sorteio está em equilíbrio térmico ou com compressão estrutural.
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Impede combinações com entropia degenerada ou aglomerações caóticas.
-                </div>
-            </div>
-
-            <!-- Camada 6 -->
-            <div class="camada-card">
-                <div class="camada-header">
-                    <span class="camada-badge">Camada 6</span>
-                    <span style="font-size: 1.4rem;">🧩</span>
-                </div>
-                <h3>Filtragem Não Linear & Fechamentos</h3>
-                <div class="formula-chip">Score = 1.5 &times; MCP + 1.0 &times; (1-ICT) + 0.8 &times; (1-H)</div>
-                <p>
-                    Poda estrita de <em>combinações mortas</em> (como 5 dezenas consecutivas, 100% pares ou dezenas restritas a um único quadrante). Utiliza matrizes de desdobramento combinatório para montar cartelas de fechamento com cobertura máxima de premiação garantida.
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Utilidade:</strong> Elimina cartelas com chance histórica desprezível e maximiza prêmios múltiplos.
-                </div>
-            </div>
-
-            <!-- Camada 7 -->
-            <div class="camada-card" style="grid-column: 1 / -1;">
-                <div class="camada-header">
-                    <span class="camada-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);">Camada 7 &bull; Validação Científica</span>
-                    <span style="font-size: 1.4rem;">🧪</span>
-                </div>
-                <h3>Falsificação Estatística & Validação Empírica</h3>
-                <div class="formula-chip">Monte Carlo (10.000 iterações, p &lt; 0.01) &bull; Análise Bayesiana (&chi;&sup2;, Bayes Factor &gt; 10) &bull; Backtest Retrospectivo</div>
-                <p>
-                    Nenhum modelo matemático tem valor sem validação empírica. A Camada 7 submete os parâmetros a três testes científicos rigorosos:
-                    <strong>1) Simulação de Monte Carlo</strong> (10.000 sorteios simulados para garantir que os scores superam o acaso puro com percentil &lt; 1%);
-                    <strong>2) Análise Bayesiana com Teste Chi-Quadrado</strong> (evidência matemática forte a favor da hipótese de convergência, com Bayes Factor &gt; 10);
-                    <strong>3) Backtest Retrospectivo</strong> (testando as recomendações contra os últimos 50 concursos reais já ocorridos da Caixa).
-                </p>
-                <div class="camada-beneficio">
-                    <span>🎯</span> <strong>Garantia de Rigor:</strong> Se os dados não passarem pelo crivo da Camada 7, o sistema sinaliza como <em>"Ruído Estatístico Puro"</em> em vez de gerar falsas expectativas.
-                </div>
-            </div>
-        </div>
-
-        <!-- Transparência Técnica: Caixa e IA -->
-        <div class="section-header" style="margin-bottom: 25px; margin-top: 20px;">
-            <h3>Arquitetura Técnica & Transparência dos Dados</h3>
-            <p>Conheça os mecanismos que garantem confiabilidade e atualização em tempo real.</p>
-        </div>
-
-        <div class="transparencia-grid">
-            <div class="transparencia-card">
-                <h3><span>🏛️</span> Sincronização Oficial Caixa Econômica</h3>
-                <p>
-                    Nossos servidores conectam-se diretamente à API REST oficial da Caixa Econômica Federal (<code>servicebus2.caixa.gov.br</code>). Todas as noites às <strong>23:59h</strong>, um serviço automatizado sincroniza os números sorteados, rateios e premiações de todas as 9 loterias.
-                </p>
-                <p style="margin-top: 10px; font-size: 0.88rem; color: #94a3b8;">
-                    ✓ Zero digitação manual &bull; ✓ Histórico integral auditável &bull; ✓ Sincronização incremental instantânea
-                </p>
-            </div>
-
-            <div class="transparencia-card">
-                <h3><span>🤖</span> Agente Consultor IA Híbrido</h3>
-                <p>
-                    O Agente Consultor combina modelos de linguagem de ponta (<strong>Moonshot Kimi K3</strong>, <strong>Google Gemini</strong> e <strong>Motor Heurístico Canônico</strong>). A IA não "adivinha números": ela lê a saída determinística das 7 camadas e traduz em pareceres didáticos e recomendações de balanceamento.
-                </p>
-                <p style="margin-top: 10px; font-size: 0.88rem; color: #94a3b8;">
-                    ✓ Sem alucinações &bull; ✓ Análise estocástica objetiva &bull; ✓ Chat interativo para tirar dúvidas
-                </p>
-            </div>
-        </div>
-    </section>
-
     <!-- Como Funciona / 3 Pilares -->
     <section id="diferenciais" class="section" style="background: rgba(15, 23, 42, 0.6);">
         <div class="section-header">
             <h2>Por que o Cálculo da Sorte é Diferente?</h2>
-            <p>Esqueça os "palpites místicos" ou geradores aleatórios comuns. Conheça os 3 pilares matemáticos da nossa plataforma:</p>
+            <p>Esqueça os palpites no escuro ou geradores aleatórios comuns. Conheça as vantagens da nossa plataforma:</p>
         </div>
 
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">📐</div>
-                <h3>1. Modelo Canônico 3.0 (MCSCE)</h3>
+                <div class="feature-icon">🎯</div>
+                <h3>1. Gerador Inteligente de Palpites</h3>
                 <p>
-                    Algoritmo estocástico em 7 camadas que examina convergência temporal (LLN), índice de estabilidade (ICT), classes A-B-C-D, entropia informacional de Shannon e validação Bayesiana sobre todos os concursos da Caixa.
+                    Nosso sistema analisa o histórico de sorteios oficiais da Caixa Econômica Federal para sugerir combinações estruturadas, eliminando combinações improváveis que só desperdiçam seu dinheiro.
                 </p>
             </div>
 
@@ -1129,7 +855,7 @@
                 <div class="feature-icon">🎲</div>
                 <h3>2. Fechamentos e Desdobramentos</h3>
                 <p>
-                    O sistema elimina combinações estatisticamente mortas (como 5 números consecutivos ou dezenas sem dispersão) e monta cartelas de fechamento inteligente baseadas no seu grupo favorito de números.
+                    Escolha suas dezenas prediletas no volante e monte cartelas de fechamento inteligente, multiplicando suas chances de premiações múltiplas com o menor custo possível.
                 </p>
             </div>
 
@@ -1137,7 +863,7 @@
                 <div class="feature-icon">🤖</div>
                 <h3>3. Agente IA Consultor de Loterias</h3>
                 <p>
-                    Inteligência Artificial avançada que lê todos os números, interpreta as tendências da rodada e gera um parecer didático, explicando exatamente por que aquelas combinações têm maior probabilidade harmônica.
+                    Inteligência Artificial especializada que lê o cenário do sorteio e gera pareceres didáticos e recomendações práticas, explicando a estratégia das suas apostas em português claro.
                 </p>
             </div>
         </div>
@@ -1230,21 +956,21 @@
                 <span>❓ Esclarecimentos & Jogo Responsável</span>
             </div>
             <h2>Perguntas Frequentes sobre o Sistema</h2>
-            <p>Transparência absoluta sobre o que a matemática faz e os limites estocásticos de qualquer loteria.</p>
+            <p>Respostas diretas e esclarecimentos sobre o funcionamento da plataforma e os limites de qualquer loteria.</p>
         </div>
 
         <div class="faq-grid">
             <div class="faq-item">
                 <h3><span>🎲</span> O Cálculo da Sorte garante que vou ganhar na loteria?</h3>
                 <p>
-                    <strong>Não. E desconfie de qualquer promessa de enriquecimento fácil.</strong> Loterias são jogos de prognósticos com aleatoriedade estocástica. O que o Cálculo da Sorte faz é aplicar ciência estatística (Modelo Canônico 3.0) para <em>eliminar combinações mortas</em>, otimizar desdobramentos e gerar apostas com equilíbrio probabilístico comprovadamente superior a palpites aleatórios.
+                    <strong>Não. E desconfie de qualquer promessa de enriquecimento fácil.</strong> Loterias são jogos de prognósticos com aleatoriedade estocástica. O que o Cálculo da Sorte faz é aplicar tecnologia e análise de dados para <em>eliminar combinações improváveis</em>, otimizar desdobramentos e gerar apostas com equilíbrio superior a palpites aleatórios.
                 </p>
             </div>
 
             <div class="faq-item">
                 <h3><span>⚡</span> Qual a diferença entre este sistema e um gerador aleatório da internet?</h3>
                 <p>
-                    Geradores comuns utilizam funções pseudoaleatórias simples (como <code>Math.random()</code>), que frequentemente geram volantes absurdos (como 01-02-03-04-05-06 ou 6 dezenas no mesmo quadrante). O Cálculo da Sorte avalia 7 camadas matemáticas (LLN, ICT, MCP-MD, Entropia de Shannon e Bayes) para entregar cartelas estruturadas com alta dispersão e harmonia.
+                    Geradores comuns utilizam funções pseudoaleatórias simples (como <code>Math.random()</code>), que frequentemente geram volantes absurdos (como 01-02-03-04-05-06 ou 6 dezenas no mesmo quadrante). O Cálculo da Sorte processa a distribuição histórica de todos os sorteios oficiais para entregar cartelas estruturadas com alta dispersão e harmonia no volante.
                 </p>
             </div>
 
@@ -1288,7 +1014,7 @@
             <a href="mailto:silvio.luis.morais@gmail.com" style="color: #94a3b8; text-decoration: none; font-weight: 600;">Encarregado LGPD (DPO)</a>
         </div>
         <p class="footer-disclaimer">
-            <strong>Aviso de Responsabilidade e Transparência:</strong> O Cálculo da Sorte é uma plataforma de pesquisa e análise probabilística baseada em modelos matemáticos e estatísticos (Modelo Canônico MCSCE 3.0 e inteligência artificial). Loterias são jogos de prognósticos estocásticos e dependem de sorteio oficial realizado pela Caixa Econômica Federal. Nossos cálculos otimizam combinações estatísticas, mas não garantem prêmios fixos. Jogue com responsabilidade. Proibido para menores de 18 anos.
+            <strong>Aviso de Responsabilidade e Transparência:</strong> O Cálculo da Sorte é uma plataforma de pesquisa e análise probabilística baseada em análise de dados estatísticos e inteligência artificial. Loterias são jogos de prognósticos estocásticos e dependem de sorteio oficial realizado pela Caixa Econômica Federal. Nossos cálculos otimizam combinações, mas não garantem prêmios fixos. Jogue com responsabilidade. Proibido para menores de 18 anos.
         </p>
         <p class="footer-copy">
             © 2026 Cálculo da Sorte — Todos os direitos reservados. Em conformidade com a LGPD (Lei nº 13.709/2018).
