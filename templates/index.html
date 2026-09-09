@@ -145,15 +145,90 @@
         }
 
         .modelo-info {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px 24px;
+            border-radius: 14px;
+            margin-top: 25px;
             color: white;
+            backdrop-filter: blur(8px);
+        }
+
+        .modelo-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .modelo-info h4 {
-            margin-bottom: 10px;
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .btn-toggle-camadas {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-toggle-camadas:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .camadas-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .camada-dash-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .camada-dash-item strong {
+            display: block;
+            color: #34d399;
+            font-size: 0.92rem;
+            margin-bottom: 4px;
+        }
+
+        .camada-dash-item span {
+            display: block;
+            font-size: 0.82rem;
+            color: #e2e8f0;
+            line-height: 1.45;
+        }
+
+        .camada-dash-formula {
+            font-family: monospace;
+            font-size: 0.78rem;
+            color: #38bdf8;
+            margin-top: 8px;
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
         /* Responsividade Mobile */
@@ -299,8 +374,57 @@
         </header>
 
         <div class="modelo-info">
-            <h4>Sistema de Análise Estatística Baseado no Modelo Canônico</h4>
-            <p>Análise completa através das 7 camadas: Convergência, Estabilidade, Saturação, Dinâmica, Informacional, Não Linear e Validação.</p>
+            <div class="modelo-info-header" onclick="toggleCamadasDashboard()">
+                <div>
+                    <h4>🔬 Sistema de Análise Estatística Baseado no Modelo Canônico 3.0</h4>
+                    <p style="font-size: 0.88rem; color: #cbd5e1; margin-top: 4px;">
+                        Análise estocástica em 7 camadas: Convergência, Estabilidade, Saturação, Dinâmica, Informacional, Não Linear e Validação.
+                    </p>
+                </div>
+                <button type="button" class="btn-toggle-camadas" id="btn-toggle-camadas">
+                    Ver 7 Camadas ▼
+                </button>
+            </div>
+            
+            <div id="camadas-detalhes-dashboard" style="display: none;">
+                <div class="camadas-dashboard-grid">
+                    <div class="camada-dash-item">
+                        <strong>1. Convergência Temporal (LLN)</strong>
+                        <span>Lei dos Grandes Números: compara a frequência observada com a probabilidade teórica (&mu; = k/N).</span>
+                        <div class="camada-dash-formula">FR = f_i(T) / &mu;</div>
+                    </div>
+                    <div class="camada-dash-item">
+                        <strong>2. Estabilidade Estocástica (ICT)</strong>
+                        <span>Índice de Convergência Temporal: avalia o coeficiente de variação em janelas móveis de concursos.</span>
+                        <div class="camada-dash-formula">ICT = min(2&times;CV, 1.0)</div>
+                    </div>
+                    <div class="camada-dash-item">
+                        <strong>3. Saturação & Classes A-B-C-D</strong>
+                        <span>Segmentação de maturidade: Classe A (ICT &le; 0.25), B (0.25-0.50), C (0.50-0.75) e D (&gt; 0.75).</span>
+                        <div class="camada-dash-formula">H_i = |FR_i - 1|</div>
+                    </div>
+                    <div class="camada-dash-item">
+                        <strong>4. Microdinâmica MCP-MD</strong>
+                        <span>Aceleração recente calculada por janelas assimétricas (W1=100 e W2=150) com fator adaptativo &gamma;.</span>
+                        <div class="camada-dash-formula">Score MCP = ILLA + &gamma;&bull;IMC</div>
+                    </div>
+                    <div class="camada-dash-item">
+                        <strong>5. Entropia de Shannon</strong>
+                        <span>Mede a complexidade informacional e compressibilidade, evitando padrões caóticos ou degenerados.</span>
+                        <div class="camada-dash-formula">H(X) = -&sum; p_i log&sub2;(p_i)</div>
+                    </div>
+                    <div class="camada-dash-item">
+                        <strong>6. Filtragem Não Linear</strong>
+                        <span>Elimina jogos mortos (sequências improváveis, blocos no volante) e gera fechamentos combinatórios ótimos.</span>
+                        <div class="camada-dash-formula">Fechamento Inteligente</div>
+                    </div>
+                    <div class="camada-dash-item" style="grid-column: 1 / -1;">
+                        <strong>7. Falsificação & Validação Científica</strong>
+                        <span>Simulação de Monte Carlo (10.000 iterações, p &lt; 0.01), Análise Bayesiana (&chi;&sup2;, Bayes Factor &gt; 10) e Backtest retrospectivo.</span>
+                        <div class="camada-dash-formula">Monte Carlo + Bayes Factor + Backtest</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <h2 style="color: white; margin-top: 30px; text-align: center;">Selecione uma Loteria</h2>
@@ -335,5 +459,19 @@
             <p style="margin-top: 10px;">Modelo Canônico 3.0 — MCSCE | MCP-MD 1.0</p>
         </footer>
     </div>
+
+    <script>
+        function toggleCamadasDashboard() {
+            const el = document.getElementById('camadas-detalhes-dashboard');
+            const btn = document.getElementById('btn-toggle-camadas');
+            if (el.style.display === 'none' || !el.style.display) {
+                el.style.display = 'block';
+                btn.innerHTML = 'Recolher ▲';
+            } else {
+                el.style.display = 'none';
+                btn.innerHTML = 'Ver 7 Camadas ▼';
+            }
+        }
+    </script>
 </body>
 </html>

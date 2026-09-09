@@ -1635,8 +1635,53 @@ Exemplo para {{ config.nome }}:
 
         <!-- Tab 3: Análise Canônica Completa -->
         <div id="analise" class="tab-content">
-            <h2>Análise Estatística Completa</h2>
-            <button class="btn-action" onclick="realizarAnalise()">🔍 Atualizar Análise</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                <div>
+                    <h2>Análise Estatística Completa — Modelo Canônico 3.0</h2>
+                    <p style="color: #64748b; font-size: 0.95rem; margin-top: 4px;">
+                        Métricas estocásticas processadas através do histórico oficial da Caixa Econômica Federal.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-action" onclick="realizarAnalise()">🔍 Atualizar Análise</button>
+                    <button class="btn-action" onclick="toggleGuiaMatematico()" style="background: #475569;">
+                        📖 Guia das Métricas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Guia Expansível das Métricas e Modelos Matemáticos -->
+            <div id="guia-metricas-box" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <h3 style="color: #1e293b; margin-bottom: 12px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                    <span>📐</span> Entenda as Métricas do Modelo Canônico 3.0 (MCSCE + MCP-MD)
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 0.9rem; color: #475569;">
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⏱️ ICT (Índice de Convergência Temporal)</strong>
+                        <span>Mede a regularidade do número ao longo do tempo. Valores baixos (≤ 0.25) indicam alta estabilidade. Valores altos (> 0.75) indicam comportamento volátil.</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">📊 FR (Fator de Recorrência)</strong>
+                        <span>Razão entre a frequência real de saídas e a probabilidade teórica esperada (μ = k/N). FR próximo de 1.0 representa perfeito equilíbrio estatístico.</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⚖️ HI (Desvio de Harmonia)</strong>
+                        <span>Calculado como |FR - 1|. Quanto menor o HI, mais harmônica é a dezena em relação ao ciclo assintótico da Lei dos Grandes Números.</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">⚡ Score MCP-MD 1.0</strong>
+                        <span>Pontuação microdinâmica que combina aceleração recente em janelas curtas (W1=100) com persistência global ponderada pelo fator adaptativo γ.</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">🌐 Entropia de Shannon</strong>
+                        <span>Mede a complexidade informacional do sistema de sorteios. Uma entropia balanceada indica distribuição dispersa sem vícios mecânicos no globo.</span>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">🏷️ Classes de Estabilidade (A, B, C, D)</strong>
+                        <span><strong>Classe A:</strong> Mais estáveis (ICT ≤ 0.25); <strong>Classe B:</strong> Sustentação (0.25 a 0.50); <strong>Classe C:</strong> Intermediária (0.50 a 0.75); <strong>Classe D:</strong> Menor estabilidade (> 0.75).</span>
+                    </div>
+                </div>
+            </div>
             
             <div id="analise-loading" class="loading" style="display: none;">
                 Processando análise estatística... Aguarde.
@@ -1729,8 +1774,16 @@ Exemplo para {{ config.nome }}:
 
         <!-- Tab 5: Validação (Camada 7) -->
         <div id="validacao" class="tab-content">
-            <h2>Validação Científica - Camada 7</h2>
-            <p style="color: #64748b;">Simulação de Monte Carlo, Análise Bayesiana e Backtest</p>
+            <div style="margin-bottom: 18px;">
+                <h2>Validação Científica — Camada 7 (Falsificabilidade Empírica)</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-top: 4px;">
+                    Protocolo estatístico rigoroso que submete o Modelo Canônico a três baterias de testes empíricos para atestar que os resultados superam o acaso.
+                </p>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 14px 18px; margin-bottom: 22px; font-size: 0.9rem; color: #166534; line-height: 1.5;">
+                💡 <strong>Critério Científico de Aprovação:</strong> O sistema apenas classifica o modelo como <em>"MCP-MD Válido"</em> quando o Teste de Monte Carlo obtém percentil <strong>p &lt; 0.01</strong> (probabilidade de casualidade pura inferior a 1%), o Fator de Bayes atinge <strong>BF &gt; 10</strong> (evidência estatística forte) e o Backtest demonstra performance relativa <strong>&gt; 1.20</strong> contra a média esperada.
+            </div>
             
             <div id="validacao-resultado" class="resultado-section" style="display: none;">
                 <h3>Teste de Monte Carlo (10.000 iterações)</h3>
@@ -1814,6 +1867,13 @@ Exemplo para {{ config.nome }}:
             }
             if (tabId === 'salvos') {
                 carregarApostasSalvas();
+            }
+        }
+
+        function toggleGuiaMatematico() {
+            const box = document.getElementById('guia-metricas-box');
+            if (box) {
+                box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
             }
         }
 
