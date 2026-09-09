@@ -9,7 +9,7 @@ import json
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response, send_from_directory
 from werkzeug.security import check_password_hash
 
 import requests
@@ -1288,6 +1288,12 @@ def comparar_concursos(loteria_type: str):
 # ==========================================
 # ROTAS DE SEO, GEO E LLM DISCOVERABILITY
 # ==========================================
+
+@app.route('/favicon.ico')
+def favicon():
+    """Serve o ícone .ico oficial do dado da sorte na raiz do site"""
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 
 @app.route('/robots.txt', methods=['GET'])
 def robots_txt():
