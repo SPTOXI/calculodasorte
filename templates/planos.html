@@ -3,7 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planos & Recargas PIX — Cálculo da Sorte</title>
+    <title>Planos e Preços — Cálculo da Sorte | VIP Mensal e Análise Avulsa</title>
+    
+    <!-- Metatags Principais de SEO -->
+    <meta name="description" content="Conheça os planos do Cálculo da Sorte: Plano VIP Mensal Ilimitado por R$ 29,90/mês ou Análise Avulsa por R$ 5,00. Liberação imediata via PIX InfinitePay para as 9 loterias oficiais da Caixa.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://calculodasorte.com.br/planos">
+
+    <!-- Open Graph / Redes Sociais -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Cálculo da Sorte">
+    <meta property="og:url" content="https://calculodasorte.com.br/planos">
+    <meta property="og:title" content="Planos e Preços — Cálculo da Sorte">
+    <meta property="og:description" content="Acesse as 9 loterias oficiais com o Plano VIP Mensal por R$ 29,90 ou compre Análises Avulsas por R$ 5,00 com liberação imediata via PIX.">
+    <meta property="og:image" content="https://calculodasorte.com.br/static/og-banner.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Planos e Preços — Cálculo da Sorte">
+    <meta name="twitter:description" content="Acesso ilimitado às 9 loterias com suporte a IA e fechamentos inteligentes por R$ 29,90/mês.">
+
+    <!-- Schema.org OfferCatalog JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Cálculo da Sorte - Assinaturas e Créditos",
+      "description": "Ferramenta analítica de fechamentos e geração inteligente de apostas para as 9 loterias da Caixa Econômica Federal.",
+      "brand": {
+        "@type": "Brand",
+        "name": "Cálculo da Sorte"
+      },
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Análise Avulsa",
+          "price": "5.00",
+          "priceCurrency": "BRL",
+          "availability": "https://schema.org/InStock",
+          "url": "https://calculodasorte.com.br/planos"
+        },
+        {
+          "@type": "Offer",
+          "name": "Plano VIP Mensal",
+          "price": "29.90",
+          "priceCurrency": "BRL",
+          "priceValidUntil": "2027-12-31",
+          "availability": "https://schema.org/InStock",
+          "url": "https://calculodasorte.com.br/planos"
+        }
+      ]
+    }
+    </script>
     <style>
         :root {
             --primary: #059669;
@@ -376,7 +428,7 @@
 
     <div class="container">
         <div class="top-nav">
-            <a href="/dashboard" class="btn-back">← Voltar para as Loterias</a>
+            <a href="{% if user %}/dashboard{% else %}/{% endif %}" class="btn-back">← Voltar para {% if user %}as Loterias{% else %}o Início{% endif %}</a>
             <div class="nav-brand-pill">
                 <span class="nav-brand-icon">🎲</span>
                 <span>Cálculo da <span class="brand-highlight">Sorte</span></span>
@@ -384,6 +436,7 @@
         </div>
 
         <!-- Status do Usuário -->
+        {% if user %}
         <div class="user-status-card">
             <div>
                 <strong style="font-size: 1.1rem; color: white;">Olá, {{ user.name or user.email }}!</strong>
@@ -392,9 +445,9 @@
                 </div>
             </div>
             <div>
-                {% if access.is_vip %}
+                {% if access and access.is_vip %}
                     <span class="badge-status badge-vip">👑 Assinante VIP Ilimitado</span>
-                {% elif access.credits > 0 %}
+                {% elif access and access.credits > 0 %}
                     <span class="badge-status badge-credits">🪙 {{ access.credits }} Análise(s) Disponível(is)</span>
                 {% else %}
                     <span class="badge-status" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">
@@ -403,6 +456,21 @@
                 {% endif %}
             </div>
         </div>
+        {% else %}
+        <div class="user-status-card" style="background: rgba(5, 150, 105, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <div>
+                <strong style="font-size: 1.05rem; color: white;">🎁 Novo por aqui?</strong>
+                <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 4px;">
+                    Cadastre-se gratuitamente e ganhe 1 análise completa de cortesia para qualquer loteria!
+                </div>
+            </div>
+            <div>
+                <a href="/cadastro" class="btn-checkout btn-green" style="text-decoration: none; padding: 8px 18px; font-size: 0.9rem; display: inline-block;">
+                    Criar Conta Grátis
+                </a>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="page-header">
             <h1>Escolha seu Plano ou Recarga PIX</h1>
@@ -533,9 +601,15 @@
 
     <script>
         let pagamentoAtualId = null;
+        const IS_AUTHENTICATED = {{ 'true' if user else 'false' }};
 
         // Checkout Oficial InfinitePay (Taxa Zero & D+0 Instantâneo)
         async function iniciarCheckoutInfinitePay(tipo, valor, btnId) {
+            if (!IS_AUTHENTICATED) {
+                window.location.href = '/cadastro?plano=' + encodeURIComponent(tipo);
+                return;
+            }
+
             const btn = document.getElementById(btnId);
             const textoOriginal = btn ? btn.innerHTML : '';
             if (btn) {
@@ -570,6 +644,11 @@
         }
 
         async function iniciarCheckoutPix(tipo, valor, titulo) {
+            if (!IS_AUTHENTICATED) {
+                window.location.href = '/cadastro?plano=' + encodeURIComponent(tipo);
+                return;
+            }
+
             document.getElementById('pix-titulo').textContent = titulo;
             document.getElementById('pix-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
             document.getElementById('pix-modal').style.display = 'flex';

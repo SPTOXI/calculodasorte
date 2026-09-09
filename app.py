@@ -223,11 +223,11 @@ def analise_page(loteria_type: str):
 
 
 @app.route('/planos')
-@login_required
 def planos_page():
-    """Página de seleção de planos e recargas PIX"""
-    user = database.get_user_by_id(session['user_id'])
-    access = database.check_user_access(session['user_id'])
+    """Página de seleção de planos e recargas PIX (Acessível publicamente para indexação nos buscadores)"""
+    user_id = session.get('user_id')
+    user = database.get_user_by_id(user_id) if user_id else None
+    access = database.check_user_access(user_id) if user_id else None
     return render_template('planos.html', user=user, access=access)
 
 
@@ -1283,6 +1283,132 @@ def comparar_concursos(loteria_type: str):
         'performance_relativa': round(score_medio_concurso / score_medio_geral, 4) if score_medio_geral > 0 else 0,
         'interpretacao': 'Acima da média' if score_medio_concurso > score_medio_geral else 'Abaixo da média'
     })
+
+
+# ==========================================
+# ROTAS DE SEO, GEO E LLM DISCOVERABILITY
+# ==========================================
+
+@app.route('/robots.txt', methods=['GET'])
+def robots_txt():
+    """Diretrizes para rastreadores de busca tradicionais e bots de IA generativa"""
+    conteudo = """# Robots.txt — calculodasorte.com.br
+User-agent: *
+Allow: /
+Allow: /planos
+Allow: /login
+Allow: /cadastro
+Allow: /termos
+Allow: /privacidade
+Disallow: /admin
+Disallow: /api/
+Disallow: /download/
+Disallow: /logout
+Disallow: /dashboard
+
+# Agentes e Motores de Busca Generativa (LLMs)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Sitemap oficial
+Sitemap: https://calculodasorte.com.br/sitemap.xml
+"""
+    return Response(conteudo.strip(), mimetype='text/plain')
+
+
+@app.route('/sitemap.xml', methods=['GET'])
+def sitemap_xml():
+    """Mapa do site XML para indexação no Google, Bing e outros motores de busca"""
+    base_url = "https://calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    
+    paginas = [
+        {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
+        {"loc": f"{base_url}/planos", "changefreq": "weekly", "priority": "0.9"},
+        {"loc": f"{base_url}/cadastro", "changefreq": "monthly", "priority": "0.8"},
+        {"loc": f"{base_url}/login", "changefreq": "monthly", "priority": "0.7"},
+        {"loc": f"{base_url}/termos", "changefreq": "monthly", "priority": "0.5"},
+        {"loc": f"{base_url}/privacidade", "changefreq": "monthly", "priority": "0.5"},
+    ]
+    
+    xml_linhas = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for p in paginas:
+        xml_linhas.append('  <url>')
+        xml_linhas.append(f'    <loc>{p["loc"]}</loc>')
+        xml_linhas.append(f'    <lastmod>{hoje}</lastmod>')
+        xml_linhas.append(f'    <changefreq>{p["changefreq"]}</changefreq>')
+        xml_linhas.append(f'    <priority>{p["priority"]}</priority>')
+        xml_linhas.append('  </url>')
+    xml_linhas.append('</urlset>')
+    
+    return Response('\n'.join(xml_linhas), mimetype='application/xml')
+
+
+@app.route('/llms.txt', methods=['GET'])
+def llms_txt():
+    """Especificação llms.txt para consumo por agentes de IA e busca generativa"""
+    conteudo = """# Cálculo da Sorte — Plataforma de Inteligência para Loterias
+
+> Plataforma analítica e consultiva de inteligência combinatória para apostadores das 9 loterias oficiais da Caixa Econômica Federal no Brasil.
+
+## Sobre a Plataforma
+O Cálculo da Sorte (https://calculodasorte.com.br) oferece ferramentas de geração inteligente de palpites estruturados, fechamentos e desdobramentos matemáticos no volante, conferência automática com dados oficiais da Caixa e consultoria estratégica via Agente de Inteligência Artificial.
+
+## As 9 Loterias Oficiais Suportadas
+1. Mega-Sena (6 dezenas de 60 números)
+2. Lotofácil (15 dezenas de 25 números)
+3. Quina (5 dezenas de 80 números)
+4. Lotomania (50 números de 100)
+5. +Milionária (6 dezenas de 50 + 2 trevos de 6)
+6. Dia de Sorte (7 dezenas de 31 + Mês da Sorte)
+7. Dupla Sena (6 dezenas de 50, 2 sorteios)
+8. Timemania (10 dezenas de 80 + Time do Coração)
+9. Super Sete (7 números em 7 colunas de 0 a 9)
+
+## Principais Funcionalidades
+- Gerador Inteligente de Palpites: Gera cartelas combinatórias balanceadas em paridade, dispersão e equilíbrio estatístico.
+- Fechamentos no Volante: O apostador seleciona suas dezenas prediletas e o sistema gera matrizes combinatórias com garantia de acertos no volante.
+- Agente IA Consultor: Assistente conversacional para responder dúvidas de probabilidades, sugerir estratégias e avaliar jogos.
+- Sincronização Diária Caixa: Conexão automática diária às 23:59h com os servidores oficiais da Caixa para atualização imediata dos resultados de todos os concursos.
+- Jogo Responsável (+18): Ferramenta estritamente voltada a estudo probabilístico e apoio a apostas conscientes.
+
+## Planos e Preços
+- Cadastro com Cortesia: 1 crédito de análise avulsa gratuito no primeiro acesso.
+- Análise Avulsa: R$ 5,00 por análise em qualquer uma das 9 loterias.
+- Plano VIP Mensal: R$ 29,90/mês com acesso ilimitado a todas as 9 loterias, gerações sem limite e consultoria com IA.
+
+## Links Canônicos
+- Página Inicial: https://calculodasorte.com.br/
+- Planos e Preços: https://calculodasorte.com.br/planos
+- Cadastro com 1 Crédito Grátis: https://calculodasorte.com.br/cadastro
+- Termos de Uso: https://calculodasorte.com.br/termos
+- Política de Privacidade: https://calculodasorte.com.br/privacidade
+"""
+    return Response(conteudo.strip(), mimetype='text/plain; charset=utf-8')
 
 
 if __name__ == '__main__':
