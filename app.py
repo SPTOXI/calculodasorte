@@ -44,8 +44,21 @@ def _carregar_env():
 
 _carregar_env()
 
+import secrets
+import time
+from collections import defaultdict
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'loteria-canonical-secret-2026-key')
+
+# Configuração Criptográfica de Sessão (Proteção contra falsificação de cookies)
+secret_from_env = os.environ.get('SECRET_KEY')
+if not secret_from_env or secret_from_env == 'loteria-canonical-secret-2026-key':
+    # Gera chave criptográfica randômica segura de 256 bits para a sessão
+    secret_from_env = secrets.token_hex(32)
+
+app.config['SECRET_KEY'] = secret_from_env
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Inicializar Banco de Dados e Agendador de Loterias
 database.init_db()
@@ -54,6 +67,54 @@ updater.iniciar_agendador()
 # Diretório para armazenar dados
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
+
+
+# ==========================================
+# CABEÇALHOS DE SEGURANÇA E RATE LIMITING
+# ==========================================
+
+@app.after_request
+def aplicar_cabecalhos_seguranca(response):
+    """Aplica cabeçalhos HTTP defensivos para mitigar ataques comuns (XSS, Clickjacking, MIME-sniffing)"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+
+
+# Rate Limiter em memória para proteção contra ataques de força bruta, flood e DoS
+_rate_limits = defaultdict(list)
+
+def rate_limit(max_requests: int = 15, window_seconds: int = 60, by_ip: bool = True):
+    """
+    Decorator de Rate Limiting leve em memória para prevenir abusos, scraping agressivo e força bruta.
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if by_ip:
+                client_id = request.headers.get('X-Forwarded-For', request.remote_addr or '127.0.0.1').split(',')[0].strip()
+            else:
+                client_id = str(session.get('user_id') or request.remote_addr or 'anon')
+
+            key = f"{f.__name__}:{client_id}"
+            now = time.time()
+
+            _rate_limits[key] = [t for t in _rate_limits[key] if now - t < window_seconds]
+
+            if len(_rate_limits[key]) >= max_requests:
+                if request.path.startswith('/api/'):
+                    return jsonify({
+                        'erro': 'Muitas requisições. Por favor, aguarde alguns instantes antes de tentar novamente.',
+                        'rate_limited': True
+                    }), 429
+                return render_template('login.html', erro='Muitas tentativas. Aguarde 1 minuto.'), 429
+
+            _rate_limits[key].append(now)
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 # ==========================================
@@ -175,6 +236,7 @@ def planos_page():
 # ==========================================
 
 @app.route('/cadastro', methods=['GET', 'POST'])
+@rate_limit(max_requests=10, window_seconds=60)
 def cadastro():
     """Auto-cadastro de novos apostadores com 1 crédito grátis de cortesia"""
     if 'user_id' in session:
@@ -236,6 +298,7 @@ def cadastro():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@rate_limit(max_requests=10, window_seconds=60)
 def login():
     """Tela de login de usuários e administradores"""
     if 'user_id' in session:
@@ -567,10 +630,22 @@ def api_excluir_aposta(aposta_id: int):
 
 @app.route('/api/apostas/conferir/<int:aposta_id>', methods=['GET'])
 def api_conferir_aposta(aposta_id: int):
-    """Confere as cartelas de uma aposta salva contra o último sorteio oficial da Caixa"""
+    """Confere as cartelas de uma aposta salva contra o último sorteio oficial da Caixa com validação de posse"""
     aposta = database.obter_aposta(aposta_id)
     if not aposta:
         return jsonify({'erro': 'Aposta não encontrada'}), 404
+
+    # Proteção IDOR: Apenas o titular da aposta ou administrador pode visualizar/conferir
+    user_id, session_id = _obter_identificadores_usuario()
+    dono_user = aposta.get('user_id')
+    dono_session = aposta.get('session_id')
+    is_admin = session.get('user_role') == 'admin'
+
+    if not is_admin:
+        if user_id and dono_user != user_id and dono_session != session_id:
+            return jsonify({'erro': 'Acesso não autorizado a esta aposta'}), 403
+        elif not user_id and dono_session != session_id:
+            return jsonify({'erro': 'Acesso não autorizado a esta aposta'}), 403
 
     loteria_type = aposta['loteria_type']
     historico = carregar_historico(loteria_type)
@@ -976,6 +1051,7 @@ def api_admin_aprovar_pagamento(payment_id: int):
 
 @app.route('/api/ia/parecer/<loteria_type>', methods=['POST'])
 @login_required
+@rate_limit(max_requests=10, window_seconds=60)
 def api_ia_parecer(loteria_type: str):
     """Gera parecer estatístico didático do Agente IA para a rodada e palpites"""
     try:
@@ -1003,6 +1079,7 @@ def api_ia_parecer(loteria_type: str):
 
 @app.route('/api/ia/chat', methods=['POST'])
 @login_required
+@rate_limit(max_requests=15, window_seconds=60)
 def api_ia_chat():
     """Bate-papo consultivo com o Agente IA sobre probabilidades e estratégias"""
     dados = request.get_json() or {}

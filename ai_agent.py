@@ -9,9 +9,21 @@ Integração com APIs de IA:
 """
 
 import os
+import re
 import json
 import requests
 from typing import Dict, List, Optional, Any
+
+def _mascarar_segredos(texto: Any) -> str:
+    """Mascara chaves de API, credenciais e tokens para que nunca vazem em logs de servidor"""
+    if not texto:
+        return ""
+    s = str(texto)
+    s = re.sub(r'key=[a-zA-Z0-9_\-]+', 'key=***MASCARADO***', s)
+    s = re.sub(r'(ak-[a-zA-Z0-9_\-]{4})[a-zA-Z0-9_\-]+', r'\1***', s)
+    s = re.sub(r'(sk-[a-zA-Z0-9_\-]{4})[a-zA-Z0-9_\-]+', r'\1***', s)
+    s = re.sub(r'(AIza[a-zA-Z0-9_\-]{4})[a-zA-Z0-9_\-]+', r'\1***', s)
+    return s
 
 def _carregar_env():
     """Carrega variáveis do arquivo .env local se existir"""
@@ -114,9 +126,9 @@ def _chamar_kimi(prompt: str, max_tokens: int = 2500) -> Optional[tuple]:
                         if content:
                             return content, modelo
             else:
-                print(f"[AI AGENT] Moonshot ({modelo}) status {response.status_code}: {response.text[:120]}")
+                print(f"[AI AGENT] Moonshot ({modelo}) status {response.status_code}: {_mascarar_segredos(response.text[:120])}")
         except Exception as e:
-            print(f"[AI AGENT] Moonshot {modelo} demorou ({e}). Tentando próximo...")
+            print(f"[AI AGENT] Moonshot {modelo} demorou ({_mascarar_segredos(e)}). Tentando próximo...")
 
     return None
 
@@ -153,7 +165,7 @@ def _chamar_gemini(prompt: str) -> Optional[str]:
                     if parts:
                         return parts[0].get('text')
         except Exception as e:
-            print(f"[AI AGENT] Erro ao chamar Google Gemini ({modelo}): {e}")
+            print(f"[AI AGENT] Erro ao chamar Google Gemini ({modelo}): {_mascarar_segredos(e)}")
         
     return None
 
@@ -185,7 +197,7 @@ def _chamar_claude(prompt: str) -> Optional[str]:
             if content:
                 return content[0].get('text')
     except Exception as e:
-        print(f"[AI AGENT] Erro ao chamar Anthropic Claude: {e}")
+        print(f"[AI AGENT] Erro ao chamar Anthropic Claude: {_mascarar_segredos(e)}")
 
     return None
 
