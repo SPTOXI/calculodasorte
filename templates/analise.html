@@ -1268,8 +1268,11 @@
             </div>
 
             <div class="downloads-bar">
-                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; font-weight: 800;">
-                    💎 Planos / VIP (R$ 29,90)
+                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #059669, #047857); color: #ffffff; font-weight: 800; border: 1px solid rgba(52, 211, 153, 0.4); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);">
+                    🪙 Palpite Avulso (R$ 5,00)
+                </a>
+                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; font-weight: 800; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);">
+                    👑 VIP (R$ 29,90)
                 </a>
                 <a href="/download/historico/{{ loteria.value }}/md" class="btn-download" title="Baixar histórico oficial em Markdown">
                     📥 Baixar Histórico (.MD)
@@ -2896,22 +2899,55 @@ Exemplo para {{ config.nome }}:
         });
     </script>
 
-    <!-- Modal de Bloqueio / Paywall -->
-    <div id="paywall-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; backdrop-filter: blur(6px); justify-content: center; align-items: center; padding: 20px;">
-        <div style="background: #1e293b; border: 2px solid #f59e0b; border-radius: 16px; max-width: 480px; width: 100%; padding: 32px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; text-align: center;">
-            <button onclick="fecharModalPaywall()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #94a3b8; cursor: pointer;">&times;</button>
-            <div style="font-size: 3.2rem; margin-bottom: 14px;">🔒</div>
-            <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 8px;">Créditos de Análise Esgotados</h3>
-            <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
-                Você utilizou seu crédito promocional. Para continuar gerando palpites otimizados e consultando o <strong>Agente IA</strong>, escolha uma opção:
+    <!-- Modal de Bloqueio / Paywall Persuasivo -->
+    <div id="paywall-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 16px;">
+        <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px 22px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); position: relative; text-align: center;">
+            <button onclick="fecharModalPaywall()" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
+            <div style="font-size: 2.8rem; margin-bottom: 8px;">🔒</div>
+            <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 6px; font-weight: 800;">Créditos de Análise Esgotados</h3>
+            <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; margin-bottom: 20px;">
+                Para continuar gerando palpites otimizados, simulando fechamentos e consultando o <strong>Agente IA</strong>, escolha uma opção:
             </p>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <a href="/planos" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 20px; border-radius: 10px; font-weight: 800; font-size: 1.05rem; text-decoration: none; box-shadow: 0 4px 14px rgba(245,158,11,0.35);">
-                    👑 Assinar VIP Ilimitado (R$ 29,90/mês)
-                </a>
-                <a href="/planos" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
-                    🪙 Adquirir Recarga Avulsa (R$ 5,00)
-                </a>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; text-align: left;">
+                <!-- Opção 1: Avulso R$ 5,00 -->
+                <div style="background: linear-gradient(180deg, rgba(5,150,105,0.15) 0%, rgba(15,23,42,0.8) 100%); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <span style="font-size: 0.7rem; font-weight: 800; background: rgba(16,185,129,0.25); color: #34d399; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Teste Hoje</span>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">🪙 Palpite Avulso</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #34d399; margin-bottom: 8px;">R$ 5,00</div>
+                        <ul style="list-style: none; font-size: 0.78rem; color: #cbd5e1; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+                            <li>✅ 1 análise completa</li>
+                            <li>✅ Até 20 palpites IA</li>
+                            <li>✅ Sem mensalidade</li>
+                        </ul>
+                    </div>
+                    <a href="/planos" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; text-decoration: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(5,150,105,0.3);">
+                        Liberar por R$ 5,00
+                    </a>
+                </div>
+
+                <!-- Opção 2: VIP R$ 29,90 -->
+                <div style="background: linear-gradient(180deg, rgba(245,158,11,0.15) 0%, rgba(15,23,42,0.8) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <span style="font-size: 0.7rem; font-weight: 800; background: rgba(245,158,11,0.25); color: #fbbf24; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Mais Popular</span>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">👑 VIP Ilimitado</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;">R$ 29,90<span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">/mês</span></div>
+                        <ul style="list-style: none; font-size: 0.78rem; color: #cbd5e1; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+                            <li>👑 Todas as 9 loterias</li>
+                            <li>👑 Fechamentos livres</li>
+                            <li>👑 Consultor IA 24h</li>
+                        </ul>
+                    </div>
+                    <a href="/planos" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; text-decoration: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(245,158,11,0.35);">
+                        Ativar VIP (R$ 29,90)
+                    </a>
+                </div>
+            </div>
+
+            <div style="font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+                <span>⚡ Ativação Imediata via PIX</span>
+                <span>🔒 Pagamento Seguro InfinitePay</span>
             </div>
         </div>
     </div>

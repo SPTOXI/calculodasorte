@@ -183,18 +183,132 @@ def index():
     return render_template('landing.html')
 
 
+LOTERIAS_THEME = {
+    'mega_sena': {
+        'cor': '#209869',
+        'cor_dark': '#135c3f',
+        'cor_gradiente': 'linear-gradient(135deg, #209869 0%, #0d462f 100%)',
+        'cor_glow': 'rgba(32, 152, 105, 0.45)',
+        'icone': '🍀',
+        'tag': 'Maior Prêmio da Caixa',
+        'tag_bg': 'rgba(32, 152, 105, 0.25)',
+        'tag_cor': '#34d399',
+        'dias_resumo': 'Ter, Qui, Sáb',
+    },
+    'lotofacil': {
+        'cor': '#930089',
+        'cor_dark': '#5c0055',
+        'cor_gradiente': 'linear-gradient(135deg, #930089 0%, #4c0047 100%)',
+        'cor_glow': 'rgba(147, 0, 137, 0.45)',
+        'icone': '✨',
+        'tag': 'A Mais Fácil de Ganhar',
+        'tag_bg': 'rgba(244, 63, 94, 0.25)',
+        'tag_cor': '#fb7185',
+        'dias_resumo': 'Seg a Sáb',
+    },
+    'quina': {
+        'cor': '#260085',
+        'cor_dark': '#170052',
+        'cor_gradiente': 'linear-gradient(135deg, #260085 0%, #11003d 100%)',
+        'cor_glow': 'rgba(38, 0, 133, 0.45)',
+        'icone': '⭐',
+        'tag': 'Sorteio de Seg a Sáb',
+        'tag_bg': 'rgba(99, 102, 241, 0.25)',
+        'tag_cor': '#a5b4fc',
+        'dias_resumo': 'Seg a Sáb',
+    },
+    'lotomania': {
+        'cor': '#f78100',
+        'cor_dark': '#9b5100',
+        'cor_gradiente': 'linear-gradient(135deg, #f78100 0%, #874600 100%)',
+        'cor_glow': 'rgba(247, 129, 0, 0.45)',
+        'icone': '🎯',
+        'tag': '50 Dezenas no Bilhete',
+        'tag_bg': 'rgba(247, 129, 0, 0.25)',
+        'tag_cor': '#fdba74',
+        'dias_resumo': 'Seg, Qua, Sex',
+    },
+    'mais_milionaria': {
+        'cor': '#c48208',
+        'cor_dark': '#734c03',
+        'cor_gradiente': 'linear-gradient(135deg, #c48208 0%, #614002 100%)',
+        'cor_glow': 'rgba(196, 130, 8, 0.45)',
+        'icone': '👑',
+        'tag': 'Mínimo R$ 10 Milhões',
+        'tag_bg': 'rgba(245, 158, 11, 0.25)',
+        'tag_cor': '#fcd34d',
+        'dias_resumo': 'Qua, Sáb',
+    },
+    'dupla_sena': {
+        'cor': '#a61322',
+        'cor_dark': '#610a13',
+        'cor_gradiente': 'linear-gradient(135deg, #a61322 0%, #4e070e 100%)',
+        'cor_glow': 'rgba(166, 19, 34, 0.45)',
+        'icone': '🎲',
+        'tag': '2 Sorteios no Mesmo Jogo',
+        'tag_bg': 'rgba(239, 68, 68, 0.25)',
+        'tag_cor': '#fca5a5',
+        'dias_resumo': 'Ter, Qui, Sáb',
+    },
+    'timemania': {
+        'cor': '#049645',
+        'cor_dark': '#025225',
+        'cor_gradiente': 'linear-gradient(135deg, #049645 0%, #013819 100%)',
+        'cor_glow': 'rgba(4, 150, 69, 0.45)',
+        'icone': '⚽',
+        'tag': 'Seu Time do Coração',
+        'tag_bg': 'rgba(34, 197, 94, 0.25)',
+        'tag_cor': '#86efac',
+        'dias_resumo': 'Ter, Qui, Sáb',
+    },
+    'dia_de_sorte': {
+        'cor': '#cb852a',
+        'cor_dark': '#754a14',
+        'cor_gradiente': 'linear-gradient(135deg, #cb852a 0%, #5e3b0e 100%)',
+        'cor_glow': 'rgba(203, 133, 42, 0.45)',
+        'icone': '📅',
+        'tag': 'Dias e Meses da Sorte',
+        'tag_bg': 'rgba(217, 119, 6, 0.25)',
+        'tag_cor': '#fde68a',
+        'dias_resumo': 'Ter, Qui, Sáb',
+    },
+    'super_sete': {
+        'cor': '#8bc53f',
+        'cor_dark': '#4e7320',
+        'cor_gradiente': 'linear-gradient(135deg, #8bc53f 0%, #3a5717 100%)',
+        'cor_glow': 'rgba(139, 197, 63, 0.45)',
+        'icone': '⚡',
+        'tag': 'Colunas Premiadas',
+        'tag_bg': 'rgba(132, 204, 22, 0.25)',
+        'tag_cor': '#bef264',
+        'dias_resumo': 'Seg, Qua, Sex',
+    },
+}
+
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
     """Painel do apostador autenticado com seleção das 9 loterias e status da conta"""
-    loterias = [
-        {
+    loterias = []
+    for loteria, config in LOTERIAS_CONFIG.items():
+        theme = LOTERIAS_THEME.get(loteria.value, {
+            'cor': '#2563eb',
+            'cor_dark': '#1e40af',
+            'cor_gradiente': 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+            'cor_glow': 'rgba(37, 99, 235, 0.45)',
+            'icone': '🎲',
+            'tag': 'Oficial Caixa',
+            'tag_bg': 'rgba(37, 99, 235, 0.25)',
+            'tag_cor': '#93c5fd',
+            'dias_resumo': ', '.join(config.dias_sorteio)
+        })
+        loterias.append({
             'id': loteria.value,
-            'nome': loteria.value.replace('_', ' ').title(),
-            'config': config
-        }
-        for loteria, config in LOTERIAS_CONFIG.items()
-    ]
+            'nome': config.nome,
+            'config': config,
+            'theme': theme
+        })
     current_user = database.get_user_by_id(session['user_id'])
     access = database.check_user_access(session['user_id'])
     return render_template('index.html', loterias=loterias, current_user=current_user, access=access)
