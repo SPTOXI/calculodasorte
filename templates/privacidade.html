@@ -305,10 +305,14 @@
         {% if session.get('user_id') %}
         <div class="actions-box">
             <h3 style="color: white; margin-bottom: 12px;">Gerenciar Seus Direitos de Titular</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Você está autenticado no sistema. Utilize as ações automáticas abaixo:</p>
-            <a href="/api/usuario/exportar-dados" target="_blank" class="btn-action btn-export">
-                📥 Exportar Meus Dados Pessoais (JSON)
-            </a>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                <a href="/minha-conta" class="btn-action" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; text-decoration: none;">
+                    👤 Acessar Painel da Minha Conta
+                </a>
+                <a href="/api/usuario/exportar-dados" download="meus_dados_calculo_da_sorte.json" class="btn-action btn-export" style="text-decoration: none;">
+                    📥 Baixar Arquivo de Dados (JSON)
+                </a>
+            </div>
             <button onclick="solicitarExclusaoConta()" class="btn-action btn-delete">
                 🗑️ Solicitar Exclusão da Minha Conta
             </button>

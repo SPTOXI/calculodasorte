@@ -27,9 +27,10 @@ env/
 .venv/
 .env/
 
-# IDE
+# IDE & Vercel
 .vscode/
 .idea/
+.vercel/
 *.swp
 *.swo
 

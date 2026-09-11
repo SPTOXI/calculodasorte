@@ -775,9 +775,9 @@
                 </a>
 
                 {% if current_user %}
-                    <span style="font-size: 0.88rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/minha-conta" style="font-size: 0.88rem; color: #cbd5e1; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Ver meu perfil e dados">
                         👤 <strong>{{ current_user.name or current_user.email.split('@')[0] }}</strong>
-                    </span>
+                    </a>
 
                     {% if access and access.is_vip %}
                         <span class="user-badge vip">👑 VIP ILIMITADO</span>
@@ -790,6 +790,11 @@
             </div>
 
             <div class="user-top-actions">
+                <!-- Botão Minha Conta / Meus Dados -->
+                <a href="/minha-conta" class="btn-top btn-top-ghost" title="Gerenciar meus dados cadastrais e assinatura">
+                    👤 Minha Conta
+                </a>
+
                 <!-- Botão 1: Palpite Avulso R$ 5,00 -->
                 <button class="btn-top btn-top-avulso" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')">
                     🪙 Palpite Avulso (R$ 5,00)
@@ -958,7 +963,7 @@
                 <span>•</span>
                 <a href="/privacidade" target="_blank">Política de Privacidade</a>
                 <span>•</span>
-                <a href="/api/usuario/exportar-dados" target="_blank">Meus Dados (LGPD)</a>
+                <a href="/minha-conta">Meus Dados / Minha Conta</a>
             </div>
             <p style="margin-bottom: 8px;">
                 ⚠️ <strong>Aviso Legal:</strong> O Cálculo da Sorte é uma ferramenta de estudo probabilístico e geração de palpites inteligentes. Loterias são jogos de azar estocásticos. Jogue com responsabilidade e moderação (+18).

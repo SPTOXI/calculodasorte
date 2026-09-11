@@ -475,13 +475,73 @@ def termos():
     return render_template('termos.html')
 
 
+@app.route('/minha-conta')
+@app.route('/perfil')
+@login_required
+def minha_conta():
+    """Página de gestão de perfil, dados cadastrais, plano e segurança do usuário"""
+    user_id = session['user_id']
+    current_user = database.get_user_by_id(user_id)
+    if not current_user:
+        session.clear()
+        return redirect(url_for('login', erro='Sessão inválida. Faça login novamente.'))
+    
+    access = database.check_user_access(user_id)
+    apostas = database.listar_apostas(user_id=user_id, limit=20)
+    
+    erro = request.args.get('erro')
+    sucesso = request.args.get('sucesso')
+    
+    return render_template(
+        'minha_conta.html',
+        current_user=current_user,
+        access=access,
+        apostas=apostas,
+        erro=erro,
+        sucesso=sucesso
+    )
+
+
+@app.route('/minha-conta/alterar-senha', methods=['POST'])
+@login_required
+def minha_conta_alterar_senha():
+    """Alteração de senha do usuário logado com validação da senha atual"""
+    user_id = session['user_id']
+    senha_atual = request.form.get('senha_atual', '')
+    nova_senha = request.form.get('nova_senha', '')
+    confirmar_senha = request.form.get('confirmar_senha', '')
+    
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return redirect(url_for('login'))
+        
+    if not check_password_hash(user['password_hash'], senha_atual):
+        return redirect(url_for('minha_conta', erro='A senha atual informada está incorreta.'))
+        
+    if len(nova_senha) < 4:
+        return redirect(url_for('minha_conta', erro='A nova senha deve ter pelo menos 4 caracteres.'))
+        
+    if nova_senha != confirmar_senha:
+        return redirect(url_for('minha_conta', erro='A confirmação de senha não coincide com a nova senha.'))
+        
+    try:
+        database.update_password(user_id, nova_senha)
+        return redirect(url_for('minha_conta', sucesso='Senha alterada com sucesso!'))
+    except Exception as e:
+        return redirect(url_for('minha_conta', erro=f'Erro ao atualizar senha: {str(e)}'))
+
+
 @app.route('/api/usuario/exportar-dados', methods=['GET'])
 @login_required
 def api_usuario_exportar_dados():
-    """Portabilidade de dados cadastrais e apostas em formato JSON (Art. 18, V da LGPD)"""
+    """Portabilidade de dados cadastrais e apostas em formato JSON (Art. 18, V da LGPD) como arquivo de download"""
+    import json
     user_id = session['user_id']
     dados_portabilidade = database.export_user_data(user_id)
-    return jsonify(dados_portabilidade)
+    json_bytes = json.dumps(dados_portabilidade, indent=2, ensure_ascii=False).encode('utf-8')
+    resp = Response(json_bytes, mimetype='application/json')
+    resp.headers["Content-Disposition"] = "attachment; filename=meus_dados_calculo_da_sorte.json"
+    return resp
 
 
 @app.route('/api/usuario/excluir-conta', methods=['POST'])
