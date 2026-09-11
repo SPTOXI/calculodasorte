@@ -804,6 +804,401 @@
                 font-size: 1.3rem;
             }
         }
+
+        /* ============================================================
+           HERO TEMPORÁRIA: LOTOFÁCIL DA INDEPENDÊNCIA (R$ 300 MILHÕES)
+           ============================================================ */
+        .hero-independencia-section {
+            position: relative;
+            background: radial-gradient(circle at 50% 0%, rgba(147, 0, 137, 0.48) 0%, rgba(245, 158, 11, 0.18) 45%, #080d1a 90%) !important;
+            border-bottom: 2px solid rgba(245, 158, 11, 0.35);
+            padding: 85px 8% 60px !important;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .indep-glow-bg {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, transparent 60%);
+            animation: rotateGlow 22s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotateGlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .indep-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(147, 0, 137, 0.35) 100%);
+            border: 1px solid #f59e0b;
+            color: #fde047;
+            padding: 5px 14px;
+            border-radius: 30px;
+            font-size: clamp(0.72rem, 2.4vw, 0.85rem);
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+            position: relative;
+            z-index: 1;
+            max-width: 95%;
+        }
+
+        .indep-subtitle-top {
+            font-size: clamp(0.74rem, 2.2vw, 0.88rem);
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        .indep-main-title {
+            font-size: clamp(1.75rem, 5vw, 3.4rem) !important;
+            font-weight: 950 !important;
+            color: #ffffff !important;
+            letter-spacing: -0.5px !important;
+            line-height: 1.12 !important;
+            margin-bottom: 12px !important;
+            text-transform: uppercase !important;
+            position: relative;
+            z-index: 1;
+        }
+
+        .indep-br-mobile {
+            display: none;
+        }
+
+        .indep-title-purple {
+            background: linear-gradient(135deg, #f472b6 0%, #e879f9 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 25px rgba(232, 121, 249, 0.4);
+        }
+
+        .indep-prize-card {
+            margin: 10px auto 16px;
+            max-width: 700px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .indep-prize-tag {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #fbbf24;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .indep-prize-amount {
+            font-size: clamp(1.95rem, 7.5vw, 4.8rem);
+            font-weight: 950;
+            line-height: 1.02;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef08a 25%, #f59e0b 60%, #d97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 20px rgba(245, 158, 11, 0.55));
+        }
+
+        .indep-nao-acumula-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            color: #ffffff;
+            font-weight: 900;
+            font-size: clamp(0.7rem, 2.3vw, 0.82rem);
+            padding: 5px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+            box-shadow: 0 3px 12px rgba(220, 38, 38, 0.4);
+            max-width: 95%;
+            line-height: 1.35;
+        }
+
+        .indep-lead-text {
+            color: #cbd5e1;
+            font-size: clamp(1rem, 2vw, 1.18rem);
+            max-width: 820px;
+            margin: 16px auto 26px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .indep-lead-text strong {
+            color: #fde047;
+        }
+
+        /* CONTADOR REGRESSIVO */
+        .indep-countdown-container {
+            background: rgba(15, 23, 42, 0.82);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 18px;
+            padding: 16px 24px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto 28px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .indep-countdown-header {
+            font-size: 0.86rem;
+            color: #fbbf24;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .indep-timer-boxes {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .indep-timer-unit {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(251, 191, 36, 0.45);
+            border-radius: 12px;
+            padding: 10px 16px;
+            min-width: 70px;
+            text-align: center;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .indep-timer-num {
+            display: block;
+            font-size: clamp(1.5rem, 3.8vw, 2.1rem);
+            font-weight: 900;
+            color: #fef08a;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .indep-timer-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+            display: block;
+        }
+
+        .indep-timer-sep {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #f59e0b;
+            margin-top: -10px;
+        }
+
+        /* BOTOES DE AÇÃO */
+        .indep-cta-group {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-indep-gold {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #0b1120 !important;
+            font-weight: 900;
+            font-size: 1.05rem;
+            padding: 15px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 22px rgba(245, 158, 11, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-indep-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(245, 158, 11, 0.65);
+            color: #000 !important;
+        }
+
+        .btn-indep-pulse {
+            animation: pulseGlow 2.5s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            70% { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        .btn-indep-purple {
+            background: linear-gradient(135deg, #930089 0%, #6b0064 100%);
+            color: #ffffff !important;
+            font-weight: 800;
+            font-size: 1rem;
+            padding: 15px 26px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(147, 0, 137, 0.45);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-indep-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(147, 0, 137, 0.65);
+            color: #ffffff !important;
+        }
+
+        .btn-indep-outline {
+            background: rgba(30, 41, 59, 0.8);
+            color: #f8fafc !important;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 15px 22px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .btn-indep-outline:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: rgba(255, 255, 255, 0.35);
+            color: #ffffff !important;
+        }
+
+        /* 3 PÍLULAS ESTATÍSTICAS */
+        .indep-stats-trio {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            max-width: 980px;
+            margin: 0 auto;
+            text-align: left;
+            position: relative;
+            z-index: 1;
+        }
+
+        .indep-stat-pill {
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .indep-stat-pill:hover {
+            border-color: rgba(245, 158, 11, 0.45);
+            transform: translateY(-2px);
+        }
+
+        .stat-pill-icon {
+            font-size: 1.4rem;
+            background: rgba(147, 0, 137, 0.25);
+            border: 1px solid rgba(232, 121, 249, 0.2);
+            border-radius: 10px;
+            padding: 8px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .indep-stat-pill strong {
+            display: block;
+            font-size: 0.92rem;
+            color: #f8fafc;
+            font-weight: 800;
+            margin-bottom: 3px;
+        }
+
+        .indep-stat-pill span {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 640px) {
+            .hero-independencia-section {
+                padding: 40px 16px 30px !important;
+            }
+
+            .indep-timer-boxes {
+                gap: 6px;
+            }
+
+            .indep-timer-unit {
+                min-width: 54px;
+                padding: 6px 8px;
+            }
+
+            .indep-timer-num {
+                font-size: 1.3rem;
+            }
+
+            .indep-timer-sep {
+                font-size: 1.2rem;
+                margin-top: -6px;
+            }
+
+            .indep-cta-group a,
+            .indep-cta-group button {
+                width: 100%;
+            }
+
+            .indep-br-mobile {
+                display: block !important;
+            }
+
+            .indep-main-title {
+                font-size: 1.55rem !important;
+                line-height: 1.15 !important;
+            }
+
+            .indep-prize-amount {
+                font-size: 2.15rem !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -826,29 +1221,107 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="badge-pill">
-            <span>✨ Inteligência para Loterias + Agente IA Oficial</span>
+    <!-- ============================================================
+         HERO TEMPORÁRIA: LOTOFÁCIL DA INDEPENDÊNCIA (R$ 300 MILHÕES)
+         ============================================================ -->
+    <section class="hero hero-independencia-section">
+        <!-- Glow & Partículas -->
+        <div class="indep-glow-bg"></div>
+
+        <!-- Badge Oficial Especial -->
+        <div class="indep-badge">
+            <span>🇧🇷</span> CONCURSO ESPECIAL &bull; NÃO ACUMULA!
         </div>
-        <h1>
-            Pare de Apostar no Escuro.<br>
-            Transforme seus Jogos com <span class="gradient-text">Inteligência Estruturada</span>.
+
+        <div class="indep-subtitle-top">
+            GRANDE SORTEIO &bull; TERÇA-FEIRA, 15/09 ÀS 20H
+        </div>
+
+        <h1 class="indep-main-title">
+            LOTOFÁCIL DA <br class="indep-br-mobile"><span class="indep-title-purple">INDEPENDÊNCIA</span>
         </h1>
-        <p>
-            A plataforma definitiva para quem joga nas loterias da Caixa: geração de palpites inteligentes, fechamentos práticos no volante, conferência automática e <strong>Inteligência Artificial</strong> sincronizada diariamente aos sorteios oficiais.
+
+        <!-- Destaque do Prêmio R$ 300 Milhões -->
+        <div class="indep-prize-card">
+            <span class="indep-prize-tag">PRÊMIO HISTÓRICO ESTIMADO</span>
+            <div class="indep-prize-amount">R$ 300 MILHÕES</div>
+            <div class="indep-nao-acumula-badge">
+                ⚠️ NÃO ACUMULA! SE NINGUÉM FIZER 15, DIVIDE ENTRE QUEM FIZER 14 PONTOS!
+            </div>
+        </div>
+
+        <p class="indep-lead-text">
+            O maior prêmio da história da Lotofácil não pode ser jogado na sorte cega. Aumente drasticamente suas chances com <strong>fechamentos combinatórios</strong>, análise dos padrões de repetição do último concurso e inteligência estatística oficial da Caixa.
         </p>
 
-        <div class="hero-cta-group">
-            <a href="/cadastro" class="btn-primary btn-large btn-gold">
-                🎁 Comece Agora com 1 Análise Grátis
+        <!-- Contador Regressivo para 15/09 às 20h -->
+        <div class="indep-countdown-container">
+            <div class="indep-countdown-header">
+                <span>⏰</span> TEMPO RESTANTE ATÉ O SORTEIO OFICIAL:
+            </div>
+            <div class="indep-timer-boxes">
+                <div class="indep-timer-unit">
+                    <span class="indep-timer-num" id="indep-days">--</span>
+                    <span class="indep-timer-label">Dias</span>
+                </div>
+                <span class="indep-timer-sep">:</span>
+                <div class="indep-timer-unit">
+                    <span class="indep-timer-num" id="indep-hours">--</span>
+                    <span class="indep-timer-label">Horas</span>
+                </div>
+                <span class="indep-timer-sep">:</span>
+                <div class="indep-timer-unit">
+                    <span class="indep-timer-num" id="indep-minutes">--</span>
+                    <span class="indep-timer-label">Min</span>
+                </div>
+                <span class="indep-timer-sep">:</span>
+                <div class="indep-timer-unit">
+                    <span class="indep-timer-num" id="indep-seconds">--</span>
+                    <span class="indep-timer-label">Seg</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação de Alta Conversão -->
+        <div class="indep-cta-group">
+            <a href="/cadastro" class="btn-indep-gold btn-indep-pulse">
+                🎁 Comece Agora & Ganhe 1 Análise Grátis
             </a>
-            <a href="#planos" class="btn-secondary btn-large">
-                Conhecer Planos e Preços
+            <a href="#planos" class="btn-indep-purple">
+                🪙 Palpite Avulso por R$ 5,00
+            </a>
+            <a href="#loterias" class="btn-indep-outline">
+                Ver Todas as 9 Loterias ↓
             </a>
         </div>
 
-        <div class="trust-metrics">
+        <!-- 3 Pílulas Estatísticas Estratégicas -->
+        <div class="indep-stats-trio">
+            <div class="indep-stat-pill">
+                <div class="stat-pill-icon">🔁</div>
+                <div>
+                    <strong>9 Dezenas Repetidas</strong>
+                    <span>Historicamente, ~60% dos números sorteados repetem do concurso anterior.</span>
+                </div>
+            </div>
+            <div class="indep-stat-pill">
+                <div class="stat-pill-icon">⚖️</div>
+                <div>
+                    <strong>8 Ímpares & 7 Pares</strong>
+                    <span>A proporção de equilíbrio mais frequente nas premiações da Lotofácil.</span>
+                </div>
+            </div>
+            <div class="indep-stat-pill">
+                <div class="stat-pill-icon">🛡️</div>
+                <div>
+                    <strong>Fechamentos no Volante</strong>
+                    <span>Matrizes combinatórias econômicas para cercar 14 pontos sem jogar números aleatórios.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métricas de Confiança -->
+        <div class="trust-metrics" style="margin-top: 35px;">
             <div class="metric-item">
                 <strong>9 Loterias Oficiais</strong>
                 <span>Mega-Sena, Lotofácil, Quina e mais</span>
@@ -1247,6 +1720,46 @@
             banner.style.transition = 'opacity 0.3s ease';
             setTimeout(() => { banner.style.display = 'none'; }, 300);
         }
+
+        // Contador Regressivo da Lotofácil da Independência (15/09/2026 às 20:00 Horário de Brasília)
+        (function() {
+            const targetDate = new Date('2026-09-15T20:00:00-03:00').getTime();
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                const dEl = document.getElementById('indep-days');
+                const hEl = document.getElementById('indep-hours');
+                const mEl = document.getElementById('indep-minutes');
+                const sEl = document.getElementById('indep-seconds');
+
+                if (!dEl || !hEl || !mEl || !sEl) return;
+
+                if (diff <= 0) {
+                    dEl.innerText = '00';
+                    hEl.innerText = '00';
+                    mEl.innerText = '00';
+                    sEl.innerText = '00';
+                    const header = document.querySelector('.indep-countdown-header');
+                    if (header) header.innerHTML = '🔴 SORTEIO EM ANDAMENTO OU CONCLUÍDO!';
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                dEl.innerText = String(days).padStart(2, '0');
+                hEl.innerText = String(hours).padStart(2, '0');
+                mEl.innerText = String(minutes).padStart(2, '0');
+                sEl.innerText = String(seconds).padStart(2, '0');
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        })();
     </script>
 
 </body>
