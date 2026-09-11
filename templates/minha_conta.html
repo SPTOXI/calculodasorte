@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Conta — Cálculo da Sorte | Meus Dados e Assinatura</title>
+    <meta name="description" content="Gerencie suas informações cadastrais, consulte seus créditos, histórico de palpites e gerencie sua assinatura no Cálculo da Sorte.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Favicon Oficial do Dado da Sorte (.ico, .svg, .png) -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --gold: #f59e0b;
+            --dark: #0f172a;
+            --dark-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0b1120;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px 16px 60px;
+            background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.15) 0%, #0b1120 70%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Top Bar / Navegação */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: 800;
+            font-size: 1.15rem;
+        }
+
+        .brand-logo .accent {
+            color: #34d399;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-nav {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-nav-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-nav-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-nav-ghost {
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-nav-ghost:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+
+        .btn-nav-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-nav-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Profile Header Card */
+        .profile-header-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .user-avatar-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        .user-info h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .user-info p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+        }
+
+        .badge-plan {
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-vip {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-free {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Grid de Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.92rem;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .info-val {
+            font-weight: 600;
+            color: #f1f5f9;
+            text-align: right;
+            word-break: break-all;
+        }
+
+        /* Formulários */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-light);
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* LGPD Box */
+        .lgpd-box {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 14px;
+        }
+
+        .lgpd-box p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .lgpd-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action-lgpd {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+        }
+
+        .btn-download-lgpd {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-download-lgpd:hover {
+            background: rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-delete-lgpd {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-delete-lgpd:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Tabela de Apostas Recentes */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        .styled-table th {
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .styled-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+        }
+
+        .styled-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Modal Backdrop */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 16px;
+            padding: 28px 24px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-card h3 {
+            color: #f87171;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-card p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navegação Superior -->
+        <nav class="top-nav">
+            <a href="/dashboard" class="brand-logo">
+                <span>🎲</span>
+                <span>Cálculo da <span class="accent">Sorte</span></span>
+            </a>
+            <div class="nav-actions">
+                <a href="/dashboard" class="btn-nav btn-nav-primary">
+                    <span>⚡</span> Gerador de Palpites
+                </a>
+                <a href="/planos" class="btn-nav btn-nav-ghost">
+                    <span>💎</span> Planos VIP
+                </a>
+                <a href="/logout" class="btn-nav btn-nav-danger">
+                    <span>🚪</span> Sair
+                </a>
+            </div>
+        </nav>
+
+        {% if erro %}
+        <div class="alert alert-error">
+            <span>❌</span>
+            <div>{{ erro }}</div>
+        </div>
+        {% endif %}
+
+        {% if sucesso %}
+        <div class="alert alert-success">
+            <span>✅</span>
+            <div>{{ sucesso }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Cabeçalho do Perfil -->
+        <div class="profile-header-card">
+            <div class="user-avatar-group">
+                <div class="user-avatar">
+                    👤
+                </div>
+                <div class="user-info">
+                    <h2>{{ current_user.name or 'Apostador' }}</h2>
+                    <p>{{ current_user.email }}</p>
+                </div>
+            </div>
+
+            <div>
+                {% if access and access.is_vip %}
+                    <span class="badge-plan badge-vip">👑 PLANO VIP ILIMITADO</span>
+                {% elif access and access.credits > 0 %}
+                    <span class="badge-plan badge-free">🪙 {{ access.credits }} CRÉDITO(S) DE CORTESIA</span>
+                {% else %}
+                    <span class="badge-plan" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3);">⚠️ SEM CRÉDITOS</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grid de Informações -->
+        <div class="cards-grid">
+            <!-- Card 1: Meus Dados Cadastrais -->
+            <div class="card">
+                <div class="card-title">
+                    <span>📋</span> Meus Dados Cadastrais
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Nome Completo:</span>
+                    <span class="info-val">{{ current_user.name or 'Apostador' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Endereço de E-mail:</span>
+                    <span class="info-val">{{ current_user.email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ID da Conta:</span>
+                    <span class="info-val">#{{ current_user.id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Perfil de Acesso:</span>
+                    <span class="info-val">{{ 'Administrador' if current_user.role == 'admin' else 'Apostador' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Data de Cadastro:</span>
+                    <span class="info-val">{{ current_user.created_at or '-' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Último Acesso:</span>
+                    <span class="info-val">{{ current_user.last_login or 'Hoje' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Termos LGPD Aceitos:</span>
+                    <span class="info-val">{{ current_user.accepted_terms_at or 'Sim' }}</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Plano e Créditos -->
+            <div class="card">
+                <div class="card-title">
+                    <span>💎</span> Plano & Saldo de Créditos
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status da Assinatura:</span>
+                    <span class="info-val">
+                        {% if access and access.is_vip %}
+                            <strong style="color: #fbbf24;">VIP Ativo (Acesso Total)</strong>
+                        {% else %}
+                            <strong style="color: #34d399;">Plano Gratuito / Degustação</strong>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Saldo de Créditos:</span>
+                    <span class="info-val">
+                        {% if access and access.is_vip %}
+                            <span style="color: #fbbf24;">Ilimitado ∞</span>
+                        {% else %}
+                            <strong>{{ access.credits if access else 0 }} análise(s)</strong>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if access and access.is_vip and current_user.vip_expires_at %}
+                <div class="info-row">
+                    <span class="info-label">Válido até:</span>
+                    <span class="info-val" style="color: #fbbf24;">{{ current_user.vip_expires_at }}</span>
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 10px;">
+                    <a href="/planos" class="btn-submit" style="text-align: center; text-decoration: none; display: block;">
+                        🚀 Fazer Recarga de R$ 5,00 ou Assinar VIP
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Card 3: Segurança da Conta -->
+            <div class="card">
+                <div class="card-title">
+                    <span>🔒</span> Segurança & Alterar Senha
+                </div>
+                <form action="/minha-conta/alterar-senha" method="POST">
+                    <div class="form-group">
+                        <label for="senha_atual">Senha Atual</label>
+                        <input type="password" id="senha_atual" name="senha_atual" placeholder="Sua senha atual" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nova_senha">Nova Senha</label>
+                        <input type="password" id="nova_senha" name="nova_senha" placeholder="Mínimo 4 caracteres" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmar_senha">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Repita a nova senha" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Atualizar Minha Senha</button>
+                </form>
+            </div>
+
+            <!-- Card 4: Direitos do Titular LGPD -->
+            <div class="card">
+                <div class="card-title">
+                    <span>🛡️</span> Privacidade & LGPD (Art. 18)
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">
+                    Seus dados pessoais estão protegidos nos termos da <strong>Lei Geral de Proteção de Dados (Lei nº 13.709/2018)</strong>. Você possui total autonomia para exportar suas informações ou solicitar a exclusão de sua conta a qualquer momento.
+                </p>
+
+                <div class="lgpd-box">
+                    <p>
+                        <strong>Portabilidade de Dados:</strong> Baixe uma cópia completa de suas informações cadastrais e histórico de apostas em formato aberto JSON.
+                    </p>
+                    <div class="lgpd-actions">
+                        <a href="/api/usuario/exportar-dados" download="meus_dados_calculo_da_sorte.json" class="btn-action-lgpd btn-download-lgpd">
+                            <span>📥</span> Baixar Relatório (JSON)
+                        </a>
+                        <button type="button" onclick="abrirModalExclusao()" class="btn-action-lgpd btn-delete-lgpd">
+                            <span>🗑️</span> Excluir Minha Conta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico de Apostas Recentes -->
+        <div class="card" style="margin-top: 8px;">
+            <div class="card-title" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>🎲</span> Minhas Apostas & Palpites Recentes
+                </div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">
+                    {{ apostas|length }} aposta(s) salva(s)
+                </span>
+            </div>
+
+            {% if apostas %}
+            <div class="table-responsive">
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Título / Identificação</th>
+                            <th>Loteria</th>
+                            <th>Modalidade</th>
+                            <th>Jogos</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in apostas %}
+                        <tr>
+                            <td><strong>{{ a.titulo or 'Palpite Estruturado' }}</strong></td>
+                            <td><span style="text-transform: capitalize; color: #34d399;">{{ a.loteria_type|replace('_', ' ') }}</span></td>
+                            <td>{{ a.modalidade }}</td>
+                            <td>{{ a.quantidade_jogos }} jogo(s) ({{ a.dezenas_por_jogo }} dezenas)</td>
+                            <td>{{ a.created_at or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+                <p style="font-size: 1.1rem; margin-bottom: 8px;">Você ainda não possui apostas salvas.</p>
+                <p style="font-size: 0.9rem; margin-bottom: 16px;">Gere palpites inteligentes e fechamentos no gerador oficial para salvá-los aqui.</p>
+                <a href="/dashboard" class="btn-nav btn-nav-primary" style="display: inline-flex;">
+                    ⚡ Ir para o Gerador de Palpites
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal de Exclusão de Conta -->
+    <div class="modal-backdrop" id="modal-exclusao">
+        <div class="modal-card">
+            <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+            <h3>Excluir Conta Definitivamente?</h3>
+            <p>
+                Esta ação é <strong>irreversível</strong>. Todos os seus dados pessoais, créditos e apostas salvas serão permanentemente removidos em estrita conformidade com o Art. 18, VI da LGPD.
+            </p>
+            <div class="modal-actions">
+                <button type="button" onclick="fecharModalExclusao()" class="btn-nav btn-nav-ghost" style="padding: 10px 18px;">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmarExclusao()" class="btn-nav btn-nav-danger" style="padding: 10px 18px;" id="btn-confirma-del">
+                    Sim, Excluir Minha Conta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalExclusao() {
+            document.getElementById('modal-exclusao').classList.add('active');
+        }
+
+        function fecharModalExclusao() {
+            document.getElementById('modal-exclusao').classList.remove('active');
+        }
+
+        async function confirmarExclusao() {
+            const btn = document.getElementById('btn-confirma-del');
+            btn.disabled = true;
+            btn.innerText = 'Excluindo...';
+
+            try {
+                const res = await fetch('/api/usuario/excluir-conta', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.sucesso) {
+                    alert('Sua conta e dados foram excluídos com sucesso.');
+                    window.location.href = '/login?sucesso=Conta excluída com sucesso.';
+                } else {
+                    alert(data.mensagem || 'Falha ao excluir conta.');
+                    btn.disabled = false;
+                    btn.innerText = 'Sim, Excluir Minha Conta';
+                }
+            } catch (e) {
+                alert('Erro na comunicação com o servidor: ' + e.message);
+                btn.disabled = false;
+                btn.innerText = 'Sim, Excluir Minha Conta';
+            }
+        }
+    </script>
+</body>
+</html>
