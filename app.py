@@ -390,9 +390,39 @@ def api_usuario_excluir_conta():
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    """Dashboard do painel administrativo"""
+    """Dashboard do painel administrativo com renderização imediata de dados"""
     user = database.get_user_by_id(session['user_id'])
-    return render_template('admin.html', user=user)
+    usuarios = database.get_all_users()
+    pagamentos = database.get_all_payments()
+    logs = database.get_latest_sync_logs(15)
+    status_loterias = updater.obter_status_loterias(consultar_online=False)
+    
+    total_usuarios = len(usuarios)
+    usuarios_ativos = sum(1 for u in usuarios if not u.get('is_blocked'))
+    total_pagamentos = len(pagamentos)
+    pagamentos_aprovados = sum(1 for p in pagamentos if p.get('status') == 'aprovado')
+    receita_total = sum(float(p.get('valor', 0)) for p in pagamentos if p.get('status') == 'aprovado')
+    
+    metricas = {
+        'total_usuarios': total_usuarios,
+        'usuarios_ativos': usuarios_ativos,
+        'total_pagamentos': total_pagamentos,
+        'pagamentos_aprovados': pagamentos_aprovados,
+        'receita_total': receita_total
+    }
+    
+    aba_ativa = request.args.get('aba', 'tab-loterias')
+
+    return render_template(
+        'admin.html', 
+        user=user, 
+        usuarios=usuarios, 
+        pagamentos=pagamentos,
+        logs=logs,
+        status_loterias=status_loterias,
+        metricas=metricas,
+        aba_ativa=aba_ativa
+    )
 
 
 @app.route('/admin/alterar-senha', methods=['POST'])
@@ -535,7 +565,7 @@ def api_analise(loteria_type: str):
     
     if len(historico_input) < 10:
         return jsonify({
-            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários. Use a opção de sincronização ou gere dados de exemplo.',
+            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.',
             'concursos_atuais': len(historico_input)
         }), 400
     
@@ -756,7 +786,14 @@ def api_salvar_historico(loteria_type: str):
 
 @app.route('/api/carregar-historico/<loteria_type>', methods=['GET'])
 def api_carregar_historico(loteria_type: str):
-    """API para carregar histórico salvo com metadados"""
+    """API para carregar histórico salvo com metadados e atualização inteligente sob demanda"""
+    # Se solicitado via parâmetro ou se a rotina detectar que os dados precisam de atualização
+    if request.args.get('auto_sync') == '1' or updater.verificar_se_necessita_atualizacao(loteria_type):
+        try:
+            updater.sincronizar_loteria(loteria_type, n_historico=25)
+        except Exception as e:
+            print(f"[API] Aviso na auto-sincronização de {loteria_type}: {e}")
+
     historico = carregar_historico(loteria_type)
     meta = updater.carregar_meta(loteria_type)
     return jsonify({
@@ -768,7 +805,12 @@ def api_carregar_historico(loteria_type: str):
 
 @app.route('/api/sincronizar/<loteria_type>', methods=['POST'])
 def api_sincronizar_publica(loteria_type: str):
-    """Sincroniza os últimos resultados oficiais da Caixa para a modalidade"""
+    """Sincroniza os últimos resultados oficiais da Caixa para a modalidade (Exclusivo Administrador)"""
+    if session.get('user_role') != 'admin':
+        return jsonify({
+            'sucesso': False,
+            'erro': 'A sincronização manual com a Caixa é permitida apenas para administradores.'
+        }), 403
     res = updater.sincronizar_loteria(loteria_type, n_historico=25)
     return jsonify(res)
 
@@ -1230,8 +1272,9 @@ def download_jogos(loteria_type: str, formato: str):
 
 @app.route('/api/cron/atualizar', methods=['GET', 'POST'])
 def cron_atualizar():
-    """Endpoint chamado pelo Vercel Cron Job às 23:59h"""
-    print("[CRON] Executando sincronização diária oficial da Caixa às 23:59h...")
+    """Endpoint chamado pelo Vercel Cron Job pontualmente às 23:00h do Horário de Brasília (02:00 UTC)"""
+    agora_str = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    print(f"[CRON] Executando sincronização diária oficial da Caixa às 23:00h BRT ({agora_str})...")
     res = updater.sincronizar_todas(n_historico=50)
     return jsonify(res)
 

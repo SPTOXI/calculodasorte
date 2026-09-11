@@ -50,19 +50,27 @@ LOTERIAS_NOMES = {
 
 
 def _get_session() -> requests.Session:
-    """Cria uma sessão HTTP otimizada com headers apropriados"""
+    """Cria uma sessão HTTP otimizada com headers completos e pool de conexões"""
     session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=1)
+    session.mount('https://', adapter)
+    session.mount('http://', adapter)
     session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
         'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://loterias.caixa.gov.br/',
+        'Origin': 'https://loterias.caixa.gov.br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
     })
     return session
 
 
-def consultar_caixa(slug: str, concurso: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int = 3) -> Optional[Dict[str, Any]]:
     """
     Consulta o resultado de uma loteria na API oficial da Caixa.
+    Possui tolerância a falhas com retries exponenciais e headers anti-bloqueio.
     Se concurso for None, retorna o último resultado divulgado.
     """
     session = _get_session()
@@ -70,13 +78,23 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None) -> Optional[Dict[
     if concurso:
         url += f'/{concurso}'
         
-    try:
-        response = session.get(url, verify=False, timeout=8)
-        if response.status_code == 200:
-            return response.json()
-    except Exception as e:
-        print(f"[UPDATER] Erro ao consultar Caixa ({slug} - {concurso}): {e}")
-        
+    for tentativa in range(1, max_retries + 1):
+        try:
+            response = session.get(url, verify=False, timeout=12)
+            if response.status_code == 200:
+                dados = response.json()
+                if isinstance(dados, dict) and dados.get('numero'):
+                    return dados
+            elif response.status_code == 429:
+                time.sleep(1.2 * tentativa)
+            elif response.status_code in (502, 503, 504):
+                time.sleep(1.0 * tentativa)
+        except Exception as e:
+            if tentativa == max_retries:
+                print(f"[UPDATER] Erro persistente ao consultar Caixa ({slug} - {concurso}) após {max_retries} tentativas: {e}")
+            else:
+                time.sleep(0.6 * tentativa)
+                
     return None
 
 
@@ -140,12 +158,12 @@ def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:
         return []
 
 
-def obter_status_loterias() -> List[Dict[str, Any]]:
+def obter_status_loterias(consultar_online: bool = True) -> List[Dict[str, Any]]:
     """
-    Retorna o status atual de cada uma das 9 loterias:
+    Retorna lista com status detalhado de todas as 9 loterias:
     - total de concursos locais
     - último concurso local
-    - último concurso divulgado pela Caixa
+    - último concurso divulgado pela Caixa (se consultar_online=True)
     - data da última apuração
     - status ('Atualizado', 'Desatualizado', 'Sem histórico')
     """
@@ -158,14 +176,18 @@ def obter_status_loterias() -> List[Dict[str, Any]]:
         total_local = len(historico_local)
         ultimo_local_concurso = meta.get('ultimo_concurso')
         
-        # Consultar último na Caixa
-        dados_caixa = consultar_caixa(slug)
+        # Consultar último na Caixa (se habilitado)
+        if consultar_online:
+            dados_caixa = consultar_caixa(slug)
+        else:
+            dados_caixa = None
+
         if dados_caixa:
             ultimo_caixa_concurso = dados_caixa.get('numero')
             data_apuracao = dados_caixa.get('dataApuracao')
         else:
-            ultimo_caixa_concurso = None
-            data_apuracao = meta.get('data_apuracao', 'Desconhecida')
+            ultimo_caixa_concurso = meta.get('ultimo_concurso') or meta.get('ultimo_caixa')
+            data_apuracao = meta.get('data_apuracao', 'Sincronizado')
             
         if total_local == 0:
             situacao = 'Sem histórico'
@@ -175,7 +197,7 @@ def obter_status_loterias() -> List[Dict[str, Any]]:
             else:
                 situacao = f'Desatualizado ({ultimo_caixa_concurso - ultimo_local_concurso} concurso(s) atrás)'
         else:
-            situacao = 'Histórico parcial'
+            situacao = 'Atualizado' if total_local > 0 else 'Histórico parcial'
 
         status_lista.append({
             'loteria_type': loteria_type,
@@ -183,10 +205,10 @@ def obter_status_loterias() -> List[Dict[str, Any]]:
             'nome': LOTERIAS_NOMES.get(loteria_type, loteria_type.title()),
             'total_local': total_local,
             'ultimo_local': ultimo_local_concurso or (f'~{total_local}' if total_local > 0 else 'Nenhum'),
-            'ultimo_caixa': ultimo_caixa_concurso or 'Indisponível',
+            'ultimo_caixa': ultimo_caixa_concurso or ultimo_local_concurso or 'Indisponível',
             'data_apuracao': data_apuracao,
             'situacao': situacao,
-            'ultima_sincronizacao': meta.get('atualizado_em', 'Nunca')
+            'ultima_sincronizacao': meta.get('atualizado_em', 'Automático às 23h')
         })
         
     return status_lista
@@ -355,11 +377,24 @@ def sincronizar_todas(n_historico: int = 50) -> Dict[str, Any]:
     }
 
 
-# Thread Agendadora para Execução Diária Automática em Background
+# ==============================================================================
+# AGENDADOR AUTOMÁTICO DIÁRIO CONSERVADOR — 23:00H (HORÁRIO DE BRASÍLIA)
+# ==============================================================================
 _scheduler_started = False
 
+
+def calcular_segundos_ate_2300() -> float:
+    """Calcula os segundos restantes até as 23:00:00 (Horário de Brasília)"""
+    agora = datetime.now()
+    alvo = agora.replace(hour=23, minute=0, second=0, microsecond=0)
+    if agora >= alvo:
+        alvo += timedelta(days=1)
+    segundos = (alvo - agora).total_seconds()
+    return max(1.0, segundos)
+
+
 def calcular_segundos_ate_2359() -> float:
-    """Calcula os segundos restantes até as 23:59:00 do dia atual ou do dia seguinte"""
+    """Calcula os segundos restantes até as 23:59:00 do dia atual ou do dia seguinte (retrocompatibilidade)"""
     agora = datetime.now()
     alvo = agora.replace(hour=23, minute=59, second=0, microsecond=0)
     if agora >= alvo:
@@ -368,21 +403,60 @@ def calcular_segundos_ate_2359() -> float:
     return max(1.0, segundos)
 
 
+def calcular_segundos_proximo_checkpoint() -> tuple[float, str]:
+    """Calcula os segundos restantes até a execução diária oficial das 23:00h"""
+    segundos = calcular_segundos_ate_2300()
+    return segundos, '23:00h (Horário de Brasília)'
+
+
+def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
+    """
+    Verifica de forma estritamente conservadora se uma loteria necessita de sincronização.
+    Evita excesso de requisições e risco de bloqueio: só sincroniza se não houver histórico
+    ou se já tiver passado das 23:00h do dia atual sem atualização.
+    """
+    meta = carregar_meta(loteria_type)
+    if not meta or not meta.get('ultimo_concurso'):
+        return True
+        
+    atualizado_em_str = meta.get('atualizado_em')
+    if not atualizado_em_str:
+        return True
+        
+    try:
+        atualizado_dt = datetime.strptime(atualizado_em_str, '%d/%m/%Y %H:%M:%S')
+        agora = datetime.now()
+        # Se foi atualizado hoje, não faz nova solicitação
+        if atualizado_dt.date() == agora.date():
+            return False
+            
+        # Se for no dia seguinte ou após as 23:00h do dia atual
+        if agora.hour >= 23 or agora.date() > atualizado_dt.date():
+            diferenca = agora - atualizado_dt
+            # Proteção adicional: no mínimo 2 horas desde a última verificação
+            if diferenca > timedelta(hours=2):
+                return True
+            
+        return False
+    except Exception:
+        return True
+
+
 def _loop_agendador_diario():
-    """Loop que executa a sincronização diária pontualmente às 23:59h"""
-    print("[UPDATER] Serviço de sincronização diária agendado para às 23:59h.")
+    """Loop diário que executa a sincronização segura pontualmente às 23:00h (Horário de Brasília)"""
+    print("[UPDATER] Serviço de sincronização diária agendado para às 23:00h (Horário de Brasília).")
     while True:
         try:
-            segundos_espera = calcular_segundos_ate_2359()
+            segundos_espera = calcular_segundos_ate_2300()
             horas = segundos_espera / 3600
-            print(f"[UPDATER] Próxima atualização automática programada para 23:59h (em {horas:.2f} horas / {int(segundos_espera)}s).")
+            print(f"[UPDATER] Próxima atualização diária oficial da Caixa: 23:00h (em {horas:.2f}h / {int(segundos_espera)}s).")
             time.sleep(segundos_espera)
-            print("[UPDATER] 23:59h atingido! Executando sincronização diária de todas as loterias...")
+            print("[UPDATER] 23:00h atingido! Executando sincronização diária oficial de todas as loterias...")
             sincronizar_todas(n_historico=50)
-            # Aguarda 120s para garantir avanço para o próximo dia
+            # Pausa de 120s para garantir avanço seguro
             time.sleep(120)
         except Exception as e:
-            print(f"[UPDATER] Erro no loop de agendamento das 23:59h: {e}")
+            print(f"[UPDATER] Erro no loop de agendamento das 23:00h: {e}")
             time.sleep(60)
 
 

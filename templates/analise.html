@@ -888,15 +888,15 @@
 
             /* Barra de Navegação Superior e Usuário */
             .nav-top-bar {
-                flex-direction: column;
-                align-items: stretch;
+                flex-direction: column !important;
+                align-items: stretch !important;
                 gap: 10px;
                 margin-bottom: 14px;
             }
 
             .nav-top-bar > div:first-child {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: column !important;
+                align-items: stretch !important;
                 gap: 8px;
                 width: 100%;
             }
@@ -1167,9 +1167,14 @@
             }
 
             /* Tab 6: Tabelas */
+            #tabela-numeros {
+                min-width: 500px;
+            }
+
             table th, table td {
                 padding: 8px 10px;
                 font-size: 0.82rem;
+                white-space: nowrap;
             }
 
             /* Modal de Paywall */
@@ -1360,9 +1365,11 @@
                     <a href="/download/historico/{{ loteria.value }}/txt" class="btn-download" style="background: #334155;" title="Baixar histórico em Texto">
                         📥 Baixar em .TXT
                     </a>
+                    {% if session.get('user_role') == 'admin' %}
                     <button class="btn-action" style="padding: 8px 16px; font-size: 0.9rem;" onclick="sincronizarComCaixaAgora()">
-                        🔄 Sincronizar Agora
+                        🔄 Sincronizar Agora (Admin)
                     </button>
+                    {% endif %}
                 </div>
             </div>
 
@@ -1422,7 +1429,6 @@ Exemplo para {{ config.nome }}:
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
                 <button class="btn-action" onclick="executarAnaliseComInput()">🔍 Analisar Meus Números</button>
                 <button class="btn-action" onclick="salvarHistoricoPersonalizado()" style="background: #059669;">💾 Salvar no Histórico Pessoal</button>
-                <button class="btn-action" onclick="gerarDadosExemplo()" style="background: #0284c7;">🎲 Gerar 50 Jogos de Teste</button>
             </div>
             
             <div id="dados-msg" style="margin-top: 15px;"></div>
@@ -1834,9 +1840,9 @@ Exemplo para {{ config.nome }}:
                     // Executa a análise estatística em segundo plano para alimentar as abas canônicas
                     realizarAnalise(result.historico);
                 } else {
-                    document.getElementById('caixa-status-texto').textContent = 'Nenhum histórico encontrado para esta modalidade. Clique em "Sincronizar Agora".';
+                    document.getElementById('caixa-status-texto').textContent = 'Base oficial da Caixa em sincronização diária automática às 23:00h.';
                     document.getElementById('lista-concursos-caixa').innerHTML = 
-                        '<div style="text-align: center; color: #64748b; padding: 40px;">Nenhum concurso catalogado. Clique em "Sincronizar Agora" acima.</div>';
+                        '<div style="text-align: center; color: #64748b; padding: 40px;">Carregando histórico oficial... Os resultados são atualizados diariamente às 23:00h.</div>';
                 }
             } catch (e) {
                 console.error("Erro ao carregar histórico oficial:", e);
@@ -1896,9 +1902,12 @@ Exemplo para {{ config.nome }}:
             });
         }
 
+        {% if session.get('user_role') == 'admin' %}
         async function sincronizarComCaixaAgora() {
             const badgeTexto = document.getElementById('caixa-status-texto');
-            badgeTexto.innerHTML = '🔄 <em>Sincronizando com a Caixa Econômica Federal em tempo real... Por favor aguarde.</em>';
+            if (badgeTexto) {
+                badgeTexto.innerHTML = '🔄 <em>Sincronizando com a Caixa Econômica Federal em tempo real... Por favor aguarde.</em>';
+            }
             
             try {
                 const res = await fetch(`/api/sincronizar/${loteriaType}`, { method: 'POST' });
@@ -1915,6 +1924,7 @@ Exemplo para {{ config.nome }}:
                 carregarHistoricoSalvo();
             }
         }
+        {% endif %}
 
         // ==========================================
         // ABA 2: MEUS NÚMEROS (MANUAL DO USUÁRIO)
@@ -2030,23 +2040,6 @@ Exemplo para {{ config.nome }}:
             }
         }
 
-        function gerarDadosExemplo() {
-            const cfg = { universo: CONFIG_LOTERIA.universo, sorteados: CONFIG_LOTERIA.sorteados };
-            const historico = [];
-            
-            for (let i = 0; i < 50; i++) {
-                const concurso = new Set();
-                while (concurso.size < cfg.sorteados) {
-                    concurso.add(Math.floor(Math.random() * cfg.universo) + 1);
-                }
-                historico.push(Array.from(concurso).sort((a,b) => a - b));
-            }
-            
-            document.getElementById('historico-input').value = formatarHistoricoParaTexto(historico);
-            validarInputEmTempoReal();
-            mostrarMensagem('dados-msg', '50 jogos de teste gerados no campo! Clique em "Analisar Meus Números".', 'success');
-        }
-
         function mostrarMensagem(elementId, msg, tipo) {
             const el = document.getElementById(elementId);
             el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
@@ -2057,7 +2050,7 @@ Exemplo para {{ config.nome }}:
             const input = document.getElementById('historico-input').value;
             const historico = interpretarNumeros(input);
             if (historico.length < 10) {
-                mostrarMensagem('dados-msg', 'São necessários ao menos 10 jogos para a análise estatística completa. Use o botão "Gerar 50 Jogos de Teste" se quiser testar.', 'error');
+                mostrarMensagem('dados-msg', 'São necessários ao menos 10 jogos digitados para a análise estatística completa. Para gerar palpites inteligentes e balanceados, utilize a aba "Gerador de Jogos".', 'error');
                 return;
             }
             realizarAnalise(historico);
