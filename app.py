@@ -53,8 +53,8 @@ app = Flask(__name__)
 # Configuração Criptográfica de Sessão (Proteção contra falsificação de cookies)
 secret_from_env = os.environ.get('SECRET_KEY')
 if not secret_from_env or secret_from_env == 'loteria-canonical-secret-2026-key':
-    # Gera chave criptográfica randômica segura de 256 bits para a sessão
-    secret_from_env = secrets.token_hex(32)
+    # Chave estável de 256 bits para consistência entre instâncias e lambdas serverless
+    secret_from_env = '6f04de83e1c5a30f789647fcece0a8052dc5ae7ecc5f08f4b75cb9f9dd8734ef'
 
 app.config['SECRET_KEY'] = secret_from_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -580,7 +580,12 @@ def api_admin_criar_usuario():
         return jsonify({'erro': 'Já existe um usuário com este e-mail'}), 409
 
     try:
-        user = database.create_user(email, password, role)
+        user = database.create_user(
+            email=email,
+            password=password,
+            name=dados.get('name') or email.split('@')[0],
+            role=role
+        )
         return jsonify(user), 201
     except Exception as e:
         return jsonify({'erro': str(e)}), 400

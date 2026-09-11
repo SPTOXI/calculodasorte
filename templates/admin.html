@@ -1263,7 +1263,10 @@
                         <h3><span>👥</span> Gerenciamento de Usuários Cadastrados</h3>
                         <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Controle de acesso, créditos, status ativo/bloqueado e permissões administrativas.</p>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-secondary" onclick="carregarUsuarios()" style="padding: 10px 14px; font-size: 0.9rem;">
+                            <span>🔄</span> Atualizar Lista
+                        </button>
                         <button class="btn-primary" onclick="abrirModalNovoUsuario()">
                             <span>➕</span> Novo Usuário
                         </button>
@@ -1572,6 +1575,13 @@
 
             const content = document.getElementById(tabId);
             if (content) content.classList.add('active');
+
+            // Recarregar dados dinâmicos ao entrar na aba
+            if (tabId === 'tab-usuarios' && typeof carregarUsuarios === 'function') {
+                carregarUsuarios();
+            } else if (tabId === 'tab-pagamentos' && typeof carregarPagamentos === 'function') {
+                carregarPagamentos();
+            }
         }
 
         // Toasts

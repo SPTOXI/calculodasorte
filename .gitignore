@@ -42,8 +42,8 @@ env/
 *.env.*
 !.env.example
 
-# Database
-data/database.db
+# Database (a base limpa inicial é empacotada no repositório para inicialização rápida)
+# data/database.db
 
 # Pytest & MyPy
 .pytest_cache/

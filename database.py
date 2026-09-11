@@ -5,9 +5,12 @@ Projeto Calculadora da Sorte
 
 import os
 import sqlite3
+import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
+
+import blob_storage
 
 ORIGINAL_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if os.environ.get('VERCEL'):
@@ -18,6 +21,35 @@ else:
 DB_PATH = os.path.join(DATA_DIR, 'database.db')
 
 from contextlib import contextmanager
+
+_LAST_CLOUD_SYNC = 0.0
+
+def sync_db_from_cloud(force: bool = False) -> bool:
+    """Sincroniza o banco local com a versão persistente na nuvem (Vercel Blob)"""
+    global _LAST_CLOUD_SYNC
+    now = time.time()
+    if not force and (now - _LAST_CLOUD_SYNC < 4.0):
+        return False
+    
+    if not blob_storage.get_blob_token():
+        return False
+
+    success = blob_storage.download_blob('database.db', DB_PATH)
+    if success:
+        _LAST_CLOUD_SYNC = now
+    return success
+
+
+def sync_db_to_cloud() -> bool:
+    """Envia o banco local atualizado para o Vercel Blob"""
+    global _LAST_CLOUD_SYNC
+    if not blob_storage.get_blob_token():
+        return False
+    
+    success = blob_storage.upload_blob(DB_PATH, 'database.db')
+    if success:
+        _LAST_CLOUD_SYNC = time.time()
+    return success
 
 
 @contextmanager
@@ -34,7 +66,21 @@ def get_db_connection():
 
 
 def init_db():
-    """Inicializa as tabelas do banco de dados e cria o administrador padrão"""
+    """Inicializa as tabelas do banco de dados e cria o administrador padrão com suporte a Vercel Blob"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
+    if os.environ.get('VERCEL') or not os.path.exists(DB_PATH):
+        bundled_db = os.path.join(ORIGINAL_DATA_DIR, 'database.db')
+        if not os.path.exists(DB_PATH) and os.path.exists(bundled_db):
+            try:
+                import shutil
+                shutil.copy2(bundled_db, DB_PATH)
+                print(f"[DB] Banco inicial copiado de {bundled_db} para {DB_PATH}")
+            except Exception as e:
+                print(f"[DB] Aviso ao copiar banco empacotado: {e}")
+        
+        sync_db_from_cloud(force=True)
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
@@ -147,24 +193,50 @@ def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123
 
 
 def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
-    """Buscar usuário por ID"""
+    """Buscar usuário por ID com fallback para sincronização na nuvem"""
     with get_db_connection() as conn:
         row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        return dict(row) if row else None
+        if row:
+            return dict(row)
+
+    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
+    if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
+        with get_db_connection() as conn:
+            row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            if row:
+                return dict(row)
+
+    return None
 
 
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
-    """Buscar usuário por e-mail (case-insensitive)"""
+    """Buscar usuário por e-mail (case-insensitive) com fallback para sincronização na nuvem"""
+    email_clean = email.strip().lower()
     with get_db_connection() as conn:
         row = conn.execute(
-            'SELECT * FROM users WHERE LOWER(email) = LOWER(?)', 
-            (email.strip(),)
+            'SELECT * FROM users WHERE LOWER(email) = ?', 
+            (email_clean,)
         ).fetchone()
-        return dict(row) if row else None
+        if row:
+            return dict(row)
+
+    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
+    if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
+        with get_db_connection() as conn:
+            row = conn.execute(
+                'SELECT * FROM users WHERE LOWER(email) = ?', 
+                (email_clean,)
+            ).fetchone()
+            if row:
+                return dict(row)
+
+    return None
 
 
 def get_all_users() -> List[Dict[str, Any]]:
-    """Listar todos os usuários com dados de plano e créditos"""
+    """Listar todos os usuários com dados de plano e créditos (sincronizado com a nuvem)"""
+    if os.environ.get('VERCEL'):
+        sync_db_from_cloud(force=False)
     with get_db_connection() as conn:
         rows = conn.execute(
             'SELECT id, email, name, role, plan, credits, vip_expires_at, is_blocked, must_change_password, created_at, last_login '
@@ -183,7 +255,7 @@ def create_user(
     must_change_password: int = 0,
     accepted_terms: bool = True
 ) -> Dict[str, Any]:
-    """Criar novo usuário no sistema com crédito de degustação gratuito e registro de consentimento LGPD"""
+    """Criar novo usuário no sistema com crédito de cortesia e sincronização em nuvem"""
     email_clean = email.strip().lower()
     if not email_clean or '@' not in email_clean:
         raise ValueError("E-mail inválido")
@@ -204,6 +276,7 @@ def create_user(
         conn.commit()
         user_id = cursor.lastrowid
         
+    sync_db_to_cloud()
     return get_user_by_id(user_id)
 
 
@@ -246,6 +319,7 @@ def update_user(
         conn.execute(query, values)
         conn.commit()
 
+    sync_db_to_cloud()
     return get_user_by_id(user_id)
 
 
@@ -260,6 +334,7 @@ def toggle_block_user(user_id: int) -> bool:
         conn.execute('UPDATE users SET is_blocked = ? WHERE id = ?', (new_status, user_id))
         conn.commit()
 
+    sync_db_to_cloud()
     return bool(new_status)
 
 
@@ -269,7 +344,11 @@ def delete_user(user_id: int) -> bool:
         cursor = conn.cursor()
         cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
         conn.commit()
-        return cursor.rowcount > 0
+        success = cursor.rowcount > 0
+
+    if success:
+        sync_db_to_cloud()
+    return success
 
 
 def update_password(user_id: int, new_password: str) -> bool:
@@ -284,6 +363,8 @@ def update_password(user_id: int, new_password: str) -> bool:
             SET password_hash = ?, must_change_password = 0 
             WHERE id = ?
         ''', (pwd_hash, user_id))
+        conn.commit()
+    sync_db_to_cloud()
     return True
 
 
@@ -291,6 +372,8 @@ def set_must_change_password(user_id: int, flag: int = 1):
     """Define flag se usuário deve trocar de senha"""
     with get_db_connection() as conn:
         conn.execute('UPDATE users SET must_change_password = ? WHERE id = ?', (flag, user_id))
+        conn.commit()
+    sync_db_to_cloud()
 
 
 
@@ -302,6 +385,7 @@ def record_login(user_id: int):
             (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), user_id)
         )
         conn.commit()
+    sync_db_to_cloud()
 
 
 def log_sync(
@@ -363,7 +447,9 @@ def salvar_aposta(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json))
         conn.commit()
-        return cursor.lastrowid
+        last_id = cursor.lastrowid
+    sync_db_to_cloud()
+    return last_id
 
 
 def listar_apostas(
@@ -432,7 +518,11 @@ def excluir_aposta(aposta_id: int, user_id: Optional[int] = None, session_id: Op
         else:
             cursor.execute("DELETE FROM user_bets WHERE id = ?", (aposta_id,))
         conn.commit()
-        return cursor.rowcount > 0
+        success = cursor.rowcount > 0
+
+    if success:
+        sync_db_to_cloud()
+    return success
 
 
 # ==========================================
@@ -579,6 +669,7 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
         conn.commit()
         payment_id = cursor.lastrowid
         
+    sync_db_to_cloud()
     return get_payment_by_id(payment_id)
 
 
@@ -586,7 +677,16 @@ def get_payment_by_id(payment_id: int) -> Optional[Dict[str, Any]]:
     """Obtém detalhes do pagamento"""
     with get_db_connection() as conn:
         row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
-        return dict(row) if row else None
+        if row:
+            return dict(row)
+
+    if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
+        with get_db_connection() as conn:
+            row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
+            if row:
+                return dict(row)
+
+    return None
 
 
 def approve_payment(payment_id: int) -> bool:
@@ -611,11 +711,14 @@ def approve_payment(payment_id: int) -> bool:
     elif tipo == 'avulso':
         add_user_credits(user_id, amount=1)
         
+    sync_db_to_cloud()
     return True
 
 
 def get_all_payments() -> List[Dict[str, Any]]:
-    """Listar todos os pagamentos com dados do usuário para o painel admin"""
+    """Listar todos os pagamentos com dados do usuário para o painel admin (sincronizado na nuvem)"""
+    if os.environ.get('VERCEL'):
+        sync_db_from_cloud(force=False)
     with get_db_connection() as conn:
         rows = conn.execute('''
             SELECT p.*, u.email as user_email, u.name as user_name
@@ -663,6 +766,7 @@ def delete_user_and_data(user_id: int) -> bool:
         # 3. Excluir conta do usuário
         conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
         conn.commit()
+    sync_db_to_cloud()
     return True
 
 
