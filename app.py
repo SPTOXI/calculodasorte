@@ -607,6 +607,42 @@ BLOG_POSTS = {
     }
 }
 
+RESULTS_CACHE = {}
+RESULTS_CACHE_TIME = {}
+
+@app.route('/resultados/<loteria_type>')
+def ver_resultado(loteria_type):
+    if loteria_type not in LOTERIAS_CONFIG:
+        return "Loteria não encontrada", 404
+    
+    slug = updater.LOTERIAS_SLUGS.get(loteria_type)
+    if not slug:
+        return "Loteria não suportada para resultados", 404
+        
+    import time
+    now = time.time()
+    
+    # Cache em memória (10 minutos) para aguentar o pico de acessos do Google (Tráfego de Vaidade)
+    if loteria_type in RESULTS_CACHE and (now - RESULTS_CACHE_TIME.get(loteria_type, 0)) < 600:
+        dados_caixa = RESULTS_CACHE[loteria_type]
+    else:
+        dados_caixa = updater.consultar_caixa(slug)
+        if dados_caixa:
+            RESULTS_CACHE[loteria_type] = dados_caixa
+            RESULTS_CACHE_TIME[loteria_type] = now
+        else:
+            dados_caixa = RESULTS_CACHE.get(loteria_type)
+            
+    if not dados_caixa:
+        return "Não foi possível carregar os resultados da Caixa no momento. Tente novamente.", 503
+        
+    numeros = updater.extrair_dezenas(dados_caixa, slug)
+    
+    return render_template('resultado.html', 
+                           loteria=LOTERIAS_CONFIG[loteria_type],
+                           dados=dados_caixa, 
+                           numeros=numeros)
+
 
 @app.route('/blog')
 def blog_index():
