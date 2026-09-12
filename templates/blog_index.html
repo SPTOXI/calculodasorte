@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog e Estudos de Caso — Cálculo da Sorte</title>
+    <meta name="description" content="Artigos avançados sobre matemática, probabilidade, IA e estatística aplicadas em sorteios da Caixa.">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-light: #10b981;
+            --dark-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0b1120; color: var(--text-light); line-height: 1.6; padding: 40px 20px; background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.12) 0%, #0b1120 70%); }
+        .container { max-width: 900px; margin: 0 auto; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        .nav-brand-pill { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #ffffff; padding: 6px 14px; background: rgba(255, 255, 255, 0.06); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-brand-pill .brand-highlight { color: #34d399; }
+        .btn-back { color: var(--text-muted); text-decoration: none; font-weight: 600; }
+        .btn-back:hover { color: white; }
+        h1 { font-size: 2.2rem; margin-bottom: 10px; }
+        .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem; }
+        .blog-grid { display: flex; flex-direction: column; gap: 20px; }
+        .blog-card { background: var(--dark-card); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 25px; text-decoration: none; color: inherit; transition: all 0.2s; }
+        .blog-card:hover { transform: translateY(-3px); border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); }
+        .blog-title { font-size: 1.4rem; font-weight: 700; color: white; margin-bottom: 10px; }
+        .blog-meta { font-size: 0.85rem; color: #34d399; margin-bottom: 12px; font-weight: 600; }
+        .blog-desc { color: var(--text-muted); font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <div class="nav-brand-pill">
+                <span>🎲</span> Cálculo da <span class="brand-highlight">Sorte</span>
+            </div>
+            <a href="/" class="btn-back">← Voltar à Home</a>
+        </div>
+        <h1>Inteligência Matemática Aplicada</h1>
+        <p class="subtitle">Artigos técnicos, estudos de caso e análises aprofundadas sobre métodos probabilísticos para loterias da Caixa.</p>
+        
+        <div class="blog-grid">
+            {% for slug, post in posts.items() %}
+            <a href="/blog/{{ slug }}" class="blog-card">
+                <div class="blog-meta">{{ post.date }} • {{ post.author }}</div>
+                <h2 class="blog-title">{{ post.title }}</h2>
+                <p class="blog-desc">{{ post.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
