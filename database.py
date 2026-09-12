@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import blob_storage
+from pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
 
 ORIGINAL_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if os.environ.get('VERCEL'):
@@ -862,6 +863,51 @@ def calcular_crc16_ccitt(payload: str) -> str:
 
 
 def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txid: str = '***') -> str:
+    """Generate the official PIX Copy‑and‑Paste payload (EMVCo / BR Code).
+    Includes validation of required fields and CRC integrity.
+    """
+    import unicodedata
+    # Normalizar chave
+    chave_clean = normalizar_chave_pix(chave)
+    # Normalizar nome e cidade para ASCII sem acentos (requisito universal de compatibilidade bancária)
+    nome_norm = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('ASCII')
+    cidade_norm = unicodedata.normalize('NFKD', cidade).encode('ASCII', 'ignore').decode('ASCII')
+    nome_clean = (nome_norm or 'Calculo da Sorte')[:25]
+    cidade_clean = (cidade_norm or 'SAO PAULO')[:15]
+    # Tag 00: Payload Format Indicator
+    p_format = "000201"
+    # Tag 01: Point of Initiation Method (11 = Estático / Reutilizável - mandatório pelo BACEN)
+    p_init = "010211"
+    # Tag 26: Merchant Account Information
+    gui = "0014br.gov.bcb.pix"
+    key_tag = f"01{len(chave_clean):02d}{chave_clean}"
+    merchant_info = gui + key_tag
+    tag_26 = f"26{len(merchant_info):02d}{merchant_info}"
+    # Tag 52: Merchant Category Code
+    tag_52 = "52040000"
+    # Tag 53: Transaction Currency (986 = Real brasileiro)
+    tag_53 = "5303986"
+    # Tag 54: Transaction Amount
+    val_str = f"{valor:.2f}"
+    tag_54 = f"54{len(val_str):02d}{val_str}"
+    # Tag 58: Country Code
+    tag_58 = "5802BR"
+    # Tag 59: Merchant Name
+    tag_59 = f"59{len(nome_clean):02d}{nome_clean}"
+    # Tag 60: Merchant City
+    tag_60 = f"60{len(cidade_clean):02d}{cidade_clean}"
+    # Tag 62: Additional Data Field (txid - '***' é o padrão BACEN para QR estático sem API de conciliação)
+    txid_clean = (txid or '***')[:25]
+    subtag_05 = f"05{len(txid_clean):02d}{txid_clean}"
+    tag_62 = f"62{len(subtag_05):02d}{subtag_05}"
+    # Tag 63: CRC16 (Payload com tag 6304 antes do cálculo)
+    raw = p_format + p_init + tag_26 + tag_52 + tag_53 + tag_54 + tag_58 + tag_59 + tag_60 + tag_62 + "6304"
+    crc = calcular_crc16_ccitt(raw)
+    payload = raw + crc
+    # Validate payload integrity
+    if not validar_payload_pix(payload):
+        raise ValueError('Payload PIX inválido ou CRC incorreto')
+    return payload
     """
     Gera o payload oficial PIX Copia e Cola no padrão EMVCo / BR Code estabelecido pelo Banco Central do Brasil.
     Garante tags TLV (Tag-Length-Value) rigorosamente corretas, inclusão da Tag 01 (010211 estático) e checksum CRC-16.
