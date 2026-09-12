@@ -555,6 +555,55 @@ BLOG_POSTS = {
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Descubra como Agentes IAs extraem padrões temporais e tendências históricas que o cérebro humano ignora, traduzindo complexidade matemática em estratégias de jogo claras.',
         'template': 'blog/artigo_3.html'
+    },
+    'o-paradoxo-do-jogador-e-lei-das-medias': {
+        'title': 'O Paradoxo do Jogador: A Falácia da "Lei das Médias" nas Apostas',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Entenda por que uma dezena que está atrasada há 15 concursos não tem mais chance de sair hoje do que qualquer outra. Desvende a falácia do apostador.',
+        'template': 'blog/artigo_4.html'
+    },
+    'filtros-matematicos-como-eliminar-dezenas': {
+        'title': 'Filtros Matemáticos: Como Eliminar Combinações que Destroem seu Investimento',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Aprenda o poder da filtragem baseada em soma de dezenas e geometria de volante. Veja por que apostar sem filtros é doação para a banca.',
+        'template': 'blog/artigo_5.html'
+    },
+    'a-curva-de-gauss-nas-loterias': {
+        'title': 'A Curva de Gauss: Por Que Extremos Nunca Ganham em Loterias',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Mergulhe na distribuição normal e veja por que a soma das dezenas sorteadas sempre se concentra na área mediana do gráfico estatístico.',
+        'template': 'blog/artigo_6.html'
+    },
+    'desdobramentos-vs-fechamentos': {
+        'title': 'Desdobramentos vs. Fechamentos: O Segredo Financeiro da Matemática',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'A diferença colossal entre apostar em força bruta (combinatória completa) e usar matrizes ortogonais para reduzir custos mantendo prêmios.',
+        'template': 'blog/artigo_7.html'
+    },
+    'estatistica-bayesiana-em-loterias': {
+        'title': 'Estatística Bayesiana e Loterias: É Possível Prever o Futuro?',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Uma aula sobre o Teorema de Bayes e como a atualização de probabilidade (Priors e Posteriors) refina os algoritmos heurísticos das nossas análises.',
+        'template': 'blog/artigo_8.html'
+    },
+    'teoria-do-caos-e-a-maquina-de-sorteio': {
+        'title': 'Teoria do Caos: A Física Intransponível dos Globos de Sorteio',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Entenda por que calcular o peso e a velocidade das bolinhas físicas é impossível devido ao "Efeito Borboleta" e à entropia projetada.',
+        'template': 'blog/artigo_9.html'
+    },
+    'gestao-de-banca-em-loterias': {
+        'title': 'Otimização de Banca: A Engenharia de Não Quebrar Apostando',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Loterias possuem Valor Esperado (EV) negativo. Descubra as táticas de Bankroll Management para mitigar perdas enquanto mira no jackpot.',
+        'template': 'blog/artigo_10.html'
     }
 }
 
