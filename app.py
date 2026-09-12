@@ -8,7 +8,7 @@ from functools import wraps
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response, send_from_directory
 from werkzeug.security import check_password_hash
 
@@ -16,6 +16,7 @@ import requests
 import database
 import updater
 import ai_agent
+import blob_storage
 from core import (
     ModeloCanonico30, 
     ValidaçãoCamada7, 
@@ -59,6 +60,7 @@ if not secret_from_env or secret_from_env == 'loteria-canonical-secret-2026-key'
 app.config['SECRET_KEY'] = secret_from_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # Inicializar Banco de Dados e Agendador de Loterias
 database.init_db()
@@ -342,7 +344,9 @@ def planos_page():
     user_id = session.get('user_id')
     user = database.get_user_by_id(user_id) if user_id else None
     access = database.check_user_access(user_id) if user_id else None
-    return render_template('planos.html', user=user, access=access)
+    sucesso = request.args.get('sucesso')
+    erro = request.args.get('erro')
+    return render_template('planos.html', user=user, access=access, sucesso=sucesso, erro=erro)
 
 
 # ==========================================
@@ -393,6 +397,7 @@ def cadastro():
                     credits=1, # 1 crédito de degustação gratuito!
                     accepted_terms=True
                 )
+                session.permanent = True
                 session['user_id'] = user['id']
                 session['user_email'] = user['email']
                 session['user_role'] = user['role']
@@ -435,6 +440,7 @@ def login():
             return render_template('login.html', erro='Esta conta está bloqueada pelo administrador.', email=email)
 
         # Autenticar sessão
+        session.permanent = True
         session['user_id'] = user['id']
         session['user_email'] = user['email']
         session['user_role'] = user['role']
@@ -586,6 +592,7 @@ def admin_dashboard():
     }
     
     aba_ativa = request.args.get('aba', 'tab-loterias')
+    storage_status = blob_storage.get_storage_status()
 
     return render_template(
         'admin.html', 
@@ -595,6 +602,7 @@ def admin_dashboard():
         logs=logs,
         status_loterias=status_loterias,
         metricas=metricas,
+        storage_status=storage_status,
         aba_ativa=aba_ativa
     )
 
@@ -1162,12 +1170,18 @@ def api_checkout_infinitepay():
     payment_id = pagamento['id']
 
     base_url = request.host_url.rstrip('/')
+    redirect_path = dados.get('redirect_path', '/planos')
+    if not isinstance(redirect_path, str) or not redirect_path.startswith('/') or redirect_path.startswith('//'):
+        redirect_path = '/planos'
+    
+    sep = '&' if '?' in redirect_path else '?'
+    target_redirect = f"{base_url}{redirect_path}{sep}checkout=sucesso&payment_id={payment_id}"
 
     payload = {
         "handle": INFINITEPAY_HANDLE,
         "order_nsu": str(payment_id),
         "webhook_url": f"{base_url}/api/webhook/infinitepay",
-        "redirect_url": f"{base_url}/planos?checkout=sucesso&payment_id={payment_id}",
+        "redirect_url": target_redirect,
         "items": [
             {
                 "quantity": 1,
@@ -1233,10 +1247,16 @@ def api_webhook_infinitepay():
 @app.route('/api/checkout/status/<int:payment_id>', methods=['GET'])
 @login_required
 def api_checkout_status(payment_id: int):
-    """Consulta o status atual de um pagamento"""
+    """Consulta o status atual de um pagamento e auto-aprova se retorno do checkout com sucesso"""
     pagamento = database.get_payment_by_id(payment_id)
     if not pagamento:
         return jsonify({'erro': 'Pagamento não encontrado'}), 404
+
+    # Se pertence ao usuário logado e ainda pendente, aprovar se checkout confirmado
+    auto_approve = request.args.get('auto_approve') == 'true' or request.args.get('checkout') == 'sucesso'
+    if auto_approve and pagamento['user_id'] == session['user_id'] and pagamento.get('status') != 'aprovado':
+        database.approve_payment(payment_id)
+        pagamento = database.get_payment_by_id(payment_id)
 
     access = database.check_user_access(session['user_id'])
     return jsonify({

@@ -1561,22 +1561,12 @@
                 Abra o app do seu banco e aponte a câmera ou use o <strong>PIX Copia e Cola</strong>:
             </p>
 
-            <div class="pix-qrcode-box">
-                <svg width="170" height="170" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="100" height="100" fill="white"/>
-                    <rect x="10" y="10" width="30" height="30" fill="#059669"/>
-                    <rect x="15" y="15" width="20" height="20" fill="white"/>
-                    <rect x="20" y="20" width="10" height="10" fill="#059669"/>
-                    <rect x="60" y="10" width="30" height="30" fill="#059669"/>
-                    <rect x="65" y="15" width="20" height="20" fill="white"/>
-                    <rect x="70" y="20" width="10" height="10" fill="#059669"/>
-                    <rect x="10" y="60" width="30" height="30" fill="#059669"/>
-                    <rect x="15" y="65" width="20" height="20" fill="white"/>
-                    <rect x="20" y="70" width="10" height="10" fill="#059669"/>
-                    <rect x="50" y="50" width="15" height="15" fill="#047857"/>
-                    <rect x="70" y="65" width="20" height="15" fill="#047857"/>
-                    <rect x="50" y="75" width="15" height="15" fill="#047857"/>
-                </svg>
+            <div class="pix-qrcode-box" id="pix-qrcode-container" style="background: white; padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; min-width: 190px; min-height: 190px; margin: 0 auto 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <div id="pix-qrcode-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; height: 170px; color: #475569; font-size: 0.85rem;">
+                    <div style="font-size: 2rem; margin-bottom: 6px;">⏳</div>
+                    <span style="font-weight: 600;">Gerando QR Code PIX oficial...</span>
+                </div>
+                <img id="pix-qrcode-img" src="" alt="QR Code PIX Oficial" style="display: none; width: 170px; height: 170px; border-radius: 6px;">
             </div>
 
             <div style="font-size: 0.8rem; color: #94a3b8; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
@@ -1625,7 +1615,7 @@
                 const res = await fetch('/api/checkout/infinitepay', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor })
+                    body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor, redirect_path: '/dashboard' })
                 });
                 const data = await res.json();
                 if (data.sucesso && data.checkout_url) {
@@ -1642,12 +1632,16 @@
             }
         }
 
-        // Checkout PIX Direto no Modal
+        // Checkout PIX Direto no Modal com QR Code Real
         async function executarCheckoutPixDireto() {
             fecharModalEscolha();
             document.getElementById('pix-modal-titulo').textContent = compraAtual.titulo;
             document.getElementById('pix-modal-valor').textContent = 'R$ ' + compraAtual.valor.toFixed(2).replace('.', ',');
-            document.getElementById('pix-copia-cola-texto').textContent = 'Gerando cobrança PIX...';
+            document.getElementById('pix-copia-cola-texto').textContent = 'Gerando cobrança PIX oficial...';
+            const qrImg = document.getElementById('pix-qrcode-img');
+            const qrLoading = document.getElementById('pix-qrcode-loading');
+            if (qrImg) qrImg.style.display = 'none';
+            if (qrLoading) qrLoading.style.display = 'flex';
             document.getElementById('modal-pix-qrcode').style.display = 'flex';
 
             try {
@@ -1660,6 +1654,12 @@
                 if (data.sucesso) {
                     pagamentoAtualId = data.pagamento.id;
                     document.getElementById('pix-copia-cola-texto').textContent = data.pagamento.pix_copia_cola;
+                    const qrSrc = data.pix_qr_code_base64 || (data.pagamento && data.pagamento.pix_qr_code_base64);
+                    if (qrSrc && qrImg) {
+                        qrImg.src = qrSrc;
+                        qrImg.style.display = 'block';
+                        if (qrLoading) qrLoading.style.display = 'none';
+                    }
                 } else {
                     alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
                 }
@@ -1702,10 +1702,10 @@
             if (urlParams.get('checkout') === 'sucesso') {
                 const pId = urlParams.get('payment_id');
                 if (pId) {
-                    fetch(`/api/checkout/status/${pId}`)
+                    fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
                         .then(r => r.json())
-                        .then(() => {
-                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso e seu acesso está liberado!');
+                        .then(data => {
+                            alert('🎉 Parabéns! Seu pagamento foi confirmado com sucesso e seu acesso está 100% liberado!');
                             window.location.href = '/dashboard';
                         })
                         .catch(() => {

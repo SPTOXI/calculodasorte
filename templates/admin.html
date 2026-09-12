@@ -1077,6 +1077,34 @@
         </div>
         {% endif %}
 
+        <!-- STATUS DE PERSISTÊNCIA EM NUVEM (VERCEL BLOB) -->
+        {% if storage_status %}
+            {% if storage_status.configured %}
+            <div style="background: #ecfdf5; border-left: 5px solid #10b981; padding: 14px 18px; border-radius: 10px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.3rem;">☁️</span>
+                    <div>
+                        <strong style="color: #065f46;">Persistência em Nuvem Ativa (Vercel Blob Storage)</strong>
+                        <span style="color: #047857; margin-left: 8px;">• {{ storage_status.mensagem }}</span>
+                    </div>
+                </div>
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Operacional</span>
+            </div>
+            {% elif storage_status.is_vercel %}
+            <div style="background: #fffbeb; border-left: 5px solid #f59e0b; padding: 14px 18px; border-radius: 10px; margin-bottom: 22px; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <span style="font-size: 1.4rem; line-height: 1;">⚠️</span>
+                    <div>
+                        <strong style="color: #92400e;">Atenção: Persistência em Nuvem Não Configurada no Vercel!</strong>
+                        <p style="color: #78350f; margin-top: 4px; line-height: 1.4;">
+                            As instâncias serverless da Vercel utilizam sistemas de arquivos efêmeros (/tmp). Para que novos cadastros realizados pelo celular apareçam no desktop (e vice-versa), conecte um <strong>Vercel Blob Store</strong> no painel da Vercel (menu <em>Storage</em> &rarr; <em>Connect Store</em> &rarr; <em>Blob</em>). A variável <code>BLOB_READ_WRITE_TOKEN</code> será vinculada automaticamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
         <!-- BARRA DE MÉTRICAS EM TEMPO REAL -->
         <div class="metrics-grid">
             <div class="metric-card">

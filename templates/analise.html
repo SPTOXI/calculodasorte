@@ -1256,6 +1256,7 @@
                 {% if current_user %}
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #cbd5e1;">
                     <span>👤 <strong>{{ current_user.name or current_user.email }}</strong></span>
+                    <span id="analise-user-badge">
                     {% if access and access.is_vip %}
                         <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">👑 VIP ILIMITADO</span>
                     {% elif access and access.credits > 0 %}
@@ -1263,17 +1264,18 @@
                     {% else %}
                         <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">⚠️ SEM CRÉDITOS</span>
                     {% endif %}
+                    </span>
                 </div>
                 {% endif %}
             </div>
 
             <div class="downloads-bar">
-                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #059669, #047857); color: #ffffff; font-weight: 800; border: 1px solid rgba(52, 211, 153, 0.4); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);">
+                <button type="button" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')" class="btn-download" style="background: linear-gradient(135deg, #059669, #047857); color: #ffffff; font-weight: 800; border: 1px solid rgba(52, 211, 153, 0.4); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); cursor: pointer;">
                     🪙 Palpite Avulso (R$ 5,00)
-                </a>
-                <a href="/planos" class="btn-download" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; font-weight: 800; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);">
+                </button>
+                <button type="button" onclick="abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')" class="btn-download" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a1a; font-weight: 800; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); cursor: pointer;">
                     👑 VIP (R$ 29,90)
-                </a>
+                </button>
                 <a href="/download/historico/{{ loteria.value }}/md" class="btn-download" title="Baixar histórico oficial em Markdown">
                     📥 Baixar Histórico (.MD)
                 </a>
@@ -2922,9 +2924,9 @@ Exemplo para {{ config.nome }}:
                             <li>✅ Sem mensalidade</li>
                         </ul>
                     </div>
-                    <a href="/planos" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; text-decoration: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(5,150,105,0.3);">
+                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(5,150,105,0.3); cursor: pointer; width: 100%;">
                         Liberar por R$ 5,00
-                    </a>
+                    </button>
                 </div>
 
                 <!-- Opção 2: VIP R$ 29,90 -->
@@ -2939,9 +2941,9 @@ Exemplo para {{ config.nome }}:
                             <li>👑 Consultor IA 24h</li>
                         </ul>
                     </div>
-                    <a href="/planos" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; text-decoration: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(245,158,11,0.35);">
+                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(245,158,11,0.35); cursor: pointer; width: 100%;">
                         Ativar VIP (R$ 29,90)
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -2995,5 +2997,271 @@ Exemplo para {{ config.nome }}:
             </button>
         </div>
     </div>
+
+    <!-- ============================================================
+         MODAIS DE CHECKOUT RÁPIDO (PIX E INFINITEPAY) NA ANÁLISE
+         ============================================================ -->
+    <style>
+        .checkout-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .checkout-modal {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            max-width: 440px;
+            width: 100%;
+            padding: 28px 24px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+        .checkout-modal-close {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .checkout-modal-close:hover { color: white; }
+        .pix-copia-cola-box {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #34d399;
+            word-break: break-all;
+            user-select: all;
+            margin-bottom: 14px;
+            max-height: 70px;
+            overflow-y: auto;
+            text-align: left;
+        }
+    </style>
+
+    <!-- Modal de Escolha de Forma de Pagamento -->
+    <div class="checkout-modal-backdrop" id="modal-escolha-pagamento">
+        <div class="checkout-modal">
+            <button class="checkout-modal-close" onclick="fecharModalEscolha()">&times;</button>
+            <div style="font-size: 2.6rem; margin-bottom: 8px;">⚡</div>
+            <h3 style="font-size: 1.35rem; color: white; margin-bottom: 6px;" id="modal-escolha-titulo">Finalizar Pedido</h3>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399; margin-bottom: 16px;" id="modal-escolha-valor">R$ 5,00</div>
+
+            <p style="color: #cbd5e1; font-size: 0.88rem; margin-bottom: 20px; line-height: 1.45;">
+                Escolha a forma mais conveniente para liberação imediata nesta análise:
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-download" id="btn-infinite-analise" onclick="executarCheckoutInfinitePay()" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 12px; font-size: 0.95rem; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; width: 100%;">
+                    ⚡ Pagar com InfinitePay (PIX / Cartão)
+                </button>
+
+                <button class="btn-download" onclick="executarCheckoutPixDireto()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #f8fafc; padding: 12px; font-size: 0.95rem; font-weight: 700; border-radius: 10px; cursor: pointer; width: 100%;">
+                    📱 Pagar com QR Code / PIX Copia e Cola
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal PIX QR Code & Copia e Cola -->
+    <div class="checkout-modal-backdrop" id="modal-pix-qrcode">
+        <div class="checkout-modal">
+            <button class="checkout-modal-close" onclick="fecharModalPix()">&times;</button>
+            <h3 style="font-size: 1.35rem; color: white; margin-bottom: 4px;" id="pix-modal-titulo">Pagamento Instantâneo PIX</h3>
+            <div style="color: #34d399; font-weight: 900; font-size: 1.45rem; margin-bottom: 12px;" id="pix-modal-valor">R$ 5,00</div>
+
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px;">
+                Abra o app do seu banco e aponte a câmera ou use o <strong>PIX Copia e Cola</strong>:
+            </p>
+
+            <div class="pix-qrcode-box" id="analise-pix-qrcode-container" style="background: white; padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; min-width: 190px; min-height: 190px; margin: 0 auto 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <div id="analise-pix-qrcode-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; height: 170px; color: #475569; font-size: 0.85rem;">
+                    <div style="font-size: 2rem; margin-bottom: 6px;">⏳</div>
+                    <span style="font-weight: 600;">Gerando QR Code PIX oficial...</span>
+                </div>
+                <img id="analise-pix-qrcode-img" src="" alt="QR Code PIX Oficial" style="display: none; width: 170px; height: 170px; border-radius: 6px;">
+            </div>
+
+            <div style="font-size: 0.8rem; color: #94a3b8; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
+            <div class="pix-copia-cola-box" id="pix-copia-cola-texto">Gerando código PIX...</div>
+
+            <button onclick="copiarPixCodigoAnalise()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 8px; padding: 11px; font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%; margin-bottom: 10px;">
+                📋 Copiar Código PIX
+            </button>
+
+            <button id="btn-confirmar-pix-analise" onclick="confirmarPixAnalise()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border: none; border-radius: 8px; padding: 11px; font-weight: 900; font-size: 0.92rem; cursor: pointer; width: 100%;">
+                ✅ Já Paguei / Liberar Acesso Agora
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let compraAtualAnalise = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
+        let pagamentoAtualAnaliseId = null;
+
+        function abrirModalCompraRapida(tipo, valor, titulo) {
+            compraAtualAnalise = { tipo, valor, titulo };
+            document.getElementById('modal-escolha-titulo').textContent = titulo;
+            document.getElementById('modal-escolha-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+            document.getElementById('modal-escolha-pagamento').style.display = 'flex';
+        }
+
+        function fecharModalEscolha() {
+            document.getElementById('modal-escolha-pagamento').style.display = 'none';
+        }
+
+        function fecharModalPix() {
+            document.getElementById('modal-pix-qrcode').style.display = 'none';
+        }
+
+        async function executarCheckoutInfinitePay() {
+            const btn = document.getElementById('btn-infinite-analise');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ <em>Conectando à InfinitePay...</em>';
+
+            try {
+                const res = await fetch('/api/checkout/infinitepay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        tipo: compraAtualAnalise.tipo, 
+                        valor: compraAtualAnalise.valor,
+                        loteria_type: '{{ loteria.value }}',
+                        redirect_path: window.location.pathname
+                    })
+                });
+                const data = await res.json();
+                if (data.sucesso && data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    alert('Não foi possível iniciar InfinitePay: ' + (data.erro || 'Tente novamente.'));
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                }
+            } catch (e) {
+                alert('Erro de conexão: ' + e.message);
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+
+        async function executarCheckoutPixDireto() {
+            fecharModalEscolha();
+            document.getElementById('pix-modal-titulo').textContent = compraAtualAnalise.titulo;
+            document.getElementById('pix-modal-valor').textContent = 'R$ ' + compraAtualAnalise.valor.toFixed(2).replace('.', ',');
+            document.getElementById('pix-copia-cola-texto').textContent = 'Gerando cobrança PIX oficial...';
+            const qrImg = document.getElementById('analise-pix-qrcode-img');
+            const qrLoading = document.getElementById('analise-pix-qrcode-loading');
+            if (qrImg) qrImg.style.display = 'none';
+            if (qrLoading) qrLoading.style.display = 'flex';
+            document.getElementById('modal-pix-qrcode').style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/checkout/pix', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        tipo: compraAtualAnalise.tipo, 
+                        valor: compraAtualAnalise.valor,
+                        loteria_type: '{{ loteria.value }}'
+                    })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    pagamentoAtualAnaliseId = data.pagamento.id;
+                    document.getElementById('pix-copia-cola-texto').textContent = data.pagamento.pix_copia_cola;
+                    const qrSrc = data.pix_qr_code_base64 || (data.pagamento && data.pagamento.pix_qr_code_base64);
+                    if (qrSrc && qrImg) {
+                        qrImg.src = qrSrc;
+                        qrImg.style.display = 'block';
+                        if (qrLoading) qrLoading.style.display = 'none';
+                    }
+                } else {
+                    alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
+                }
+            } catch (e) {
+                alert('Erro de conexão ao gerar PIX: ' + e.message);
+            }
+        }
+
+        function copiarPixCodigoAnalise() {
+            const codigo = document.getElementById('pix-copia-cola-texto').textContent;
+            navigator.clipboard.writeText(codigo).then(() => {
+                alert('Código PIX copiado com sucesso! Abra seu aplicativo bancário e utilize o PIX Copia e Cola.');
+            });
+        }
+
+        async function confirmarPixAnalise() {
+            if (!pagamentoAtualAnaliseId) return;
+            const btn = document.getElementById('btn-confirmar-pix-analise');
+            btn.innerHTML = '⏳ <em>Validando pagamento...</em>';
+
+            try {
+                const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualAnaliseId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.sucesso) {
+                    fecharModalPix();
+                    fecharModalPaywall();
+                    atualizarBadgeUsuario(data.access);
+                    alert('🎉 Parabéns! Pagamento aprovado com sucesso! Seus créditos já foram liberados e você pode gerar suas apostas agora.');
+                } else {
+                    alert('Status: ' + (data.erro || 'Aguardando compensação do PIX. Se já pagou, aguarde alguns segundos.'));
+                    btn.innerHTML = '✅ Já Paguei / Liberar Acesso Agora';
+                }
+            } catch (e) {
+                alert('Erro na confirmação: ' + e.message);
+                btn.innerHTML = '✅ Já Paguei / Liberar Acesso Agora';
+            }
+        }
+
+        function atualizarBadgeUsuario(access) {
+            const badgeEl = document.getElementById('analise-user-badge');
+            if (!badgeEl || !access) return;
+            if (access.is_vip) {
+                badgeEl.innerHTML = '<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">👑 VIP ILIMITADO</span>';
+            } else if (access.credits > 0) {
+                badgeEl.innerHTML = `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🪙 ${access.credits} CRÉDITO(S)</span>`;
+            } else {
+                badgeEl.innerHTML = '<span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">⚠️ SEM CRÉDITOS</span>';
+            }
+        }
+
+        // Checar retorno da InfinitePay na página de análise
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('checkout') === 'sucesso') {
+                const pId = urlParams.get('payment_id');
+                if (pId) {
+                    fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.access) {
+                                atualizarBadgeUsuario(data.access);
+                            }
+                            fecharModalPaywall();
+                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seus créditos já estão liberados.');
+                            const cleanUrl = window.location.pathname;
+                            window.history.replaceState({}, document.title, cleanUrl);
+                        })
+                        .catch(() => {});
+                }
+            }
+        });
+    </script>
 </body>
 </html>

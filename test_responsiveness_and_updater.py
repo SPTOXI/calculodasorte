@@ -138,10 +138,13 @@ class TestResponsividadeEUpdater(unittest.TestCase):
     def test_08_bloqueio_sincronizacao_usuario_padrao(self):
         """Verifica que a função 'Sincronizar Agora' está indisponível para o usuário padrão"""
         # Cliente autenticado como usuário padrão (role='user')
+        u_comum = database.get_user_by_email('usuario.comum@email.com')
+        if not u_comum:
+            u_comum = database.create_user('usuario.comum@email.com', '123456', 'Usuario Comum', role='user')
         user_client = app.test_client()
         with user_client.session_transaction() as sess:
-            sess['user_id'] = 2
-            sess['user_email'] = 'usuario.comum@email.com'
+            sess['user_id'] = u_comum['id']
+            sess['user_email'] = u_comum['email']
             sess['user_role'] = 'user'
 
         # 1. No HTML da página de análise, o botão 'Sincronizar Agora' NÃO deve ser renderizado para usuário padrão

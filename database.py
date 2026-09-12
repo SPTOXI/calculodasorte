@@ -44,11 +44,15 @@ def sync_db_to_cloud() -> bool:
     """Envia o banco local atualizado para o Vercel Blob"""
     global _LAST_CLOUD_SYNC
     if not blob_storage.get_blob_token():
+        if os.environ.get('VERCEL'):
+            print("[DB] AVISO: BLOB_READ_WRITE_TOKEN não configurado no Vercel. Alterações não serão persistidas entre instâncias.")
         return False
     
     success = blob_storage.upload_blob(DB_PATH, 'database.db')
     if success:
         _LAST_CLOUD_SYNC = time.time()
+    else:
+        print("[DB] ERRO: Falha ao sincronizar banco local com Vercel Blob.")
     return success
 
 
@@ -115,6 +119,9 @@ def init_db():
         if 'accepted_terms_at' not in colunas_existentes:
             conn.execute("ALTER TABLE users ADD COLUMN accepted_terms_at TIMESTAMP")
         
+        # Índice Case-Insensitive para consultas de e-mail de alta performance e resiliência mobile
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email_nocase ON users (email COLLATE NOCASE)')
+        
         # Tabela de Histórico de Sincronizações
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sync_logs (
@@ -156,11 +163,18 @@ def init_db():
                 status TEXT NOT NULL DEFAULT 'pendente',
                 pix_copia_cola TEXT,
                 pix_txid TEXT,
+                pix_qr_code_base64 TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 approved_at TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         ''')
+
+        # Migração segura para bases existentes
+        try:
+            cursor.execute('ALTER TABLE payments ADD COLUMN pix_qr_code_base64 TEXT')
+        except Exception:
+            pass
         
         conn.commit()
 
@@ -200,7 +214,7 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
             return dict(row)
 
     # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
+    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
             row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
             if row:
@@ -211,6 +225,8 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
 
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Buscar usuário por e-mail (case-insensitive) com fallback para sincronização na nuvem"""
+    if not email:
+        return None
     email_clean = email.strip().lower()
     with get_db_connection() as conn:
         row = conn.execute(
@@ -221,13 +237,14 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
             return dict(row)
 
     # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
+    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
             row = conn.execute(
                 'SELECT * FROM users WHERE LOWER(email) = ?', 
                 (email_clean,)
             ).fetchone()
             if row:
+                print(f"[DB] Usuário {email_clean} localizado com sucesso após sincronização em nuvem.")
                 return dict(row)
 
     return None
@@ -235,8 +252,8 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 def get_all_users() -> List[Dict[str, Any]]:
     """Listar todos os usuários com dados de plano e créditos (sincronizado com a nuvem)"""
-    if os.environ.get('VERCEL'):
-        sync_db_from_cloud(force=False)
+    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
+        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         rows = conn.execute(
             'SELECT id, email, name, role, plan, credits, vip_expires_at, is_blocked, must_change_password, created_at, last_login '
@@ -276,7 +293,11 @@ def create_user(
         conn.commit()
         user_id = cursor.lastrowid
         
-    sync_db_to_cloud()
+    synced = sync_db_to_cloud()
+    if synced:
+        print(f"[DB] Novo usuário cadastrado ({email_clean}) e sincronizado com a nuvem.")
+    else:
+        print(f"[DB] Novo usuário cadastrado ({email_clean}) localmente.")
     return get_user_by_id(user_id)
 
 
@@ -653,19 +674,127 @@ def add_user_credits(user_id: int, amount: int = 1):
         conn.commit()
 
 
+PIX_KEY_DEFAULT = os.environ.get('PIX_KEY', 'silvio.luis.morais@gmail.com')
+PIX_BENEFICIARIO_DEFAULT = os.environ.get('PIX_BENEFICIARIO', 'Calculo da Sorte')
+PIX_CIDADE_DEFAULT = os.environ.get('PIX_CIDADE', 'SAO PAULO')
+
+
+def calcular_crc16_ccitt(payload: str) -> str:
+    """Calcula o checksum CRC16-CCITT (polinômio 0x1021, valor inicial 0xFFFF) conforme especificação BACEN para PIX"""
+    crc = 0xFFFF
+    for byte in payload.encode('utf-8'):
+        crc ^= (byte << 8)
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return f"{crc:04X}"
+
+
+def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txid: str = '***') -> str:
+    """
+    Gera o payload oficial PIX Copia e Cola no padrão EMVCo / BR Code estabelecido pelo Banco Central do Brasil.
+    Garante tags TLV (Tag-Length-Value) rigorosamente corretas e checksum CRC-16/CCITT-FALSE.
+    """
+    import unicodedata
+
+    # Normalizar nome e cidade para ASCII sem acentos (requisito universal de compatibilidade bancária)
+    nome_norm = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('ASCII')
+    cidade_norm = unicodedata.normalize('NFKD', cidade).encode('ASCII', 'ignore').decode('ASCII')
+    nome_clean = (nome_norm or 'Calculo da Sorte')[:25]
+    cidade_clean = (cidade_norm or 'SAO PAULO')[:15]
+
+    # Tag 00: Payload Format Indicator
+    p_format = "000201"
+
+    # Tag 26: Merchant Account Information
+    gui = "0014br.gov.bcb.pix"
+    key_tag = f"01{len(chave):02d}{chave}"
+    merchant_info = gui + key_tag
+    tag_26 = f"26{len(merchant_info):02d}{merchant_info}"
+
+    # Tag 52: Merchant Category Code
+    tag_52 = "52040000"
+
+    # Tag 53: Transaction Currency (986 = Real brasileiro)
+    tag_53 = "5303986"
+
+    # Tag 54: Transaction Amount
+    val_str = f"{valor:.2f}"
+    tag_54 = f"54{len(val_str):02d}{val_str}"
+
+    # Tag 58: Country Code
+    tag_58 = "5802BR"
+
+    # Tag 59: Merchant Name
+    tag_59 = f"59{len(nome_clean):02d}{nome_clean}"
+
+    # Tag 60: Merchant City
+    tag_60 = f"60{len(cidade_clean):02d}{cidade_clean}"
+
+    # Tag 62: Additional Data Field (txid)
+    txid_clean = txid[:25] if txid else '***'
+    subtag_05 = f"05{len(txid_clean):02d}{txid_clean}"
+    tag_62 = f"62{len(subtag_05):02d}{subtag_05}"
+
+    # Tag 63: CRC16 (Payload sem os 4 dígitos do checksum)
+    raw = p_format + tag_26 + tag_52 + tag_53 + tag_54 + tag_58 + tag_59 + tag_60 + tag_62 + "6304"
+    crc = calcular_crc16_ccitt(raw)
+    return raw + crc
+
+
+def gerar_qrcode_pix_base64(pix_code: str) -> str:
+    """Gera imagem vetorial SVG de alta resolução legível por qualquer app bancário, codificada em data URI base64"""
+    if not pix_code:
+        return ""
+    try:
+        import qrcode
+        import qrcode.image.svg
+        import io
+        import base64
+
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+        )
+        qr.add_data(pix_code)
+        qr.make(fit=True)
+
+        factory = qrcode.image.svg.SvgPathImage
+        img = qr.make_image(image_factory=factory)
+        stream = io.BytesIO()
+        img.save(stream)
+        svg_bytes = stream.getvalue()
+        svg_base64 = base64.b64encode(svg_bytes).decode('ascii')
+        return f"data:image/svg+xml;base64,{svg_base64}"
+    except Exception as e:
+        print(f"[QRCODE] Erro ao gerar QR Code vetorial: {e}")
+        return ""
+
+
 def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional[str] = None) -> Dict[str, Any]:
-    """Registra uma intenção de pagamento PIX e gera payload Copia e Cola"""
+    """Registra uma intenção de pagamento PIX e gera payload oficial Copia e Cola e QR Code vetorial"""
     import random
     import string
-    txid = 'PIX' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
-    pix_copia_cola = f"00020126580014br.gov.bcb.pix0136silvio.luis.morais@gmail.com520400005303986540{valor:.2f}5802BR5916Calculo da Sorte6009Sao Paulo62070503***6304{txid[-4:]}"
+    txid = 'CS' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    pix_copia_cola = gerar_pix_copia_e_cola(
+        chave=PIX_KEY_DEFAULT,
+        nome=PIX_BENEFICIARIO_DEFAULT,
+        cidade=PIX_CIDADE_DEFAULT,
+        valor=valor,
+        txid=txid
+    )
+    pix_qr_code_base64 = gerar_qrcode_pix_base64(pix_copia_cola)
     
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO payments (user_id, tipo, loteria_type, valor, status, pix_copia_cola, pix_txid)
-            VALUES (?, ?, ?, ?, 'pendente', ?, ?)
-        ''', (user_id, tipo, loteria_type, valor, pix_copia_cola, txid))
+            INSERT INTO payments (user_id, tipo, loteria_type, valor, status, pix_copia_cola, pix_txid, pix_qr_code_base64)
+            VALUES (?, ?, ?, ?, 'pendente', ?, ?, ?)
+        ''', (user_id, tipo, loteria_type, valor, pix_copia_cola, txid, pix_qr_code_base64))
         conn.commit()
         payment_id = cursor.lastrowid
         
@@ -674,17 +803,23 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
 
 
 def get_payment_by_id(payment_id: int) -> Optional[Dict[str, Any]]:
-    """Obtém detalhes do pagamento"""
+    """Obtém detalhes do pagamento garantindo disponibilização do QR Code oficial"""
     with get_db_connection() as conn:
         row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
         if row:
-            return dict(row)
+            res = dict(row)
+            if not res.get('pix_qr_code_base64') and res.get('pix_copia_cola'):
+                res['pix_qr_code_base64'] = gerar_qrcode_pix_base64(res['pix_copia_cola'])
+            return res
 
     if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
             row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
             if row:
-                return dict(row)
+                res = dict(row)
+                if not res.get('pix_qr_code_base64') and res.get('pix_copia_cola'):
+                    res['pix_qr_code_base64'] = gerar_qrcode_pix_base64(res['pix_copia_cola'])
+                return res
 
     return None
 
@@ -717,8 +852,8 @@ def approve_payment(payment_id: int) -> bool:
 
 def get_all_payments() -> List[Dict[str, Any]]:
     """Listar todos os pagamentos com dados do usuário para o painel admin (sincronizado na nuvem)"""
-    if os.environ.get('VERCEL'):
-        sync_db_from_cloud(force=False)
+    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
+        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         rows = conn.execute('''
             SELECT p.*, u.email as user_email, u.name as user_name

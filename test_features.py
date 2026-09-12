@@ -469,6 +469,95 @@ class TestNovasFuncionalidades(unittest.TestCase):
         data_pix = res_pix.get_json()
         self.assertEqual(data_pix['valor'], 5.00, "Preço único de análise avulsa deve ser estritamente R$ 5,00")
 
+    def test_20_pix_emvco_e_crc16_validos(self):
+        """Valida que o payload PIX Copia e Cola gerado atende estritamente à especificação BACEN / EMVCo"""
+        import database
+        chave = 'silvio.luis.morais@gmail.com'
+        valor = 5.00
+        pix = database.gerar_pix_copia_e_cola(chave, 'Calculo da Sorte', 'SAO PAULO', valor, 'CS123456')
+        
+        # 1. Verifica indicadores obrigatórios
+        self.assertTrue(pix.startswith('00020126'))
+        self.assertIn('0014br.gov.bcb.pix', pix)
+        self.assertIn(f"01{len(chave):02d}{chave}", pix)
+        self.assertIn('5303986', pix) # BRL
+        self.assertIn('54045.00', pix) # R$ 5.00
+        self.assertIn('5802BR', pix)
+        self.assertIn('6304', pix)
+        
+        # 2. Valida o checksum CRC-16/CCITT-FALSE
+        payload_sem_crc = pix[:-4]
+        crc_calculado = database.calcular_crc16_ccitt(payload_sem_crc)
+        self.assertEqual(pix[-4:], crc_calculado, "Checksum CRC16 do PIX deve bater exatamente com o algoritmo oficial BACEN")
+
+    def test_21_geracao_qrcode_svg_base64(self):
+        """Valida a geração de QR Code vetorial SVG em base64 tanto na função direta quanto na rota /api/checkout/pix"""
+        import database
+        import uuid
+        import base64
+
+        # 1. Teste da função direta
+        pix_code = "00020126500014br.gov.bcb.pix0128silvio.luis.morais@gmail.com52040000530398654045.005802BR5916Calculo da Sorte6009SAO PAULO62070503***6304DEEE"
+        qr_uri = database.gerar_qrcode_pix_base64(pix_code)
+        self.assertTrue(qr_uri.startswith('data:image/svg+xml;base64,'))
+        base64_part = qr_uri.split(',', 1)[1]
+        svg_content = base64.b64decode(base64_part).decode('utf-8')
+        self.assertIn('<svg', svg_content)
+        self.assertIn('</svg>', svg_content)
+
+        # 2. Teste via rota /api/checkout/pix
+        email = f"qrcode_user_{uuid.uuid4().hex[:6]}@teste.com"
+        u = database.create_user(email, '123456', 'Tester QR')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = u['id']
+
+        res = self.client.post('/api/checkout/pix',
+            data=json.dumps({'tipo': 'avulso', 'valor': 5.00}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data['sucesso'])
+        self.assertIn('pix_qr_code_base64', data)
+        self.assertTrue(data['pix_qr_code_base64'].startswith('data:image/svg+xml;base64,'))
+
+    def test_22_fluxo_avulso_e_auto_aprovacao_retorno(self):
+        """Valida que a compra do avulso de R$ 5,00 libera créditos após retorno de checkout ou confirmação"""
+        import database
+        import uuid
+
+        email = f"avulso_{uuid.uuid4().hex[:6]}@teste.com"
+        u = database.create_user(email, '123456', 'Avulso Tester', credits=0)
+        user_id = u['id']
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # 1. Usuário começa sem créditos
+        access_inicial = database.check_user_access(user_id)
+        self.assertFalse(access_inicial['has_access'])
+        self.assertEqual(access_inicial['credits'], 0)
+
+        # 2. Criação do pagamento avulso
+        pagamento = database.create_payment(user_id=user_id, tipo='avulso', valor=5.00)
+        p_id = pagamento['id']
+        self.assertEqual(pagamento['valor'], 5.00)
+        self.assertEqual(pagamento['status'], 'pendente')
+
+        # 3. Retorno do checkout com parâmetro checkout=sucesso aciona auto-aprovação
+        res_status = self.client.get(f'/api/checkout/status/{p_id}?checkout=sucesso')
+        self.assertEqual(res_status.status_code, 200)
+        data_st = res_status.get_json()
+        self.assertTrue(data_st['is_approved'])
+        self.assertEqual(data_st['status'], 'aprovado')
+        self.assertTrue(data_st['access']['has_access'])
+        self.assertEqual(data_st['access']['credits'], 1)
+
+        # 4. Consumir crédito gerando jogo
+        database.consume_user_credit(user_id)
+        access_depois = database.check_user_access(user_id)
+        self.assertEqual(access_depois['credits'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
