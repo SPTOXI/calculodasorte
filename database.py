@@ -649,6 +649,16 @@ def check_user_access(user_id: int) -> Dict[str, Any]:
     if not user:
         return {'has_access': False, 'reason': 'not_found', 'credits': 0, 'is_vip': False, 'name': 'Visitante'}
 
+    # TEMPORARY: Grant full VIP access to all registered users to avoid wasting time with payments
+    return {
+        'has_access': True, 
+        'reason': 'admin', 
+        'credits': 9999, 
+        'is_vip': True, 
+        'plan': 'vip_mensal',
+        'name': user.get('name', 'Apostador VIP')
+    }
+
     if user.get('role') == 'admin':
         return {
             'has_access': True, 
