@@ -3110,10 +3110,16 @@ Exemplo para {{ config.nome }}:
     </div>
 
     <script>
+        const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
         let compraAtualAnalise = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
         let pagamentoAtualAnaliseId = null;
 
         function abrirModalCompraRapida(tipo, valor, titulo) {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta ou cadastre-se.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             compraAtualAnalise = { tipo, valor, titulo };
             document.getElementById('modal-escolha-titulo').textContent = titulo;
             document.getElementById('modal-escolha-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
@@ -3128,7 +3134,33 @@ Exemplo para {{ config.nome }}:
             document.getElementById('modal-pix-qrcode').style.display = 'none';
         }
 
+        async function parseJsonResponse(res) {
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
+            }
+            if (res.status === 401 || (data && data.requer_login)) {
+                alert('Sua sessão expirou ou é necessário entrar na sua conta. Redirecionando...');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return null;
+            }
+            if (!data) {
+                throw new Error(res.statusText || 'Resposta inesperada do servidor.');
+            }
+            return data;
+        }
+
         async function executarCheckoutInfinitePay() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             const btn = document.getElementById('btn-infinite-analise');
             const textoOriginal = btn.innerHTML;
             btn.disabled = true;
@@ -3145,7 +3177,9 @@ Exemplo para {{ config.nome }}:
                         redirect_path: window.location.pathname
                     })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
+                if (!data) return;
+
                 if (data.sucesso && data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
@@ -3154,13 +3188,18 @@ Exemplo para {{ config.nome }}:
                     btn.innerHTML = textoOriginal;
                 }
             } catch (e) {
-                alert('Erro de conexão: ' + e.message);
+                alert('Erro ao conectar com InfinitePay: ' + e.message);
                 btn.disabled = false;
                 btn.innerHTML = textoOriginal;
             }
         }
 
         async function executarCheckoutPixDireto() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             fecharModalEscolha();
             document.getElementById('pix-modal-titulo').textContent = compraAtualAnalise.titulo;
             document.getElementById('pix-modal-valor').textContent = 'R$ ' + compraAtualAnalise.valor.toFixed(2).replace('.', ',');
@@ -3181,7 +3220,9 @@ Exemplo para {{ config.nome }}:
                         loteria_type: '{{ loteria.value }}'
                     })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
+                if (!data) return;
+
                 if (data.sucesso) {
                     pagamentoAtualAnaliseId = data.pagamento.id;
                     document.getElementById('pix-copia-cola-texto').textContent = data.pagamento.pix_copia_cola;
@@ -3195,7 +3236,7 @@ Exemplo para {{ config.nome }}:
                     alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
                 }
             } catch (e) {
-                alert('Erro de conexão ao gerar PIX: ' + e.message);
+                alert('Erro ao gerar PIX: ' + e.message);
             }
         }
 
@@ -3213,7 +3254,9 @@ Exemplo para {{ config.nome }}:
 
             try {
                 const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualAnaliseId}`, { method: 'POST' });
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
+                if (!data) return;
+
                 if (data.sucesso) {
                     fecharModalPix();
                     fecharModalPaywall();
@@ -3248,8 +3291,9 @@ Exemplo para {{ config.nome }}:
                 const pId = urlParams.get('payment_id');
                 if (pId) {
                     fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
-                        .then(r => r.json())
+                        .then(r => parseJsonResponse(r))
                         .then(data => {
+                            if (!data) return;
                             if (data.access) {
                                 atualizarBadgeUsuario(data.access);
                             }

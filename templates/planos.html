@@ -606,6 +606,27 @@
         let pagamentoAtualId = null;
         const IS_AUTHENTICATED = {{ 'true' if user else 'false' }};
 
+        async function parseJsonResponse(res, redirectPath = '/planos') {
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
+            }
+            if (res.status === 401 || (data && data.requer_login)) {
+                alert('Sua sessão expirou ou é necessário entrar na sua conta. Redirecionando...');
+                window.location.href = '/login?next=' + encodeURIComponent(redirectPath);
+                return null;
+            }
+            if (!data) {
+                throw new Error(res.statusText || 'Resposta inesperada do servidor.');
+            }
+            return data;
+        }
+
         // Checkout Oficial InfinitePay (Taxa Zero & D+0 Instantâneo)
         async function iniciarCheckoutInfinitePay(tipo, valor, btnId) {
             if (!IS_AUTHENTICATED) {
@@ -626,7 +647,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tipo, valor, redirect_path: '/planos' })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/planos');
+                if (!data) return;
+
                 if (data.sucesso && data.checkout_url) {
                     // Redireciona o apostador diretamente para a página de pagamento seguro da InfinitePay
                     window.location.href = data.checkout_url;
@@ -638,7 +661,7 @@
                     }
                 }
             } catch (e) {
-                alert('Falha na requisição: ' + e.message);
+                alert('Falha ao iniciar InfinitePay: ' + e.message);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = textoOriginal;
@@ -667,7 +690,9 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ tipo, valor })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/planos');
+                if (!data) return;
+
                 if (data.sucesso) {
                     pagamentoAtualId = data.pagamento.id;
                     document.getElementById('pix-codigo').textContent = data.pagamento.pix_copia_cola;
@@ -681,7 +706,7 @@
                     alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
                 }
             } catch (e) {
-                alert('Erro de conexão ao gerar PIX: ' + e.message);
+                alert('Erro ao gerar PIX: ' + e.message);
             }
         }
 
@@ -699,7 +724,9 @@
             
             try {
                 const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualId}`, { method: 'POST' });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/planos');
+                if (!data) return;
+
                 if (data.sucesso) {
                     alert('🎉 Pagamento aprovado com sucesso! Seu acesso já está liberado.');
                     window.location.href = '/dashboard';
@@ -725,8 +752,9 @@
                 if (pId) {
                     // Consulta o backend com auto-aprovação para confirmar ativação
                     fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
-                        .then(r => r.json())
+                        .then(r => parseJsonResponse(r, '/planos'))
                         .then(data => {
+                            if (!data) return;
                             alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seu acesso está liberado.');
                             window.location.href = '/dashboard';
                         })

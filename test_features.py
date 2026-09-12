@@ -558,6 +558,46 @@ class TestNovasFuncionalidades(unittest.TestCase):
         access_depois = database.check_user_access(user_id)
         self.assertEqual(access_depois['credits'], 0)
 
+    def test_23_api_unauthenticated_returns_json_not_html(self):
+        """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""
+        # 1. /api/checkout/pix sem autenticação
+        res_pix = self.client.post('/api/checkout/pix',
+            data=json.dumps({'tipo': 'avulso', 'valor': 5.00}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_pix.status_code, 401)
+        self.assertIn('application/json', res_pix.headers.get('Content-Type', ''))
+        data_pix = res_pix.get_json()
+        self.assertIsNotNone(data_pix)
+        self.assertFalse(data_pix['sucesso'])
+        self.assertTrue(data_pix['requer_login'])
+        self.assertIn('Autenticação necessária', data_pix['erro'])
+
+        # 2. /api/checkout/infinitepay sem autenticação
+        res_inf = self.client.post('/api/checkout/infinitepay',
+            data=json.dumps({'tipo': 'avulso', 'valor': 5.00}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_inf.status_code, 401)
+        self.assertIn('application/json', res_inf.headers.get('Content-Type', ''))
+        data_inf = res_inf.get_json()
+        self.assertIsNotNone(data_inf)
+        self.assertFalse(data_inf['sucesso'])
+        self.assertTrue(data_inf['requer_login'])
+
+        # 3. Rota de API inexistente deve retornar 404 JSON, nunca HTML
+        res_404 = self.client.get('/api/rota_inexistente_de_teste')
+        self.assertEqual(res_404.status_code, 404)
+        self.assertIn('application/json', res_404.headers.get('Content-Type', ''))
+        data_404 = res_404.get_json()
+        self.assertIsNotNone(data_404)
+        self.assertFalse(data_404['sucesso'])
+
+        # 4. Rota HTML pública ou restrita sem API continua redirecionando normalmente
+        res_dash = self.client.get('/dashboard')
+        self.assertEqual(res_dash.status_code, 302)
+        self.assertIn('/login', res_dash.headers.get('Location', ''))
+
 
 if __name__ == '__main__':
     unittest.main()

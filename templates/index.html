@@ -1586,10 +1586,16 @@
          LOGICA DE CHECKOUT E INTERATIVIDADE
          ============================================================ -->
     <script>
+        const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
         let compraAtual = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
         let pagamentoAtualId = null;
 
         function abrirModalCompraRapida(tipo, valor, titulo) {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus palpites, por favor entre na sua conta ou cadastre-se.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             compraAtual = { tipo, valor, titulo };
             document.getElementById('modal-escolha-titulo').textContent = titulo;
             document.getElementById('modal-escolha-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
@@ -1604,8 +1610,34 @@
             document.getElementById('modal-pix-qrcode').style.display = 'none';
         }
 
+        async function parseJsonResponse(res, redirectPath = '/dashboard') {
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
+            }
+            if (res.status === 401 || (data && data.requer_login)) {
+                alert('Sua sessão expirou ou é necessário entrar na sua conta. Redirecionando...');
+                window.location.href = '/login?next=' + encodeURIComponent(redirectPath);
+                return null;
+            }
+            if (!data) {
+                throw new Error(res.statusText || 'Resposta inesperada do servidor.');
+            }
+            return data;
+        }
+
         // Checkout InfinitePay com redirecionamento direto
         async function executarCheckoutInfinitePay() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             const btn = document.getElementById('btn-infinite-dashboard');
             const textoOriginal = btn.innerHTML;
             btn.disabled = true;
@@ -1617,7 +1649,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor, redirect_path: '/dashboard' })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
                 if (data.sucesso && data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
@@ -1626,7 +1660,7 @@
                     btn.innerHTML = textoOriginal;
                 }
             } catch (e) {
-                alert('Erro de conexão: ' + e.message);
+                alert('Erro ao conectar com InfinitePay: ' + e.message);
                 btn.disabled = false;
                 btn.innerHTML = textoOriginal;
             }
@@ -1634,6 +1668,11 @@
 
         // Checkout PIX Direto no Modal com QR Code Real
         async function executarCheckoutPixDireto() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
             fecharModalEscolha();
             document.getElementById('pix-modal-titulo').textContent = compraAtual.titulo;
             document.getElementById('pix-modal-valor').textContent = 'R$ ' + compraAtual.valor.toFixed(2).replace('.', ',');
@@ -1650,7 +1689,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor })
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
                 if (data.sucesso) {
                     pagamentoAtualId = data.pagamento.id;
                     document.getElementById('pix-copia-cola-texto').textContent = data.pagamento.pix_copia_cola;
@@ -1664,7 +1705,7 @@
                     alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
                 }
             } catch (e) {
-                alert('Erro de conexão ao gerar PIX: ' + e.message);
+                alert('Erro ao gerar PIX: ' + e.message);
             }
         }
 
@@ -1682,7 +1723,9 @@
 
             try {
                 const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualId}`, { method: 'POST' });
-                const data = await res.json();
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
                 if (data.sucesso) {
                     alert('🎉 Parabéns! Pagamento aprovado com sucesso! Seus créditos já foram liberados.');
                     window.location.reload();
@@ -1703,8 +1746,9 @@
                 const pId = urlParams.get('payment_id');
                 if (pId) {
                     fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
-                        .then(r => r.json())
+                        .then(r => parseJsonResponse(r, '/dashboard'))
                         .then(data => {
+                            if (!data) return;
                             alert('🎉 Parabéns! Seu pagamento foi confirmado com sucesso e seu acesso está 100% liberado!');
                             window.location.href = '/dashboard';
                         })

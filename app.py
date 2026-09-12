@@ -127,10 +127,22 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({
+                    'sucesso': False,
+                    'erro': 'Autenticação necessária. Por favor, faça login para continuar.',
+                    'requer_login': True
+                }), 401
             return redirect(url_for('login', next=request.url))
         user = database.get_user_by_id(session['user_id'])
         if not user or user['is_blocked']:
             session.clear()
+            if request.path.startswith('/api/'):
+                return jsonify({
+                    'sucesso': False,
+                    'erro': 'Sessão expirada ou usuário bloqueado.',
+                    'requer_login': True
+                }), 401
             return redirect(url_for('login', erro='Sessão expirada ou usuário bloqueado.'))
         return f(*args, **kwargs)
     return decorated_function
@@ -141,20 +153,61 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             if request.path.startswith('/api/'):
-                return jsonify({'erro': 'Autenticação necessária'}), 401
+                return jsonify({
+                    'sucesso': False,
+                    'erro': 'Autenticação necessária',
+                    'requer_login': True
+                }), 401
             return redirect(url_for('login', next=request.url))
         user = database.get_user_by_id(session['user_id'])
         if not user or user['is_blocked']:
             session.clear()
             if request.path.startswith('/api/'):
-                return jsonify({'erro': 'Usuário bloqueado'}), 403
+                return jsonify({'sucesso': False, 'erro': 'Usuário bloqueado'}), 403
             return redirect(url_for('login', erro='Usuário bloqueado.'))
         if user['role'] != 'admin':
             if request.path.startswith('/api/'):
-                return jsonify({'erro': 'Acesso exclusivo para administradores'}), 403
+                return jsonify({'sucesso': False, 'erro': 'Acesso exclusivo para administradores'}), 403
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+# ==========================================
+# MANIPULADORES GLOBAIS DE ERRO (PREVENÇÃO DE HTML EM APIS)
+# ==========================================
+
+@app.errorhandler(401)
+def erro_401_unauthorized(e):
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'sucesso': False,
+            'erro': 'Autenticação necessária. Por favor, faça login para continuar.',
+            'requer_login': True
+        }), 401
+    return redirect(url_for('login', next=request.url))
+
+
+@app.errorhandler(404)
+def erro_404_not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'sucesso': False, 'erro': 'Recurso ou rota não encontrada.'}), 404
+    return ("Página não encontrada (404)", 404)
+
+
+@app.errorhandler(500)
+def erro_500_internal(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'sucesso': False, 'erro': 'Erro interno do servidor. Tente novamente mais tarde.'}), 500
+    return ("Erro interno do servidor (500)", 500)
+
+
+@app.errorhandler(Exception)
+def erro_global_exception(e):
+    if request.path.startswith('/api/'):
+        print(f"[API ERROR] Exceção em {request.path}: {e}")
+        return jsonify({'sucesso': False, 'erro': f'Erro no processamento: {str(e)}'}), 500
+    raise e
 
 
 # ==========================================
@@ -1105,42 +1158,53 @@ def api_gerar_multiplos_jogos(loteria_type: str):
 @login_required
 def api_checkout_pix():
     """Gera cobrança PIX para assinatura VIP ou recarga avulsa (Preço Único R$ 5,00)"""
-    dados = request.get_json() or {}
-    tipo = dados.get('tipo', 'avulso')
-    if tipo == 'vip_mensal':
-        valor = 29.90
-    else:
-        valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
-    loteria_type = dados.get('loteria_type')
+    try:
+        dados = request.get_json(silent=True) or {}
+        tipo = dados.get('tipo', 'avulso')
+        if tipo == 'vip_mensal':
+            valor = 29.90
+        else:
+            valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
+        loteria_type = dados.get('loteria_type')
 
-    user_id = session['user_id']
-    pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'sucesso': False, 'erro': 'Autenticação necessária', 'requer_login': True}), 401
 
-    return jsonify({
-        'sucesso': True,
-        'payment_id': pagamento['id'],
-        'valor': pagamento['valor'],
-        'tipo': pagamento['tipo'],
-        'pix_copia_cola': pagamento.get('pix_copia_cola'),
-        'pix_qr_code_base64': pagamento.get('pix_qr_code_base64'),
-        'pagamento': pagamento
-    })
+        pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
+
+        return jsonify({
+            'sucesso': True,
+            'payment_id': pagamento['id'],
+            'valor': pagamento['valor'],
+            'tipo': pagamento['tipo'],
+            'pix_copia_cola': pagamento.get('pix_copia_cola'),
+            'pix_qr_code_base64': pagamento.get('pix_qr_code_base64'),
+            'pagamento': pagamento
+        })
+    except Exception as e:
+        print(f"[CHECKOUT PIX] Erro ao gerar PIX: {e}")
+        return jsonify({'sucesso': False, 'erro': f'Falha ao gerar cobrança PIX: {str(e)}'}), 500
 
 
 @app.route('/api/checkout/confirmar/<int:payment_id>', methods=['POST'])
 @login_required
 def api_confirmar_pix(payment_id: int):
     """Aprova pagamento PIX e libera acesso VIP ou créditos de análise"""
-    sucesso = database.approve_payment(payment_id)
-    if sucesso:
-        access = database.check_user_access(session['user_id'])
-        return jsonify({
-            'sucesso': True,
-            'mensagem': 'Pagamento aprovado com sucesso! Acesso liberado.',
-            'novo_status': 'aprovado',
-            'access': access
-        })
-    return jsonify({'erro': 'Pagamento não encontrado ou já processado'}), 400
+    try:
+        sucesso = database.approve_payment(payment_id)
+        if sucesso:
+            access = database.check_user_access(session['user_id'])
+            return jsonify({
+                'sucesso': True,
+                'mensagem': 'Pagamento aprovado com sucesso! Acesso liberado.',
+                'novo_status': 'aprovado',
+                'access': access
+            })
+        return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado ou já processado'}), 400
+    except Exception as e:
+        print(f"[CHECKOUT CONFIRMAR] Erro: {e}")
+        return jsonify({'sucesso': False, 'erro': str(e)}), 500
 
 
 # ==========================================
@@ -1154,49 +1218,52 @@ INFINITEPAY_HANDLE = os.environ.get('INFINITEPAY_HANDLE', 'silvio_morais_')
 @login_required
 def api_checkout_infinitepay():
     """Gera link de checkout oficial da InfinitePay (Taxa Zero no PIX e Liberação Imediata)"""
-    dados = request.get_json() or {}
-    tipo = dados.get('tipo', 'vip_mensal')
-    if tipo == 'vip_mensal':
-        valor = 29.90
-        descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
-    else:
-        valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
-        descricao = "Recarga de Análise Avulsa (R$ 5,00) - Cálculo da Sorte"
-    loteria_type = dados.get('loteria_type')
-
-    user_id = session['user_id']
-    user = database.get_user_by_id(user_id)
-    pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
-    payment_id = pagamento['id']
-
-    base_url = request.host_url.rstrip('/')
-    redirect_path = dados.get('redirect_path', '/planos')
-    if not isinstance(redirect_path, str) or not redirect_path.startswith('/') or redirect_path.startswith('//'):
-        redirect_path = '/planos'
-    
-    sep = '&' if '?' in redirect_path else '?'
-    target_redirect = f"{base_url}{redirect_path}{sep}checkout=sucesso&payment_id={payment_id}"
-
-    payload = {
-        "handle": INFINITEPAY_HANDLE,
-        "order_nsu": str(payment_id),
-        "webhook_url": f"{base_url}/api/webhook/infinitepay",
-        "redirect_url": target_redirect,
-        "items": [
-            {
-                "quantity": 1,
-                "price": int(round(valor * 100)),
-                "description": descricao
-            }
-        ]
-    }
-    if user:
-        payload["customer"] = {
-            "name": user.get('name') or 'Apostador',
-            "email": user.get('email') or ''
-        }
-
     try:
+        dados = request.get_json(silent=True) or {}
+        tipo = dados.get('tipo', 'vip_mensal')
+        if tipo == 'vip_mensal':
+            valor = 29.90
+            descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
+        else:
+            valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
+            descricao = "Recarga de Análise Avulsa (R$ 5,00) - Cálculo da Sorte"
+        loteria_type = dados.get('loteria_type')
+
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'sucesso': False, 'erro': 'Autenticação necessária', 'requer_login': True}), 401
+
+        user = database.get_user_by_id(user_id)
+        pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
+        payment_id = pagamento['id']
+
+        base_url = request.host_url.rstrip('/')
+        redirect_path = dados.get('redirect_path', '/planos')
+        if not isinstance(redirect_path, str) or not redirect_path.startswith('/') or redirect_path.startswith('//'):
+            redirect_path = '/planos'
+        
+        sep = '&' if '?' in redirect_path else '?'
+        target_redirect = f"{base_url}{redirect_path}{sep}checkout=sucesso&payment_id={payment_id}"
+
+        payload = {
+            "handle": INFINITEPAY_HANDLE,
+            "order_nsu": str(payment_id),
+            "webhook_url": f"{base_url}/api/webhook/infinitepay",
+            "redirect_url": target_redirect,
+            "items": [
+                {
+                    "quantity": 1,
+                    "price": int(round(valor * 100)),
+                    "description": descricao
+                }
+            ]
+        }
+        if user:
+            payload["customer"] = {
+                "name": user.get('name') or 'Apostador',
+                "email": user.get('email') or ''
+            }
+
         resp = requests.post("https://api.checkout.infinitepay.io/links", json=payload, timeout=12)
         if resp.status_code == 200:
             data_inf = resp.json()
@@ -1248,23 +1315,27 @@ def api_webhook_infinitepay():
 @login_required
 def api_checkout_status(payment_id: int):
     """Consulta o status atual de um pagamento e auto-aprova se retorno do checkout com sucesso"""
-    pagamento = database.get_payment_by_id(payment_id)
-    if not pagamento:
-        return jsonify({'erro': 'Pagamento não encontrado'}), 404
-
-    # Se pertence ao usuário logado e ainda pendente, aprovar se checkout confirmado
-    auto_approve = request.args.get('auto_approve') == 'true' or request.args.get('checkout') == 'sucesso'
-    if auto_approve and pagamento['user_id'] == session['user_id'] and pagamento.get('status') != 'aprovado':
-        database.approve_payment(payment_id)
+    try:
         pagamento = database.get_payment_by_id(payment_id)
+        if not pagamento:
+            return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado'}), 404
 
-    access = database.check_user_access(session['user_id'])
-    return jsonify({
-        'sucesso': True,
-        'status': pagamento.get('status'),
-        'is_approved': pagamento.get('status') == 'aprovado',
-        'access': access
-    })
+        # Se pertence ao usuário logado e ainda pendente, aprovar se checkout confirmado
+        auto_approve = request.args.get('auto_approve') == 'true' or request.args.get('checkout') == 'sucesso'
+        if auto_approve and pagamento['user_id'] == session.get('user_id') and pagamento.get('status') != 'aprovado':
+            database.approve_payment(payment_id)
+            pagamento = database.get_payment_by_id(payment_id)
+
+        access = database.check_user_access(session['user_id'])
+        return jsonify({
+            'sucesso': True,
+            'status': pagamento.get('status'),
+            'is_approved': pagamento.get('status') == 'aprovado',
+            'access': access
+        })
+    except Exception as e:
+        print(f"[CHECKOUT STATUS] Erro: {e}")
+        return jsonify({'sucesso': False, 'erro': str(e)}), 500
 
 
 @app.route('/api/admin/pagamentos', methods=['GET'])
