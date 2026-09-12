@@ -16,7 +16,6 @@ import requests
 import database
 import updater
 import ai_agent
-import blob_storage
 from core import (
     ModeloCanonico30, 
     ValidaçãoCamada7, 
@@ -645,7 +644,7 @@ def admin_dashboard():
     }
     
     aba_ativa = request.args.get('aba', 'tab-loterias')
-    storage_status = blob_storage.get_storage_status()
+    storage_status = {}
 
     return render_template(
         'admin.html', 
