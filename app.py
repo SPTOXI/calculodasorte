@@ -533,6 +533,44 @@ def termos():
     return render_template('termos.html')
 
 
+BLOG_POSTS = {
+    'a-matematica-oculta-das-loterias': {
+        'title': 'A Matemática Oculta das Loterias: Por que Palpites Aleatórios Desperdiçam seu Dinheiro',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Entenda o erro matemático de usar datas de aniversário e o limite das funções aleatórias. Descubra como a análise probabilística e a distribuição equitativa blindam o apostador.',
+        'template': 'blog/artigo_1.html'
+    },
+    'o-poder-dos-fechamentos-combinatorios': {
+        'title': 'O Poder dos Fechamentos Combinatórios: Estratégia Avançada para Múltiplas Premiações',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Aprenda o princípio das matrizes matemáticas ortogonais e sistemas de redução. Veja como cercar dezenas garante prêmios secundários e reduz o custo das apostas.',
+        'template': 'blog/artigo_2.html'
+    },
+    'inteligencia-artificial-e-analise-estocastica': {
+        'title': 'Como a Inteligência Artificial Transforma a Análise Estocástica de Sorteios',
+        'date': '2026-09-12',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Descubra como Agentes IAs extraem padrões temporais e tendências históricas que o cérebro humano ignora, traduzindo complexidade matemática em estratégias de jogo claras.',
+        'template': 'blog/artigo_3.html'
+    }
+}
+
+
+@app.route('/blog')
+def blog_index():
+    return render_template('blog_index.html', posts=BLOG_POSTS)
+
+
+@app.route('/blog/<slug>')
+def blog_post(slug):
+    post = BLOG_POSTS.get(slug)
+    if not post:
+        return "Artigo não encontrado", 404
+    return render_template('blog_post.html', post=post, slug=slug)
+
+
 @app.route('/minha-conta')
 @app.route('/perfil')
 @login_required

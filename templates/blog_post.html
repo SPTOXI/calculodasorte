@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.title }} — Cálculo da Sorte</title>
+    <meta name="description" content="{{ post.description }}">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        :root {
+            --primary: #059669;
+            --dark-card: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0b1120; color: var(--text-light); line-height: 1.8; padding: 40px 20px; background: radial-gradient(circle at 50% 10%, rgba(5, 150, 105, 0.08) 0%, #0b1120 70%); }
+        .container { max-width: 760px; margin: 0 auto; background: var(--dark-card); padding: 40px 50px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        .nav-brand-pill { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: #ffffff; padding: 6px 14px; background: rgba(255, 255, 255, 0.06); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.9rem;}
+        .nav-brand-pill .brand-highlight { color: #34d399; }
+        .btn-back { color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .btn-back:hover { color: white; }
+        .post-meta { font-size: 0.9rem; color: #34d399; margin-bottom: 10px; font-weight: 600; }
+        h1 { font-size: 2.2rem; line-height: 1.2; margin-bottom: 30px; color: white; }
+        h2 { font-size: 1.5rem; color: white; margin-top: 40px; margin-bottom: 15px; }
+        h3 { font-size: 1.2rem; color: #e2e8f0; margin-top: 25px; margin-bottom: 10px; }
+        p { margin-bottom: 20px; color: #cbd5e1; font-size: 1.05rem; }
+        ul, ol { margin-bottom: 20px; padding-left: 20px; color: #cbd5e1; }
+        li { margin-bottom: 8px; }
+        strong { color: #f8fafc; }
+        .cta-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 25px; border-radius: 12px; margin-top: 40px; text-align: center; }
+        .cta-btn { display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+        @media (max-width: 768px) { .container { padding: 30px 20px; } h1 { font-size: 1.8rem; } }
+    </style>
+    <!-- Schema Markup para Artigo de Blog (SEO/LLM) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "{{ post.title }}",
+      "datePublished": "{{ post.date }}",
+      "author": {
+        "@type": "Organization",
+        "name": "{{ post.author }}"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Cálculo da Sorte",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://calculodasorte.com.br/static/logo.png"
+        }
+      }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <div class="nav-brand-pill">
+                <span>🎲</span> Cálculo da <span class="brand-highlight">Sorte</span>
+            </div>
+            <a href="/blog" class="btn-back">← Voltar ao Blog</a>
+        </div>
+        
+        <article>
+            <div class="post-meta">{{ post.date }} • Por {{ post.author }}</div>
+            <h1>{{ post.title }}</h1>
+            
+            {% include post.template %}
+            
+            <div class="cta-box">
+                <h3>Pare de apostar no escuro.</h3>
+                <p>Use a estatística real a seu favor com nossa plataforma.</p>
+                <a href="/" class="cta-btn">Conhecer o Cálculo da Sorte</a>
+            </div>
+        </article>
+    </div>
+</body>
+</html>
