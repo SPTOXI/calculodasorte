@@ -282,16 +282,19 @@ class TestNovasFuncionalidades(unittest.TestCase):
         # Consumir o único crédito de boas-vindas
         database.consume_user_credit(user_id)
         access = database.check_user_access(user_id)
-        # TEMPORARY BYPASS: user still has access with 9999 credits
-        self.assertEqual(access['credits'], 9999)
-        self.assertTrue(access['has_access'])
+        self.assertEqual(access['credits'], 0)
+        self.assertFalse(access['has_access'])
 
-        # Tentar gerar novo jogo deve passar devido ao BYPASS
+        # Tentar gerar novo jogo deve ser barrado com 403
         res = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
             data=json.dumps({'quantidade_jogos': 2, 'dezenas_por_jogo': 6}),
             content_type='application/json'
         )
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, 403)
+        data = res.get_json()
+        self.assertFalse(data['sucesso'])
+        self.assertTrue(data.get('precisa_plano'))
+
     def test_14_infinitepay_checkout_e_webhook(self):
         """Testa geração de link InfinitePay (com handle silvio_morais_) e aprovação via Webhook"""
         import uuid
@@ -533,8 +536,8 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
         # 1. Usuário começa sem créditos
         access_inicial = database.check_user_access(user_id)
-        self.assertTrue(access_inicial['has_access'])
-        self.assertEqual(access_inicial['credits'], 9999)
+        self.assertFalse(access_inicial['has_access'])
+        self.assertEqual(access_inicial['credits'], 0)
 
         # 2. Criação do pagamento avulso
         pagamento = database.create_payment(user_id=user_id, tipo='avulso', valor=5.00)
@@ -548,13 +551,13 @@ class TestNovasFuncionalidades(unittest.TestCase):
         data_st = res_status.get_json()
         self.assertTrue(data_st['is_approved'])
         self.assertEqual(data_st['status'], 'aprovado')
-        # Com o bypass ativo, sempre terá 9999
-        self.assertEqual(data_st['access']['credits'], 9999)
+        self.assertTrue(data_st['access']['has_access'])
+        self.assertEqual(data_st['access']['credits'], 1)
 
         # 4. Consumir crédito gerando jogo
         database.consume_user_credit(user_id)
         access_depois = database.check_user_access(user_id)
-        self.assertEqual(access_depois['credits'], 9999)
+        self.assertEqual(access_depois['credits'], 0)
 
     def test_23_api_unauthenticated_returns_json_not_html(self):
         """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""
