@@ -1,21 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Loterias — Cálculo da Sorte | Inteligência Artificial & Estatística</title>
+{% extends 'dashboard_base.html' %}
 
-    <!-- Metatags e SEO -->
-    <meta name="description" content="Painel oficial de loterias do Cálculo da Sorte. Gere palpites matemáticos otimizados com Inteligência Artificial para Mega-Sena, Lotofácil, Quina e mais. Teste avulso por R$ 5,00 ou VIP Ilimitado.">
-    <meta name="robots" content="index, follow">
+{% block title %}Painel de Loterias — Cálculo da Sorte | Inteligência Artificial & Estatística{% endblock %}
 
-    <!-- Favicon Oficial do Dado da Sorte (.ico, .svg, .png) -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+{% block extra_css %}
+<style>
 
-    <style>
         :root {
             --bg-dark: #0b1120;
             --card-dark: #1e293b;
@@ -1203,390 +1192,48 @@
                 display: block !important;
             }
         }
-    </style>
-</head>
-<body>
+    
+/* Progressive Disclosure Styles */
+.filtros-avancados-container {
+    margin-top: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.filtros-toggle {
+    width: 100%;
+    padding: 15px;
+    background: rgba(15, 23, 42, 0.5);
+    color: #e2e8f0;
+    border: none;
+    text-align: left;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+.filtros-toggle:hover {
+    background: rgba(15, 23, 42, 0.8);
+}
+.filtros-content {
+    padding: 20px;
+    background: rgba(30, 41, 59, 0.3);
+    display: none;
+}
+.filtros-content.open {
+    display: block;
+}
+</style>
+{% endblock %}
 
-    <div class="container">
+{% block content %}
 
-        <!-- ============================================================
-             BARRA DE NAVEGAÇÃO E STATUS DO USUÁRIO
-             ============================================================ -->
-        <div class="user-top-bar">
-            <div class="user-info-group">
-                <a href="/dashboard" class="user-brand-logo">
-                    <span>🎲</span>
-                    <span>Cálculo da <span class="highlight">Sorte</span></span>
-                </a>
+{% endblock %}
 
-                {% if current_user %}
-                    <a href="/minha-conta" style="font-size: 0.88rem; color: #cbd5e1; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Ver meu perfil e dados">
-                        👤 <strong>{{ current_user.name or current_user.email.split('@')[0] }}</strong>
-                    </a>
-
-                    {% if access and access.is_vip %}
-                        <span class="user-badge vip">👑 VIP ILIMITADO</span>
-                    {% elif access and access.credits > 0 %}
-                        <span class="user-badge credits">🪙 {{ access.credits }} CRÉDITO(S)</span>
-                    {% else %}
-                        <span class="user-badge no-credits">⚠️ SEM CRÉDITOS</span>
-                    {% endif %}
-                {% endif %}
-            </div>
-
-            <div class="user-top-actions">
-                <a href="/blog" class="btn-top btn-top-ghost" title="Ler nossos estudos de caso e artigos matemáticos">
-                    📚 Blog & Estudos
-                </a>
-
-                <!-- Botão Minha Conta / Meus Dados -->
-                <a href="/minha-conta" class="btn-top btn-top-ghost" title="Gerenciar meus dados cadastrais e assinatura">
-                    👤 Minha Conta
-                </a>
-
-                <!-- Botão 1: Palpite Avulso R$ 5,00 -->
-                <button class="btn-top btn-top-avulso" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')">
-                    🪙 Palpite Avulso (R$ 5,00)
-                </button>
-
-                <!-- Botão 2: VIP Mensal R$ 29,90 -->
-                <button class="btn-top btn-top-vip" onclick="abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Ilimitado (R$ 29,90)')">
-                    👑 VIP Ilimitado (R$ 29,90)
-                </button>
-
-                {% if current_user and current_user.role == 'admin' %}
-                <a href="/admin" class="btn-top btn-top-ghost">
-                    ⚙️ Admin
-                </a>
-                {% endif %}
-
-                <a href="/logout" class="btn-top btn-top-exit">
-                    🚪 Sair
-                </a>
-            </div>
-        </div>
-
-        <!-- ============================================================
-             HERO TEMPORÁRIA: LOTOFÁCIL DA INDEPENDÊNCIA (R$ 300 MILHÕES)
-             ============================================================ -->
-        <section class="hero-independencia-section">
-            <!-- Glow Sutil de Topo -->
-            <div class="indep-glow-bg"></div>
-
-            <!-- Badge Oficial Especial -->
-            <div class="indep-badge">
-                <span>✨</span> CONCURSO ESPECIAL &bull; R$ 300 MILHÕES
-            </div>
-
-            <div class="indep-subtitle-top">
-                📅 GRANDE SORTEIO &bull; TERÇA-FEIRA, 15/09 ÀS 20H
-            </div>
-
-            <h2 class="indep-main-title">
-                LOTOFÁCIL DA <br class="indep-br-mobile"><span class="indep-title-gold">INDEPENDÊNCIA</span>
-            </h2>
-
-            <div class="indep-prize-card">
-                <span class="indep-prize-tag">MAIOR PRÊMIO DO ANO NO BRASIL</span>
-                <div class="indep-prize-amount">R$ 300 MILHÕES</div>
-                <div class="indep-nao-acumula-badge">
-                    🔥 <strong style="color: #fef08a;">NÃO ACUMULA!</strong> Se ninguém fizer 15, divide entre quem fizer 14 pontos!
-                </div>
-            </div>
-
-            <p class="indep-lead-text">
-                <strong class="indep-lead-highlight">R$ 300 Milhões serão pagos no dia 15/09 — o maior prêmio do ano!</strong>
-                Não jogue no escuro com datas de aniversário. Gere agora fechamentos matemáticos avançados para cercar 14 e 15 pontos com a menor quantidade de bilhetes e a máxima probabilidade.
-            </p>
-
-            <!-- Contador Regressivo da Independência -->
-            <div class="indep-countdown-container">
-                <div class="indep-countdown-header">
-                    <span>⏳</span> CONTAGEM REGRESSIVA ATÉ 15/09 ÀS 20H:
-                </div>
-                <div class="indep-timer-boxes">
-                    <div class="indep-timer-unit">
-                        <span class="indep-timer-num" id="indep-days-dash">--</span>
-                        <span class="indep-timer-label">Dias</span>
-                    </div>
-                    <span class="indep-timer-sep">:</span>
-                    <div class="indep-timer-unit">
-                        <span class="indep-timer-num" id="indep-hours-dash">--</span>
-                        <span class="indep-timer-label">Horas</span>
-                    </div>
-                    <span class="indep-timer-sep">:</span>
-                    <div class="indep-timer-unit">
-                        <span class="indep-timer-num" id="indep-minutes-dash">--</span>
-                        <span class="indep-timer-label">Min</span>
-                    </div>
-                    <span class="indep-timer-sep">:</span>
-                    <div class="indep-timer-unit">
-                        <span class="indep-timer-num" id="indep-seconds-dash">--</span>
-                        <span class="indep-timer-label">Seg</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Botões de Ação Imediata -->
-            <div class="indep-cta-group">
-                <a href="/analise/lotofacil" class="btn-indep-gold btn-indep-pulse">
-                    🎯 Fechamento da Independência →
-                </a>
-                <button class="btn-indep-green" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso Lotofácil da Independência (R$ 5,00)')">
-                    🪙 Palpite Avulso por apenas R$ 5,00
-                </button>
-                <button class="btn-indep-outline" onclick="abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Ilimitado (R$ 29,90)')">
-                    👑 VIP Ilimitado (R$ 29,90)
-                </button>
-            </div>
-
-            <!-- 3 Pílulas de Inteligência Estratégica -->
-            <div class="indep-stats-trio">
-                <div class="indep-stat-pill">
-                    <div class="stat-pill-icon">🔁</div>
-                    <div>
-                        <strong>9 Dezenas Repetidas</strong>
-                        <span>Historicamente, cerca de 60% dos números sorteados saem do concurso anterior. Nosso algoritmo já aplica essa regra.</span>
-                    </div>
-                </div>
-                <div class="indep-stat-pill">
-                    <div class="stat-pill-icon">⚖️</div>
-                    <div>
-                        <strong>Equilíbrio 8 Ímpares / 7 Pares</strong>
-                        <span>A distribuição matemática presente em mais de 80% de todos os concursos premiados da história.</span>
-                    </div>
-                </div>
-                <div class="indep-stat-pill">
-                    <div class="stat-pill-icon">🛡️</div>
-                    <div>
-                        <strong>Fechamentos no Volante</strong>
-                        <span>Economize até 70% nas apostas com matrizes inteligentes com garantias de premiação.</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================
-             HERO BANNER DE PERSUASÃO & SEDUÇÃO DO LEAD
-             ============================================================ -->
-        <section class="hero-banner">
-            <div class="hero-header-tag">
-                <span>⚡</span> Inteligência Artificial & Estatística Caixa
-            </div>
-
-            <h1 class="hero-title">
-                Gere Palpites Inteligentes com <span class="title-accent">Estatística Real</span>
-            </h1>
-
-            <p class="hero-subtitle">
-                Elimine apostas cegas e jogos aleatórios. Nossos algoritmos analisam o histórico oficial completo das loterias da Caixa para gerar combinações matematicamente equilibradas, fechamentos combinatórios e recomendações estratégicas com o Agente IA.
-            </p>
-
-            <!-- Cards de Oferta: Palpite Avulso R$ 5,00 vs VIP Mensal R$ 29,90 -->
-            <div class="hero-offers-grid">
-                <!-- Oferta 1: Palpite Avulso R$ 5,00 -->
-                <div class="offer-card avulso">
-                    <div>
-                        <div class="offer-header">
-                            <h3 class="offer-title">🪙 Palpite Avulso</h3>
-                            <span class="offer-pill green">Teste Hoje</span>
-                        </div>
-                        <div class="offer-price">
-                            R$ 5,00 <span>/ crédito</span>
-                        </div>
-                        <ul class="offer-benefits">
-                            <li>✅ <strong>Preço Único de R$ 5,00</strong> para qualquer loteria</li>
-                            <li>✅ Gera até 20 palpites otimizados para o concurso</li>
-                            <li>✅ Análise estatística e parecer com o Agente IA</li>
-                            <li>✅ Sem assinatura ou fidelidade — use quando quiser</li>
-                        </ul>
-                    </div>
-                    <button class="btn-offer btn-offer-green" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')">
-                        🪙 Testar Agora por R$ 5,00
-                    </button>
-                </div>
-
-                <!-- Oferta 2: VIP Ilimitado R$ 29,90 -->
-                <div class="offer-card vip">
-                    <div>
-                        <div class="offer-header">
-                            <h3 class="offer-title">👑 VIP Ilimitado</h3>
-                            <span class="offer-pill gold">Mais Vantajoso</span>
-                        </div>
-                        <div class="offer-price">
-                            R$ 29,90 <span>/ mês</span>
-                        </div>
-                        <ul class="offer-benefits">
-                            <li>👑 <strong>Acesso total e livre a todas as 9 loterias</strong></li>
-                            <li>👑 Fechamentos combinatórios e volantes ilimitados</li>
-                            <li>👑 Consultoria em tempo real com o Consultor IA</li>
-                            <li>👑 Conferência automática de acertos e prêmios</li>
-                        </ul>
-                    </div>
-                    <button class="btn-offer btn-offer-gold" onclick="abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Ilimitado (R$ 29,90)')">
-                        👑 Ativar Acesso VIP (R$ 29,90)
-                    </button>
-                </div>
-            </div>
-
-            <!-- Selos de Confiança -->
-            <div class="hero-trust-badges">
-                <div class="trust-item">
-                    <span>⚡</span> <strong>Ativação Instantânea:</strong> PIX liberado em 3 segundos
-                </div>
-                <div class="trust-item">
-                    <span>🔒</span> <strong>Pagamento Seguro:</strong> InfinitePay & Criptografia SSL
-                </div>
-                <div class="trust-item">
-                    <span>🏛️</span> <strong>Resultados Oficiais:</strong> Sincronizados com a Caixa
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================
-             SELEÇÃO DAS 9 LOTERIAS OFICIAIS DA CAIXA
-             ============================================================ -->
-        <div class="section-header">
-            <h2>Escolha a sua Loteria para Analisar</h2>
-            <p>Selecione uma das 9 modalidades oficiais para explorar frequências, gerar fechamentos e testar palpites</p>
-        </div>
-
-        <div class="loterias-grid">
-            {% for loteria in loterias %}
-            <div class="loteria-card" style="border-top: 3px solid {{ loteria.theme.cor }};">
-                <div class="loteria-card-glow" style="background: {{ loteria.theme.cor_gradiente }};"></div>
-
-                <div>
-                    <div class="loteria-card-header">
-                        <div class="loteria-brand">
-                            <div class="loteria-icon-box" style="background: {{ loteria.theme.cor_gradiente }}; box-shadow: 0 4px 12px {{ loteria.theme.cor_glow }};">
-                                {{ loteria.theme.icone }}
-                            </div>
-                            <div>
-                                <h3 class="loteria-name">{{ loteria.nome }}</h3>
-                                <span style="font-size: 0.78rem; color: #94a3b8;">{{ loteria.config.universo }} dezenas no volante</span>
-                            </div>
-                        </div>
-
-                        <span class="loteria-tag" style="background: {{ loteria.theme.tag_bg }}; color: {{ loteria.theme.tag_cor }}; border: 1px solid {{ loteria.theme.tag_cor }}44;">
-                            {{ loteria.theme.tag }}
-                        </span>
-                    </div>
-
-                    <ul class="loteria-specs">
-                        <li class="loteria-spec-row">
-                            <span>Sorteados por Concurso:</span>
-                            <span class="loteria-spec-badge">{{ loteria.config.sorteados }} números</span>
-                        </li>
-                        <li class="loteria-spec-row">
-                            <span>Aposta Oficial Caixa:</span>
-                            <strong>{{ loteria.config.minimo_aposta }} a {{ loteria.config.maximo_aposta }} dezenas</strong>
-                        </li>
-                        <li class="loteria-spec-row">
-                            <span>Custo Mínimo Caixa:</span>
-                            <strong>R$ {{ "%.2f"|format(loteria.config.custo_minimo) }}</strong>
-                        </li>
-                        <li class="loteria-spec-row">
-                            <span>Dias de Sorteio:</span>
-                            <span style="color: {{ loteria.theme.tag_cor }}; font-weight: 700;">{{ loteria.theme.dias_resumo }}</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <a href="/analise/{{ loteria.id }}" class="btn-analisar-loteria" style="background: {{ loteria.theme.cor_gradiente }};">
-                    <span>Analisar {{ loteria.nome }}</span>
-                    <span>→</span>
-                </a>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- ============================================================
-             FOOTER & LGPD
-             ============================================================ -->
-        <footer>
-            <div class="footer-links">
-                <a href="/planos">Planos & Preços (R$ 5,00 e R$ 29,90)</a>
-                <span>•</span>
-                <a href="/termos" target="_blank">Termos de Uso</a>
-                <span>•</span>
-                <a href="/privacidade" target="_blank">Política de Privacidade</a>
-                <span>•</span>
-                <a href="/blog">Blog e Artigos</a>
-                <span>•</span>
-                <a href="/minha-conta">Meus Dados / Minha Conta</a>
-            </div>
-            <p style="margin-bottom: 8px;">
-                ⚠️ <strong>Aviso Legal:</strong> O Cálculo da Sorte é uma ferramenta de estudo probabilístico e geração de palpites inteligentes. Loterias são jogos de azar estocásticos. Jogue com responsabilidade e moderação (+18).
-            </p>
-            <p style="color: #64748b; font-size: 0.8rem;">
-                © 2026 Cálculo da Sorte &bull; Todos os direitos reservados &bull; Sincronizado com os dados oficiais da Caixa Econômica Federal.
-            </p>
-        </footer>
-
-    </div>
-
-    <!-- ============================================================
-         MODAL DE ESCOLHA DE FORMA DE PAGAMENTO (INFINITEPAY OU PIX)
-         ============================================================ -->
-    <div class="checkout-modal-backdrop" id="modal-escolha-pagamento">
-        <div class="checkout-modal">
-            <button class="checkout-modal-close" onclick="fecharModalEscolha()">&times;</button>
-            <div style="font-size: 2.8rem; margin-bottom: 8px;">⚡</div>
-            <h3 style="font-size: 1.4rem; color: white; margin-bottom: 6px;" id="modal-escolha-titulo">Finalizar Pedido</h3>
-            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399; margin-bottom: 16px;" id="modal-escolha-valor">R$ 5,00</div>
-
-            <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 22px; line-height: 1.5;">
-                Escolha a forma mais conveniente para liberação imediata em sua conta:
-            </p>
-
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Opção 1: InfinitePay (Cartão ou PIX Direto) -->
-                <button class="btn-offer btn-offer-green" id="btn-infinite-dashboard" onclick="executarCheckoutInfinitePay()">
-                    <span>⚡ Pagar com InfinitePay (PIX / Cartão)</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================
-         MODAL PIX QR CODE & COPIA E COLA
-         ============================================================ -->
-    <div class="checkout-modal-backdrop" id="modal-pix-qrcode">
-        <div class="checkout-modal">
-            <button class="checkout-modal-close" onclick="fecharModalPix()">&times;</button>
-            <h3 style="font-size: 1.35rem; color: white; margin-bottom: 4px;" id="pix-modal-titulo">Pagamento Instantâneo PIX</h3>
-            <div style="color: #34d399; font-weight: 900; font-size: 1.45rem; margin-bottom: 12px;" id="pix-modal-valor">R$ 5,00</div>
-
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px;">
-                Abra o app do seu banco e aponte a câmera ou use o <strong>PIX Copia e Cola</strong>:
-            </p>
-
-            <div class="pix-qrcode-box" id="pix-qrcode-container" style="background: white; padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; min-width: 190px; min-height: 190px; margin: 0 auto 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                <div id="pix-qrcode-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; height: 170px; color: #475569; font-size: 0.85rem;">
-                    <div style="font-size: 2rem; margin-bottom: 6px;">⏳</div>
-                    <span style="font-weight: 600;">Gerando QR Code PIX oficial...</span>
-                </div>
-                <img id="pix-qrcode-img" src="" alt="QR Code PIX Oficial" style="display: none; width: 170px; height: 170px; border-radius: 6px;">
-            </div>
-
-            <div style="font-size: 0.8rem; color: #94a3b8; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
-            <div class="pix-copia-cola-box" id="pix-copia-cola-texto">Gerando código PIX...</div>
-
-            <button class="btn-offer btn-offer-green" onclick="copiarPixCodigoDashboard()" style="margin-bottom: 12px;">
-                📋 Copiar Código PIX
-            </button>
-
-            <button class="btn-offer btn-offer-gold" id="btn-confirmar-pix-dashboard" onclick="confirmarPixDashboard()">
-                ✅ Já Paguei / Liberar Acesso Agora
-            </button>
-        </div>
-    </div>
-
-    <!-- ============================================================
-         LOGICA DE CHECKOUT E INTERATIVIDADE
-         ============================================================ -->
-    <script>
+{% block extra_js %}
+<script>
         const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
         let compraAtual = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
         let pagamentoAtualId = null;
@@ -1802,7 +1449,46 @@
             updateCountdownDash();
             setInterval(updateCountdownDash, 1000);
         })();
-    </script>
-
-</body>
-</html>
+    
+<script>
+    // Progressive Disclosure Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        // Envolve os filtros em um accordion
+        const forms = document.querySelectorAll('.loteria-form');
+        forms.forEach(form => {
+            const filterGroups = form.querySelectorAll('.filter-group:not(:first-child)');
+            if(filterGroups.length > 0) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'filtros-avancados-container';
+                
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'filtros-toggle';
+                toggle.innerHTML = '⚙️ Filtros Matemáticos Avançados <span>▼</span>';
+                
+                const content = document.createElement('div');
+                content.className = 'filtros-content';
+                
+                filterGroups.forEach(fg => content.appendChild(fg));
+                
+                wrapper.appendChild(toggle);
+                wrapper.appendChild(content);
+                
+                // insert before the submit button
+                const submitBtn = form.querySelector('.btn-gerar');
+                form.insertBefore(wrapper, submitBtn);
+                
+                toggle.addEventListener('click', () => {
+                    content.classList.toggle('open');
+                    toggle.querySelector('span').innerHTML = content.classList.contains('open') ? '▲' : '▼';
+                });
+            }
+            
+            // Override submit to show global loading
+            form.addEventListener('submit', () => {
+                showLoading('A IA está calculando e eliminando combinações improváveis...');
+            });
+        });
+    });
+</script>
+{% endblock %}
