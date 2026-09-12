@@ -109,19 +109,19 @@ def sync_db_to_cloud() -> bool:
 
 
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
 if not DATABASE_URL:
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        DATABASE_URL = os.environ.get('DATABASE_URL')
+        DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
     except ImportError:
         pass
 
 @contextmanager
 def get_db_connection(auto_sync: bool = True):
     if not DATABASE_URL:
-        raise ValueError('DATABASE_URL is not set')
+        raise ValueError('DATABASE_URL or POSTGRES_URL is not set')
         
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     conn = PostgresConnAdapter(conn)
