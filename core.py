@@ -43,7 +43,7 @@ LOTERIAS_CONFIG = {
         sorteados=6,
         minimo_aposta=6,
         maximo_aposta=20,
-        custo_minimo=6.0,
+        custo_minimo=5.0,
         dias_sorteio=["terça", "quinta", "domingo"],
         faixas_premiacao=[4, 5, 6]
     ),
@@ -53,7 +53,7 @@ LOTERIAS_CONFIG = {
         sorteados=5,
         minimo_aposta=5,
         maximo_aposta=15,
-        custo_minimo=2.0,
+        custo_minimo=2.5,
         dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[2, 3, 4, 5]
     ),
@@ -103,7 +103,7 @@ LOTERIAS_CONFIG = {
         sorteados=7,
         minimo_aposta=7,
         maximo_aposta=7,
-        custo_minimo=3.0,
+        custo_minimo=2.5,
         dias_sorteio=["segunda", "quarta", "sexta"],
         faixas_premiacao=[3, 4, 5, 6, 7]
     ),
@@ -123,7 +123,7 @@ LOTERIAS_CONFIG = {
         sorteados=6,
         minimo_aposta=6,
         maximo_aposta=15,
-        custo_minimo=3.0,
+        custo_minimo=2.5,
         dias_sorteio=["terça", "quinta", "sábado"],
         faixas_premiacao=[4, 5, 6]
     )
