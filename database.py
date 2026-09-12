@@ -24,6 +24,49 @@ from contextlib import contextmanager
 
 _LAST_CLOUD_SYNC = 0.0
 
+def aplicar_migracoes(conn=None):
+    """Aplica migrações de forma idempotente em tabelas existentes"""
+    def _migrar(c):
+        try:
+            colunas_users = [r['name'] for r in c.execute("PRAGMA table_info(users)").fetchall()]
+            if 'name' not in colunas_users:
+                c.execute("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT 'Apostador'")
+            if 'plan' not in colunas_users:
+                c.execute("ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'")
+            if 'credits' not in colunas_users:
+                c.execute("ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 1")
+            if 'vip_expires_at' not in colunas_users:
+                c.execute("ALTER TABLE users ADD COLUMN vip_expires_at TIMESTAMP")
+            if 'accepted_terms_at' not in colunas_users:
+                c.execute("ALTER TABLE users ADD COLUMN accepted_terms_at TIMESTAMP")
+            c.execute('CREATE INDEX IF NOT EXISTS idx_users_email_nocase ON users (email COLLATE NOCASE)')
+        except Exception:
+            pass
+
+        try:
+            colunas_pay = [r['name'] for r in c.execute("PRAGMA table_info(payments)").fetchall()]
+            if 'pix_qr_code_base64' not in colunas_pay:
+                c.execute("ALTER TABLE payments ADD COLUMN pix_qr_code_base64 TEXT")
+            if 'pix_txid' not in colunas_pay:
+                c.execute("ALTER TABLE payments ADD COLUMN pix_txid TEXT")
+            if 'pix_copia_cola' not in colunas_pay:
+                c.execute("ALTER TABLE payments ADD COLUMN pix_copia_cola TEXT")
+            if 'loteria_type' not in colunas_pay:
+                c.execute("ALTER TABLE payments ADD COLUMN loteria_type TEXT")
+        except Exception:
+            pass
+
+    if conn is not None:
+        _migrar(conn)
+    else:
+        try:
+            with get_db_connection() as c:
+                _migrar(c)
+                c.commit()
+        except Exception:
+            pass
+
+
 def sync_db_from_cloud(force: bool = False) -> bool:
     """Sincroniza o banco local com a versão persistente na nuvem (Vercel Blob)"""
     global _LAST_CLOUD_SYNC
@@ -37,6 +80,7 @@ def sync_db_from_cloud(force: bool = False) -> bool:
     success = blob_storage.download_blob('database.db', DB_PATH)
     if success:
         _LAST_CLOUD_SYNC = now
+        aplicar_migracoes()
     return success
 
 
@@ -170,12 +214,8 @@ def init_db():
             )
         ''')
 
-        # Migração segura para bases existentes
-        try:
-            cursor.execute('ALTER TABLE payments ADD COLUMN pix_qr_code_base64 TEXT')
-        except Exception:
-            pass
-        
+        # Aplicação consistente e idempotente de migrações
+        aplicar_migracoes(conn)
         conn.commit()
 
     # Garantir criação do admin padrão
@@ -790,6 +830,7 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
     pix_qr_code_base64 = gerar_qrcode_pix_base64(pix_copia_cola)
     
     with get_db_connection() as conn:
+        aplicar_migracoes(conn)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO payments (user_id, tipo, loteria_type, valor, status, pix_copia_cola, pix_txid, pix_qr_code_base64)
