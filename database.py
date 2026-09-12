@@ -76,7 +76,7 @@ def aplicar_migracoes(conn=None):
         _migrar(conn)
     else:
         try:
-            with get_db_connection() as c:
+            with get_db_connection(auto_sync=False) as c:
                 _migrar(c)
                 c.commit()
         except Exception:
@@ -145,8 +145,11 @@ def sync_db_to_cloud() -> bool:
 
 
 @contextmanager
-def get_db_connection():
+def get_db_connection(auto_sync: bool = True):
     """Retorna conexão com o banco SQLite com row_factory configurado e fechamento garantido"""
+    if auto_sync and (os.environ.get('VERCEL') or blob_storage.get_blob_token()):
+        sync_db_from_cloud(force=False)
+
     os.makedirs(DATA_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row

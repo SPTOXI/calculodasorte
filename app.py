@@ -1160,6 +1160,8 @@ def api_gerar_multiplos_jogos(loteria_type: str):
 def api_checkout_pix():
     """Gera cobrança PIX para assinatura VIP ou recarga avulsa (Preço Único R$ 5,00)"""
     try:
+        dados = request.get_json(silent=True) or {}
+        tipo = dados.get('tipo', 'vip_mensal')
         if tipo == 'vip_mensal':
             valor = PRECO_MENSAL
         else:
