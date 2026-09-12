@@ -12,7 +12,10 @@ from typing import Optional, List, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import blob_storage
-from pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
+try:
+    from .pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
+except ImportError:
+    from pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
 
 ORIGINAL_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if os.environ.get('VERCEL'):
@@ -966,52 +969,8 @@ def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txi
 
 
 def gerar_qrcode_pix_base64(pix_code: str) -> str:
-    """
-    Gera imagem vetorial SVG de alta resolução com fundo branco sólido e quiet zone (border=4)
-    compatível com qualquer câmera e leitor de app bancário.
-    """
-    if not pix_code:
-        return ""
-    try:
-        import qrcode
-        import qrcode.image.svg
-        import io
-        import base64
-
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(pix_code)
-        qr.make(fit=True)
-
-        factory = qrcode.image.svg.SvgPathImage
-        img = qr.make_image(image_factory=factory)
-        stream = io.BytesIO()
-        img.save(stream)
-        svg_bytes = stream.getvalue()
-        svg_str = svg_bytes.decode('utf-8')
-
-        # Inserir fundo branco retangular sólido após a tag de abertura <svg> para garantir contraste total
-        if '<rect' not in svg_str:
-            svg_pos = svg_str.find('<svg')
-            if svg_pos != -1:
-                close_bracket = svg_str.find('>', svg_pos)
-                if close_bracket != -1:
-                    svg_str = (
-                        svg_str[:close_bracket + 1] +
-                        '<rect width="100%" height="100%" fill="#ffffff"/>' +
-                        svg_str[close_bracket + 1:]
-                    )
-                    svg_bytes = svg_str.encode('utf-8')
-
-        svg_base64 = base64.b64encode(svg_bytes).decode('ascii')
-        return f"data:image/svg+xml;base64,{svg_base64}"
-    except Exception as e:
-        print(f"[QRCODE] Erro ao gerar QR Code vetorial: {e}")
-        return ""
+    """Generate a PNG QR code for a PIX payload and return as base64 data URI using the PNG helper."""
+    return gerar_qrcode_pix_png_base64(pix_code)
 
 
 def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional[str] = None) -> Dict[str, Any]:
