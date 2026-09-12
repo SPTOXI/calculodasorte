@@ -656,7 +656,8 @@ def admin_dashboard():
         status_loterias=status_loterias,
         metricas=metricas,
         storage_status=storage_status,
-        aba_ativa=aba_ativa
+        aba_ativa=aba_ativa,
+        pix_config=database.get_pix_config()
     )
 
 
@@ -1354,6 +1355,56 @@ def api_admin_aprovar_pagamento(payment_id: int):
     if sucesso:
         return jsonify({'sucesso': True, 'mensagem': f'Pagamento #{payment_id} aprovado com sucesso!'})
     return jsonify({'erro': 'Pagamento não encontrado ou já aprovado'}), 400
+
+
+@app.route('/api/admin/config-pix', methods=['GET', 'POST'])
+@admin_required
+def api_admin_config_pix():
+    """Consulta ou atualiza as configurações da chave PIX oficial"""
+    if request.method == 'POST':
+        dados = request.get_json() or {}
+        chave = dados.get('chave', '').strip()
+        beneficiario = dados.get('beneficiario', '').strip()
+        cidade = dados.get('cidade', '').strip()
+        
+        if not chave:
+            return jsonify({'erro': 'A chave PIX não pode ser vazia'}), 400
+            
+        config = database.save_pix_config(chave=chave, beneficiario=beneficiario, cidade=cidade)
+        
+        # Gerar amostra de payload e QR code para validação imediata
+        amostra_copia_cola = database.gerar_pix_copia_e_cola(
+            chave=config['chave'],
+            nome=config['beneficiario'],
+            cidade=config['cidade'],
+            valor=5.00,
+            txid='***'
+        )
+        amostra_qr = database.gerar_qrcode_pix_base64(amostra_copia_cola)
+        
+        return jsonify({
+            'sucesso': True,
+            'mensagem': 'Configurações do PIX salvas com sucesso!',
+            'config': config,
+            'amostra_copia_cola': amostra_copia_cola,
+            'amostra_qr': amostra_qr
+        })
+        
+    config = database.get_pix_config()
+    amostra_copia_cola = database.gerar_pix_copia_e_cola(
+        chave=config['chave'],
+        nome=config['beneficiario'],
+        cidade=config['cidade'],
+        valor=5.00,
+        txid='***'
+    )
+    amostra_qr = database.gerar_qrcode_pix_base64(amostra_copia_cola)
+    return jsonify({
+        'sucesso': True,
+        'config': config,
+        'amostra_copia_cola': amostra_copia_cola,
+        'amostra_qr': amostra_qr
+    })
 
 
 

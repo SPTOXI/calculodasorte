@@ -477,7 +477,8 @@ class TestNovasFuncionalidades(unittest.TestCase):
         pix = database.gerar_pix_copia_e_cola(chave, 'Calculo da Sorte', 'SAO PAULO', valor, 'CS123456')
         
         # 1. Verifica indicadores obrigatórios
-        self.assertTrue(pix.startswith('00020126'))
+        self.assertTrue(pix.startswith('00020101021126'))
+        self.assertIn('010211', pix)
         self.assertIn('0014br.gov.bcb.pix', pix)
         self.assertIn(f"01{len(chave):02d}{chave}", pix)
         self.assertIn('5303986', pix) # BRL
@@ -497,7 +498,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         import base64
 
         # 1. Teste da função direta
-        pix_code = "00020126500014br.gov.bcb.pix0128silvio.luis.morais@gmail.com52040000530398654045.005802BR5916Calculo da Sorte6009SAO PAULO62070503***6304DEEE"
+        pix_code = "00020101021126500014br.gov.bcb.pix0128silvio.luis.morais@gmail.com52040000530398654045.005802BR5916Calculo da Sorte6009SAO PAULO62070503***6304F4C2"
         qr_uri = database.gerar_qrcode_pix_base64(pix_code)
         self.assertTrue(qr_uri.startswith('data:image/svg+xml;base64,'))
         base64_part = qr_uri.split(',', 1)[1]
@@ -597,6 +598,92 @@ class TestNovasFuncionalidades(unittest.TestCase):
         res_dash = self.client.get('/dashboard')
         self.assertEqual(res_dash.status_code, 302)
         self.assertIn('/login', res_dash.headers.get('Location', ''))
+
+    def test_24_pix_bacen_compliance_and_config(self):
+        """Valida conformidade estrita do payload PIX com as normas do BACEN, normalização de chaves e endpoint admin"""
+        import base64
+
+        # 1. Normalização de chaves PIX
+        self.assertEqual(database.normalizar_chave_pix(' 123.456.789-01 '), '12345678901')
+        self.assertEqual(database.normalizar_chave_pix('(11) 98765-4321'), '+5511987654321')
+        self.assertEqual(database.normalizar_chave_pix('5511987654321'), '+5511987654321')
+        self.assertEqual(database.normalizar_chave_pix(' TESTE@DOMINIO.COM '), 'teste@dominio.com')
+        self.assertEqual(
+            database.normalizar_chave_pix('E8B2D5D4-7A3E-4B0F-9C1D-8F2E3A4B5C6D'),
+            'e8b2d5d4-7a3e-4b0f-9c1d-8f2e3a4b5c6d'
+        )
+
+        # 2. Identificação dos tipos de chave
+        self.assertEqual(database.identificar_tipo_chave_pix('user@site.com'), 'email')
+        self.assertEqual(database.identificar_tipo_chave_pix('+5511987654321'), 'telefone')
+        self.assertEqual(database.identificar_tipo_chave_pix('12345678901'), 'cpf')
+        self.assertEqual(database.identificar_tipo_chave_pix('12345678000190'), 'cnpj')
+        self.assertEqual(database.identificar_tipo_chave_pix('e8b2d5d4-7a3e-4b0f-9c1d-8f2e3a4b5c6d'), 'aleatoria')
+
+        # 3. Geração do Copia e Cola conforme BACEN
+        payload = database.gerar_pix_copia_e_cola(
+            chave='silvio.luis.morais@gmail.com',
+            nome='Calculo da Sorte',
+            cidade='SAO PAULO',
+            valor=5.00,
+            txid='***'
+        )
+        self.assertTrue(payload.startswith('000201'), "Payload deve iniciar com Tag 000201")
+        self.assertIn('010211', payload, "Payload deve conter Tag 010211 (QR Code Estático)")
+        self.assertIn('0014br.gov.bcb.pix', payload, "Payload deve conter GUI do BACEN")
+        self.assertIn('silvio.luis.morais@gmail.com', payload)
+        self.assertIn('52040000', payload)
+        self.assertIn('5303986', payload)
+        self.assertIn('54045.00', payload)
+        self.assertIn('5802BR', payload)
+        self.assertIn('62070503***', payload, "Tag 62 deve conter txid *** para QR estático sem rejeição de chave")
+        self.assertIn('6304', payload)
+        
+        # Validar integridade do CRC16
+        crc_gerado = payload[-4:]
+        corpo = payload[:-4]
+        crc_calculado = database.calcular_crc16_ccitt(corpo)
+        self.assertEqual(crc_gerado, crc_calculado, "Checksum CRC16-CCITT deve ser válido")
+
+        # 4. Geração de QR Code vetorial com fundo branco e quiet zone
+        qr_uri = database.gerar_qrcode_pix_base64(payload)
+        self.assertTrue(qr_uri.startswith('data:image/svg+xml;base64,'))
+        svg_decoded = base64.b64decode(qr_uri.replace('data:image/svg+xml;base64,', '')).decode('utf-8')
+        self.assertIn('<svg', svg_decoded)
+        self.assertIn('<rect width="100%" height="100%" fill="#ffffff"/>', svg_decoded)
+
+        # 5. API Admin de Configuração do PIX (/api/admin/config-pix)
+        # 5.1 Sem autenticação -> 401
+        res_nao_auth = self.client.get('/api/admin/config-pix')
+        self.assertEqual(res_nao_auth.status_code, 401)
+
+        # 5.2 Com admin logado
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = 1
+            sess['role'] = 'admin'
+
+        res_get = self.client.get('/api/admin/config-pix')
+        self.assertEqual(res_get.status_code, 200)
+        data_get = res_get.get_json()
+        self.assertTrue(data_get['sucesso'])
+        self.assertIn('config', data_get)
+        self.assertIn('amostra_qr', data_get)
+
+        # 5.3 Salvar nova configuração via POST
+        res_post = self.client.post('/api/admin/config-pix',
+            data=json.dumps({
+                'chave': '(11) 98765-4321',
+                'beneficiario': 'SILVIO LUIS MORAIS',
+                'cidade': 'SAO PAULO'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(res_post.status_code, 200)
+        data_post = res_post.get_json()
+        self.assertTrue(data_post['sucesso'])
+        self.assertEqual(data_post['config']['chave'], '+5511987654321')
+        self.assertEqual(data_post['config']['tipo'], 'telefone')
+        self.assertIn('+5511987654321', data_post['amostra_copia_cola'])
 
 
 if __name__ == '__main__':

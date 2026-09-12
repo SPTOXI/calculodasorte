@@ -1384,6 +1384,52 @@
              ABA 3: GESTÃO DE PAGAMENTOS PIX & INFINITEPAY
              ========================================== -->
         <div id="tab-pagamentos" class="tab-content {% if aba_ativa == 'tab-pagamentos' %}active{% endif %}">
+            <!-- CARD DE CONFIGURAÇÃO DA CHAVE PIX OFICIAL -->
+            <div class="card" style="border-top: 4px solid #4f46e5; margin-bottom: 22px;">
+                <div class="card-header">
+                    <div>
+                        <h3><span>⚙️</span> Configuração da Chave PIX Oficial (Recebimento dos Pagamentos)</h3>
+                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">
+                            Configure a chave PIX, nome do beneficiário e cidade para geração do QR Code e Copia e Cola nos padrões estritos do Banco Central (BACEN / EMVCo).
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn-secondary" onclick="abrirModalTestePix()">
+                            <span>📱</span> Testar QR Code no Banco
+                        </button>
+                    </div>
+                </div>
+
+                <form id="form-config-pix" onsubmit="salvarConfigPix(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="pix-chave-input" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Chave PIX Oficial</span>
+                            <span id="badge-tipo-chave" class="badge badge-primary" style="font-size: 0.72rem; text-transform: uppercase;">{{ pix_config.tipo if pix_config else 'Detectando...' }}</span>
+                        </label>
+                        <input type="text" id="pix-chave-input" value="{{ pix_config.chave if pix_config else '' }}" placeholder="CPF, Telefone (+55...), E-mail ou UUID" required oninput="detectarTipoChavePix(this.value)">
+                        <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">Aceita E-mail, Celular com DDD, CPF/CNPJ ou chave aleatória.</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="pix-beneficiario-input">Nome do Beneficiário (Até 25 caracteres)</label>
+                        <input type="text" id="pix-beneficiario-input" value="{{ pix_config.beneficiario if pix_config else 'Calculo da Sorte' }}" maxlength="25" placeholder="Ex: SILVIO LUIS MORAIS" required>
+                        <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">Nome da pessoa física ou razão social vinculada à chave.</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="pix-cidade-input">Cidade do Beneficiário (Até 15 caracteres)</label>
+                        <input type="text" id="pix-cidade-input" value="{{ pix_config.cidade if pix_config else 'SAO PAULO' }}" maxlength="15" placeholder="Ex: SAO PAULO" required>
+                        <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">Cidade da agência bancária ou domicílio.</small>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn-primary" id="btn-salvar-pix" style="width: 100%; justify-content: center; padding: 12px;">
+                            💾 Salvar Configurações PIX
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <div>
@@ -1571,6 +1617,41 @@
                     <button type="submit" class="btn-primary">Salvar Alterações</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TESTE DO QR CODE PIX NO BANCO -->
+    <div id="modal-teste-pix" class="modal-backdrop">
+        <div class="modal" style="max-width: 440px; text-align: center;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;"><span>📱</span> Teste de Leitura PIX no Banco</h3>
+                <button class="close-btn" onclick="fecharModais()">&times;</button>
+            </div>
+            <div style="margin: 10px 0;">
+                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 14px; line-height: 1.4;">
+                    Abra o app do seu banco no celular (Nubank, Itaú, BB, Bradesco, Inter, Caixa, etc.), acerte a câmera no QR Code abaixo para validar que o banco reconhece a chave imediatamente:
+                </p>
+                <div id="pix-modal-qrcode-container" style="background: white; padding: 14px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border: 2px solid #e2e8f0; margin-bottom: 14px;">
+                    <img id="pix-modal-qrcode-img" src="" alt="QR Code PIX Oficial BACEN" style="width: 220px; height: 220px; display: block; margin: 0 auto; object-fit: contain;">
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; text-align: left; margin-bottom: 12px; line-height: 1.5;">
+                    <div><strong>Chave Ativa:</strong> <span id="pix-modal-chave"></span></div>
+                    <div><strong>Beneficiário:</strong> <span id="pix-modal-beneficiario"></span></div>
+                    <div><strong>Cidade:</strong> <span id="pix-modal-cidade"></span></div>
+                    <div><strong>Padrão:</strong> <span style="color: #059669; font-weight: 700;">EMVCo BACEN (Tag 01: 010211, txid: ***)</span></div>
+                    <div><strong>Valor de Teste:</strong> <span>R$ 5,00</span></div>
+                </div>
+                <div class="form-group" style="text-align: left; margin-bottom: 8px;">
+                    <label style="font-size: 0.8rem; font-weight: 700;">Código Copia e Cola Oficial:</label>
+                    <textarea id="pix-modal-copia-cola" readonly style="width: 100%; height: 60px; font-family: monospace; font-size: 0.72rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; background: #fff;"></textarea>
+                </div>
+                <button type="button" class="btn-secondary" onclick="copiarPixModal()" style="width: 100%; justify-content: center; padding: 10px; font-size: 0.88rem;">
+                    📋 Copiar Código PIX
+                </button>
+            </div>
+            <div class="modal-footer" style="margin-top: 15px;">
+                <button type="button" class="btn-primary" style="width: 100%; justify-content: center;" onclick="fecharModais()">Fechar</button>
+            </div>
         </div>
     </div>
 
@@ -2071,6 +2152,138 @@
                 }
             } catch (e) {
                 showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        // ==========================================
+        // CONFIGURAÇÃO DA CHAVE PIX OFICIAL (BACEN)
+        // ==========================================
+
+        function detectarTipoChavePix(chave) {
+            const ch = (chave || '').trim();
+            const badge = document.getElementById('badge-tipo-chave');
+            if (!badge) return;
+
+            if (!ch) {
+                badge.innerText = 'Detectando...';
+                badge.className = 'badge badge-secondary';
+                return;
+            }
+
+            if (ch.includes('@')) {
+                badge.innerText = 'E-mail';
+                badge.className = 'badge badge-primary';
+                return;
+            }
+
+            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(ch);
+            if (isUuid) {
+                badge.innerText = 'Chave Aleatória (EVP)';
+                badge.className = 'badge badge-primary';
+                return;
+            }
+
+            const numeros = ch.replace(/\D/g, '');
+            if (ch.startsWith('+') || ch.includes('(') || ch.includes(')') || (numeros.length >= 12 && numeros.startsWith('55'))) {
+                badge.innerText = 'Telefone (+55)';
+                badge.className = 'badge badge-primary';
+                return;
+            }
+
+            if (numeros.length === 14) {
+                badge.innerText = 'CNPJ';
+                badge.className = 'badge badge-primary';
+                return;
+            }
+
+            if (numeros.length === 11) {
+                badge.innerText = 'CPF';
+                badge.className = 'badge badge-primary';
+                return;
+            }
+
+            badge.innerText = 'Chave Livre';
+            badge.className = 'badge badge-warning';
+        }
+
+        async function salvarConfigPix(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-salvar-pix');
+            const chave = document.getElementById('pix-chave-input').value.trim();
+            const beneficiario = document.getElementById('pix-beneficiario-input').value.trim();
+            const cidade = document.getElementById('pix-cidade-input').value.trim();
+
+            if (!chave) {
+                showToast('Informe uma chave PIX válida.', 'warning');
+                return;
+            }
+
+            const originalBtnText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+            try {
+                const res = await fetch('/api/admin/config-pix', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ chave, beneficiario, cidade })
+                });
+                const data = await res.json();
+                if (res.ok && data.sucesso) {
+                    showToast('Configurações PIX salvas com sucesso!', 'success');
+                    if (data.config) {
+                        document.getElementById('pix-chave-input').value = data.config.chave;
+                        document.getElementById('pix-beneficiario-input').value = data.config.beneficiario;
+                        document.getElementById('pix-cidade-input').value = data.config.cidade;
+                        detectarTipoChavePix(data.config.chave);
+                    }
+                } else {
+                    showToast(data.erro || 'Falha ao salvar configurações PIX', 'error');
+                }
+            } catch (err) {
+                showToast('Erro de conexão ao salvar: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+        }
+
+        async function abrirModalTestePix() {
+            try {
+                showToast('Gerando prévia do QR Code oficial...', 'info');
+                const res = await fetch('/api/admin/config-pix');
+                const data = await res.json();
+                if (res.ok && data.sucesso) {
+                    const img = document.getElementById('pix-modal-qrcode-img');
+                    img.src = data.amostra_qr;
+                    document.getElementById('pix-modal-chave').innerText = data.config.chave;
+                    document.getElementById('pix-modal-beneficiario').innerText = data.config.beneficiario;
+                    document.getElementById('pix-modal-cidade').innerText = data.config.cidade;
+                    document.getElementById('pix-modal-copia-cola').value = data.amostra_copia_cola;
+                    document.getElementById('modal-teste-pix').classList.add('active');
+                } else {
+                    showToast(data.erro || 'Erro ao carregar prévia do PIX', 'error');
+                }
+            } catch (err) {
+                showToast('Erro ao carregar teste PIX: ' + err.message, 'error');
+            }
+        }
+
+        function copiarPixModal() {
+            const textarea = document.getElementById('pix-modal-copia-cola');
+            if (!textarea || !textarea.value) return;
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try {
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    showToast('Código PIX Copia e Cola copiado com sucesso!', 'success');
+                }).catch(() => {
+                    document.execCommand('copy');
+                    showToast('Código PIX copiado com sucesso!', 'success');
+                });
+            } catch (e) {
+                document.execCommand('copy');
+                showToast('Código PIX copiado com sucesso!', 'success');
             }
         }
     </script>

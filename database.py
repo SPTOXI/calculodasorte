@@ -4,6 +4,7 @@ Projeto Calculadora da Sorte
 """
 
 import os
+import re
 import sqlite3
 import time
 from datetime import datetime, timedelta
@@ -56,6 +57,17 @@ def aplicar_migracoes(conn=None):
         except Exception:
             pass
 
+        try:
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+        except Exception:
+            pass
+
     if conn is not None:
         _migrar(conn)
     else:
@@ -65,6 +77,34 @@ def aplicar_migracoes(conn=None):
                 c.commit()
         except Exception:
             pass
+
+
+def get_setting(key: str, default: Optional[str] = None) -> Optional[str]:
+    """Obtém configuração persistente do sistema"""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute('SELECT value FROM system_settings WHERE key = ?', (key,)).fetchone()
+            return row['value'] if row else default
+    except Exception:
+        return default
+
+
+def set_setting(key: str, value: str) -> bool:
+    """Salva ou atualiza configuração persistente do sistema e sincroniza com a nuvem"""
+    try:
+        with get_db_connection() as conn:
+            aplicar_migracoes(conn)
+            conn.execute('''
+                INSERT INTO system_settings (key, value, updated_at) 
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            ''', (key, str(value)))
+            conn.commit()
+        sync_db_to_cloud()
+        return True
+    except Exception as e:
+        print(f"[SETTINGS] Erro ao salvar configuração {key}: {e}")
+        return False
 
 
 def sync_db_from_cloud(force: bool = False) -> bool:
@@ -719,6 +759,95 @@ PIX_BENEFICIARIO_DEFAULT = os.environ.get('PIX_BENEFICIARIO', 'Calculo da Sorte'
 PIX_CIDADE_DEFAULT = os.environ.get('PIX_CIDADE', 'SAO PAULO')
 
 
+def normalizar_chave_pix(chave: str, tipo: Optional[str] = None) -> str:
+    """
+    Normaliza a chave PIX conforme as normas estritas do BACEN:
+    - CPF: apenas 11 dígitos
+    - CNPJ: apenas 14 dígitos
+    - Telefone: formato internacional com '+' (+55DDD9XXXXXXXX)
+    - E-mail: minúsculas e sem espaços
+    - Aleatória (EVP): formato UUID minúsculo
+    """
+    if not chave:
+        return ''
+    ch = chave.strip()
+    
+    # Se contém @, é email
+    if '@' in ch:
+        return ch.lower()
+    
+    # Se tem formato UUID
+    if re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', ch):
+        return ch.lower()
+        
+    numeros = re.sub(r'\D', '', ch)
+    
+    if tipo == 'telefone' or ch.startswith('+') or '(' in ch or ')' in ch:
+        if len(numeros) in (10, 11):
+            return f"+55{numeros}"
+        elif len(numeros) in (12, 13) and numeros.startswith('55'):
+            return f"+{numeros}"
+        return f"+{numeros}" if not ch.startswith('+') else ch
+        
+    if tipo == 'cnpj' or len(numeros) == 14:
+        return numeros
+        
+    if tipo == 'cpf' or (len(numeros) == 11 and ('.' in ch or '-' in ch or not ch.startswith('+'))):
+        return numeros
+        
+    # Se tem 12 ou 13 dígitos começando com 55 e não é CNPJ
+    if len(numeros) in (12, 13) and numeros.startswith('55'):
+        return f"+{numeros}"
+        
+    return ch
+
+
+def identificar_tipo_chave_pix(chave: str) -> str:
+    """Identifica o tipo de chave PIX (email, telefone, cpf, cnpj, aleatoria ou desconhecido)"""
+    if not chave:
+        return 'desconhecido'
+    ch = chave.strip()
+    if '@' in ch:
+        return 'email'
+    if re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', ch):
+        return 'aleatoria'
+    numeros = re.sub(r'\D', '', ch)
+    if ch.startswith('+') or '(' in ch or ')' in ch or (len(numeros) in (12, 13) and numeros.startswith('55')):
+        return 'telefone'
+    if len(numeros) == 14:
+        return 'cnpj'
+    if len(numeros) == 11:
+        return 'cpf'
+    return 'desconhecido'
+
+
+def get_pix_config() -> Dict[str, str]:
+    """Retorna as configurações ativas de recebimento PIX (chave, beneficiário, cidade, tipo)"""
+    chave = get_setting('pix_key', PIX_KEY_DEFAULT) or PIX_KEY_DEFAULT
+    beneficiario = get_setting('pix_beneficiario', PIX_BENEFICIARIO_DEFAULT) or PIX_BENEFICIARIO_DEFAULT
+    cidade = get_setting('pix_cidade', PIX_CIDADE_DEFAULT) or PIX_CIDADE_DEFAULT
+    chave_norm = normalizar_chave_pix(chave)
+    tipo = identificar_tipo_chave_pix(chave_norm)
+    return {
+        'chave': chave_norm,
+        'chave_raw': chave,
+        'beneficiario': beneficiario,
+        'cidade': cidade,
+        'tipo': tipo
+    }
+
+
+def save_pix_config(chave: str, beneficiario: str = '', cidade: str = '') -> Dict[str, Any]:
+    """Salva novas configurações PIX persistentes no banco e sincroniza com a nuvem"""
+    chave_norm = normalizar_chave_pix(chave)
+    set_setting('pix_key', chave_norm)
+    if beneficiario:
+        set_setting('pix_beneficiario', beneficiario.strip()[:25])
+    if cidade:
+        set_setting('pix_cidade', cidade.strip()[:15])
+    return get_pix_config()
+
+
 def calcular_crc16_ccitt(payload: str) -> str:
     """Calcula o checksum CRC16-CCITT (polinômio 0x1021, valor inicial 0xFFFF) conforme especificação BACEN para PIX"""
     crc = 0xFFFF
@@ -735,9 +864,12 @@ def calcular_crc16_ccitt(payload: str) -> str:
 def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txid: str = '***') -> str:
     """
     Gera o payload oficial PIX Copia e Cola no padrão EMVCo / BR Code estabelecido pelo Banco Central do Brasil.
-    Garante tags TLV (Tag-Length-Value) rigorosamente corretas e checksum CRC-16/CCITT-FALSE.
+    Garante tags TLV (Tag-Length-Value) rigorosamente corretas, inclusão da Tag 01 (010211 estático) e checksum CRC-16.
     """
     import unicodedata
+
+    # Normalizar chave conforme tipo
+    chave_clean = normalizar_chave_pix(chave)
 
     # Normalizar nome e cidade para ASCII sem acentos (requisito universal de compatibilidade bancária)
     nome_norm = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('ASCII')
@@ -748,9 +880,12 @@ def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txi
     # Tag 00: Payload Format Indicator
     p_format = "000201"
 
+    # Tag 01: Point of Initiation Method (11 = Estático / Reutilizável - mandatório pelo BACEN)
+    p_init = "010211"
+
     # Tag 26: Merchant Account Information
     gui = "0014br.gov.bcb.pix"
-    key_tag = f"01{len(chave):02d}{chave}"
+    key_tag = f"01{len(chave_clean):02d}{chave_clean}"
     merchant_info = gui + key_tag
     tag_26 = f"26{len(merchant_info):02d}{merchant_info}"
 
@@ -773,19 +908,22 @@ def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txi
     # Tag 60: Merchant City
     tag_60 = f"60{len(cidade_clean):02d}{cidade_clean}"
 
-    # Tag 62: Additional Data Field (txid)
-    txid_clean = txid[:25] if txid else '***'
+    # Tag 62: Additional Data Field (txid - '***' é o padrão BACEN para QR estático sem API de conciliação)
+    txid_clean = (txid or '***')[:25]
     subtag_05 = f"05{len(txid_clean):02d}{txid_clean}"
     tag_62 = f"62{len(subtag_05):02d}{subtag_05}"
 
-    # Tag 63: CRC16 (Payload sem os 4 dígitos do checksum)
-    raw = p_format + tag_26 + tag_52 + tag_53 + tag_54 + tag_58 + tag_59 + tag_60 + tag_62 + "6304"
+    # Tag 63: CRC16 (Payload com tag 6304 antes do cálculo)
+    raw = p_format + p_init + tag_26 + tag_52 + tag_53 + tag_54 + tag_58 + tag_59 + tag_60 + tag_62 + "6304"
     crc = calcular_crc16_ccitt(raw)
     return raw + crc
 
 
 def gerar_qrcode_pix_base64(pix_code: str) -> str:
-    """Gera imagem vetorial SVG de alta resolução legível por qualquer app bancário, codificada em data URI base64"""
+    """
+    Gera imagem vetorial SVG de alta resolução com fundo branco sólido e quiet zone (border=4)
+    compatível com qualquer câmera e leitor de app bancário.
+    """
     if not pix_code:
         return ""
     try:
@@ -798,7 +936,7 @@ def gerar_qrcode_pix_base64(pix_code: str) -> str:
             version=None,
             error_correction=qrcode.constants.ERROR_CORRECT_M,
             box_size=10,
-            border=2,
+            border=4,
         )
         qr.add_data(pix_code)
         qr.make(fit=True)
@@ -808,6 +946,21 @@ def gerar_qrcode_pix_base64(pix_code: str) -> str:
         stream = io.BytesIO()
         img.save(stream)
         svg_bytes = stream.getvalue()
+        svg_str = svg_bytes.decode('utf-8')
+
+        # Inserir fundo branco retangular sólido após a tag de abertura <svg> para garantir contraste total
+        if '<rect' not in svg_str:
+            svg_pos = svg_str.find('<svg')
+            if svg_pos != -1:
+                close_bracket = svg_str.find('>', svg_pos)
+                if close_bracket != -1:
+                    svg_str = (
+                        svg_str[:close_bracket + 1] +
+                        '<rect width="100%" height="100%" fill="#ffffff"/>' +
+                        svg_str[close_bracket + 1:]
+                    )
+                    svg_bytes = svg_str.encode('utf-8')
+
         svg_base64 = base64.b64encode(svg_bytes).decode('ascii')
         return f"data:image/svg+xml;base64,{svg_base64}"
     except Exception as e:
@@ -816,16 +969,17 @@ def gerar_qrcode_pix_base64(pix_code: str) -> str:
 
 
 def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional[str] = None) -> Dict[str, Any]:
-    """Registra uma intenção de pagamento PIX e gera payload oficial Copia e Cola e QR Code vetorial"""
+    """Registra uma intenção de pagamento PIX e gera payload oficial Copia e Cola e QR Code vetorial com a chave configurada"""
     import random
     import string
     txid = 'CS' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    pix_cfg = get_pix_config()
     pix_copia_cola = gerar_pix_copia_e_cola(
-        chave=PIX_KEY_DEFAULT,
-        nome=PIX_BENEFICIARIO_DEFAULT,
-        cidade=PIX_CIDADE_DEFAULT,
+        chave=pix_cfg['chave'],
+        nome=pix_cfg['beneficiario'],
+        cidade=pix_cfg['cidade'],
         valor=valor,
-        txid=txid
+        txid='***'
     )
     pix_qr_code_base64 = gerar_qrcode_pix_base64(pix_copia_cola)
     
