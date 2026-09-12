@@ -109,12 +109,25 @@ def sync_db_to_cloud() -> bool:
 
 
 
+import urllib.parse
+
+def clean_db_url(url):
+    if not url: return url
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+    valid_keys = {'sslmode', 'connect_timeout', 'application_name', 'options', 'keepalives', 'keepalives_idle', 'keepalives_interval', 'keepalives_count'}
+    new_query = {k: v[0] for k, v in query.items() if k in valid_keys}
+    parsed = parsed._replace(query=urllib.parse.urlencode(new_query))
+    return urllib.parse.urlunparse(parsed)
+
 DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+DATABASE_URL = clean_db_url(DATABASE_URL)
 if not DATABASE_URL:
     try:
         from dotenv import load_dotenv
         load_dotenv()
         DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+        DATABASE_URL = clean_db_url(DATABASE_URL)
     except ImportError:
         pass
 
