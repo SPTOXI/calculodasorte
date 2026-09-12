@@ -1,3 +1,25 @@
+
+class PostgresConnAdapter:
+    def __init__(self, conn):
+        self.conn = conn
+    
+    def execute(self, query, params=None):
+        cursor = self.conn.cursor()
+        if params is not None:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        return cursor
+        
+    def cursor(self):
+        return self.conn.cursor()
+        
+    def commit(self):
+        self.conn.commit()
+        
+    def close(self):
+        self.conn.close()
+
 """
 Módulo de Banco de Dados SQLite para Gestão de Usuários e Autenticação
 Projeto Calculadora da Sorte
@@ -5,85 +27,31 @@ Projeto Calculadora da Sorte
 
 import os
 import re
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from werkzeug.security import generate_password_hash, check_password_hash
 
-import blob_storage
+try:
+    from .pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
+except ImportError:
+    from pix_utils import validar_payload_pix, gerar_qrcode_pix_png_base64
 
-ORIGINAL_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-if os.environ.get('VERCEL'):
-    DATA_DIR = os.path.join('/tmp', 'data')
-else:
-    DATA_DIR = ORIGINAL_DATA_DIR
 
-DB_PATH = os.path.join(DATA_DIR, 'database.db')
 
 from contextlib import contextmanager
 
 _LAST_CLOUD_SYNC = 0.0
 
-def aplicar_migracoes(conn=None):
-    """Aplica migrações de forma idempotente em tabelas existentes"""
-    def _migrar(c):
-        try:
-            colunas_users = [r['name'] for r in c.execute("PRAGMA table_info(users)").fetchall()]
-            if 'name' not in colunas_users:
-                c.execute("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT 'Apostador'")
-            if 'plan' not in colunas_users:
-                c.execute("ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'")
-            if 'credits' not in colunas_users:
-                c.execute("ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 1")
-            if 'vip_expires_at' not in colunas_users:
-                c.execute("ALTER TABLE users ADD COLUMN vip_expires_at TIMESTAMP")
-            if 'accepted_terms_at' not in colunas_users:
-                c.execute("ALTER TABLE users ADD COLUMN accepted_terms_at TIMESTAMP")
-            c.execute('CREATE INDEX IF NOT EXISTS idx_users_email_nocase ON users (email COLLATE NOCASE)')
-        except Exception:
-            pass
-
-        try:
-            colunas_pay = [r['name'] for r in c.execute("PRAGMA table_info(payments)").fetchall()]
-            if 'pix_qr_code_base64' not in colunas_pay:
-                c.execute("ALTER TABLE payments ADD COLUMN pix_qr_code_base64 TEXT")
-            if 'pix_txid' not in colunas_pay:
-                c.execute("ALTER TABLE payments ADD COLUMN pix_txid TEXT")
-            if 'pix_copia_cola' not in colunas_pay:
-                c.execute("ALTER TABLE payments ADD COLUMN pix_copia_cola TEXT")
-            if 'loteria_type' not in colunas_pay:
-                c.execute("ALTER TABLE payments ADD COLUMN loteria_type TEXT")
-        except Exception:
-            pass
-
-        try:
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS system_settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-        except Exception:
-            pass
-
-    if conn is not None:
-        _migrar(conn)
-    else:
-        try:
-            with get_db_connection() as c:
-                _migrar(c)
-                c.commit()
-        except Exception:
-            pass
 
 
 def get_setting(key: str, default: Optional[str] = None) -> Optional[str]:
     """Obtém configuração persistente do sistema"""
     try:
         with get_db_connection() as conn:
-            row = conn.execute('SELECT value FROM system_settings WHERE key = ?', (key,)).fetchone()
+            row = conn.execute('SELECT value FROM system_settings WHERE key = %s', (key,)).fetchone()
             return row['value'] if row else default
     except Exception:
         return default
@@ -93,10 +61,10 @@ def set_setting(key: str, value: str) -> bool:
     """Salva ou atualiza configuração persistente do sistema e sincroniza com a nuvem"""
     try:
         with get_db_connection() as conn:
-            aplicar_migracoes(conn)
+            
             conn.execute('''
                 INSERT INTO system_settings (key, value, updated_at) 
-                VALUES (?, ?, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             ''', (key, str(value)))
             conn.commit()
@@ -140,12 +108,36 @@ def sync_db_to_cloud() -> bool:
     return success
 
 
+
+import urllib.parse
+
+def clean_db_url(url):
+    if not url: return url
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+    valid_keys = {'sslmode', 'connect_timeout', 'application_name', 'options', 'keepalives', 'keepalives_idle', 'keepalives_interval', 'keepalives_count'}
+    new_query = {k: v[0] for k, v in query.items() if k in valid_keys}
+    parsed = parsed._replace(query=urllib.parse.urlencode(new_query))
+    return urllib.parse.urlunparse(parsed)
+
+DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+DATABASE_URL = clean_db_url(DATABASE_URL)
+if not DATABASE_URL:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+        DATABASE_URL = clean_db_url(DATABASE_URL)
+    except ImportError:
+        pass
+
 @contextmanager
-def get_db_connection():
-    """Retorna conexão com o banco SQLite com row_factory configurado e fechamento garantido"""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+def get_db_connection(auto_sync: bool = True):
+    if not DATABASE_URL:
+        raise ValueError('DATABASE_URL or POSTGRES_URL is not set')
+        
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    conn = PostgresConnAdapter(conn)
     try:
         yield conn
         conn.commit()
@@ -154,28 +146,11 @@ def get_db_connection():
 
 
 def init_db():
-    """Inicializa as tabelas do banco de dados e cria o administrador padrão com suporte a Vercel Blob"""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    
-    if os.environ.get('VERCEL') or not os.path.exists(DB_PATH):
-        bundled_db = os.path.join(ORIGINAL_DATA_DIR, 'database.db')
-        if not os.path.exists(DB_PATH) and os.path.exists(bundled_db):
-            try:
-                import shutil
-                shutil.copy2(bundled_db, DB_PATH)
-                print(f"[DB] Banco inicial copiado de {bundled_db} para {DB_PATH}")
-            except Exception as e:
-                print(f"[DB] Aviso ao copiar banco empacotado: {e}")
-        
-        sync_db_from_cloud(force=True)
-
+    """Inicializa as tabelas do banco de dados na Supabase"""
     with get_db_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Tabela de Usuários
-        cursor.execute('''
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL DEFAULT 'Apostador',
                 password_hash TEXT NOT NULL,
@@ -185,31 +160,16 @@ def init_db():
                 vip_expires_at TIMESTAMP,
                 is_blocked INTEGER NOT NULL DEFAULT 0,
                 must_change_password INTEGER NOT NULL DEFAULT 0,
+                accepted_terms_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_login TIMESTAMP
             )
-        ''')
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_users_email_nocase ON users (LOWER(email))")
 
-        # Migração segura de colunas na tabela users se já existir
-        colunas_existentes = [r['name'] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
-        if 'name' not in colunas_existentes:
-            conn.execute("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT 'Apostador'")
-        if 'plan' not in colunas_existentes:
-            conn.execute("ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'")
-        if 'credits' not in colunas_existentes:
-            conn.execute("ALTER TABLE users ADD COLUMN credits INTEGER NOT NULL DEFAULT 1")
-        if 'vip_expires_at' not in colunas_existentes:
-            conn.execute("ALTER TABLE users ADD COLUMN vip_expires_at TIMESTAMP")
-        if 'accepted_terms_at' not in colunas_existentes:
-            conn.execute("ALTER TABLE users ADD COLUMN accepted_terms_at TIMESTAMP")
-        
-        # Índice Case-Insensitive para consultas de e-mail de alta performance e resiliência mobile
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email_nocase ON users (email COLLATE NOCASE)')
-        
-        # Tabela de Histórico de Sincronizações
-        cursor.execute('''
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS sync_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 loteria_type TEXT NOT NULL,
                 concurso INTEGER,
                 data_sorteio TEXT,
@@ -217,12 +177,11 @@ def init_db():
                 mensagem TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
-        # Tabela de Histórico de Apostas dos Usuários
-        cursor.execute('''
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_bets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER,
                 session_id TEXT,
                 loteria_type TEXT NOT NULL,
@@ -234,16 +193,15 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
-        ''')
+        """)
 
-        # Tabela de Pagamentos (PIX / Assinaturas / Avulso)
-        cursor.execute('''
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 tipo TEXT NOT NULL,
                 loteria_type TEXT,
-                valor REAL NOT NULL,
+                valor NUMERIC NOT NULL,
                 status TEXT NOT NULL DEFAULT 'pendente',
                 pix_copia_cola TEXT,
                 pix_txid TEXT,
@@ -252,14 +210,19 @@ def init_db():
                 approved_at TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
-        ''')
+        """)
 
-        # Aplicação consistente e idempotente de migrações
-        aplicar_migracoes(conn)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
 
-    # Garantir criação do admin padrão
     seed_admin()
+
 
 
 def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123456'):
@@ -281,7 +244,7 @@ def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123
             conn.execute('''
                 UPDATE users 
                 SET role = 'admin', plan = 'vip_mensal', credits = 9999, name = 'Administrador Silvio' 
-                WHERE email = ?
+                WHERE email = %s
             ''', (email,))
             conn.commit()
 
@@ -289,14 +252,14 @@ def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123
 def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     """Buscar usuário por ID com fallback para sincronização na nuvem"""
     with get_db_connection() as conn:
-        row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        row = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
         if row:
             return dict(row)
 
     # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
     if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
-            row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            row = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
             if row:
                 return dict(row)
 
@@ -310,7 +273,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     email_clean = email.strip().lower()
     with get_db_connection() as conn:
         row = conn.execute(
-            'SELECT * FROM users WHERE LOWER(email) = ?', 
+            'SELECT * FROM users WHERE LOWER(email) = %s', 
             (email_clean,)
         ).fetchone()
         if row:
@@ -320,7 +283,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
             row = conn.execute(
-                'SELECT * FROM users WHERE LOWER(email) = ?', 
+                'SELECT * FROM users WHERE LOWER(email) = %s', 
                 (email_clean,)
             ).fetchone()
             if row:
@@ -368,10 +331,10 @@ def create_user(
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO users (email, name, password_hash, role, plan, credits, is_blocked, must_change_password, accepted_terms_at)
-            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, 0, %s, %s) RETURNING id
         ''', (email_clean, name_clean, pwd_hash, role, plan, credits, must_change_password, terms_date))
+        user_id = cursor.fetchone()['id']
         conn.commit()
-        user_id = cursor.lastrowid
         
     synced = sync_db_to_cloud()
     if synced:
@@ -395,26 +358,26 @@ def update_user(
         email_clean = email.strip().lower()
         if not email_clean or '@' not in email_clean:
             raise ValueError("E-mail inválido")
-        fields.append("email = ?")
+        fields.append("email = %s")
         values.append(email_clean)
 
     if password is not None and password.strip():
         if len(password.strip()) < 4:
             raise ValueError("A senha deve conter pelo menos 4 caracteres")
-        fields.append("password_hash = ?")
+        fields.append("password_hash = %s")
         values.append(generate_password_hash(password.strip()))
 
     if role is not None:
         if role not in ('admin', 'user'):
             raise ValueError("Perfil inválido (deve ser admin ou user)")
-        fields.append("role = ?")
+        fields.append("role = %s")
         values.append(role)
 
     if not fields:
         return get_user_by_id(user_id)
 
     values.append(user_id)
-    query = f"UPDATE users SET {', '.join(fields)} WHERE id = ?"
+    query = f"UPDATE users SET {', '.join(fields)} WHERE id = %s"
 
     with get_db_connection() as conn:
         conn.execute(query, values)
@@ -432,7 +395,7 @@ def toggle_block_user(user_id: int) -> bool:
 
     new_status = 0 if user['is_blocked'] else 1
     with get_db_connection() as conn:
-        conn.execute('UPDATE users SET is_blocked = ? WHERE id = ?', (new_status, user_id))
+        conn.execute('UPDATE users SET is_blocked = %s WHERE id = %s', (new_status, user_id))
         conn.commit()
 
     sync_db_to_cloud()
@@ -443,7 +406,7 @@ def delete_user(user_id: int) -> bool:
     """Excluir usuário"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         success = cursor.rowcount > 0
 
@@ -461,8 +424,8 @@ def update_password(user_id: int, new_password: str) -> bool:
     with get_db_connection() as conn:
         conn.execute('''
             UPDATE users 
-            SET password_hash = ?, must_change_password = 0 
-            WHERE id = ?
+            SET password_hash = %s, must_change_password = 0 
+            WHERE id = %s
         ''', (pwd_hash, user_id))
         conn.commit()
     sync_db_to_cloud()
@@ -472,7 +435,7 @@ def update_password(user_id: int, new_password: str) -> bool:
 def set_must_change_password(user_id: int, flag: int = 1):
     """Define flag se usuário deve trocar de senha"""
     with get_db_connection() as conn:
-        conn.execute('UPDATE users SET must_change_password = ? WHERE id = ?', (flag, user_id))
+        conn.execute('UPDATE users SET must_change_password = %s WHERE id = %s', (flag, user_id))
         conn.commit()
     sync_db_to_cloud()
 
@@ -482,7 +445,7 @@ def record_login(user_id: int):
     """Registrar data/hora do login"""
     with get_db_connection() as conn:
         conn.execute(
-            'UPDATE users SET last_login = ? WHERE id = ?', 
+            'UPDATE users SET last_login = %s WHERE id = %s', 
             (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), user_id)
         )
         conn.commit()
@@ -500,7 +463,7 @@ def log_sync(
     with get_db_connection() as conn:
         conn.execute('''
             INSERT INTO sync_logs (loteria_type, concurso, data_sorteio, status, mensagem)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         ''', (loteria_type, concurso, data_sorteio, status, mensagem))
         conn.commit()
 
@@ -509,7 +472,7 @@ def get_latest_sync_logs(limit: int = 20) -> List[Dict[str, Any]]:
     """Buscar últimos logs de sincronização"""
     with get_db_connection() as conn:
         rows = conn.execute(
-            'SELECT * FROM sync_logs ORDER BY id DESC LIMIT ?', 
+            'SELECT * FROM sync_logs ORDER BY id DESC LIMIT %s', 
             (limit,)
         ).fetchall()
         return [dict(r) for r in rows]
@@ -545,10 +508,10 @@ def salvar_aposta(
         cursor.execute('''
             INSERT INTO user_bets 
             (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json))
+        last_id = cursor.fetchone()['id']
         conn.commit()
-        last_id = cursor.lastrowid
     sync_db_to_cloud()
     return last_id
 
@@ -566,19 +529,19 @@ def listar_apostas(
         params = []
 
         if user_id:
-            query += "(user_id = ? OR session_id = ?) "
+            query += "(user_id = %s OR session_id = %s) "
             params.extend([user_id, session_id or ''])
         elif session_id:
-            query += "session_id = ? "
+            query += "session_id = %s "
             params.append(session_id)
         else:
             query += "1=1 "
 
         if loteria_type:
-            query += "AND loteria_type = ? "
+            query += "AND loteria_type = %s "
             params.append(loteria_type)
 
-        query += "ORDER BY id DESC LIMIT ?"
+        query += "ORDER BY id DESC LIMIT %s"
         params.append(limit)
 
         rows = conn.execute(query, tuple(params)).fetchall()
@@ -597,7 +560,7 @@ def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:
     """Obtém detalhes completos de uma aposta por ID"""
     import json
     with get_db_connection() as conn:
-        row = conn.execute("SELECT * FROM user_bets WHERE id = ?", (aposta_id,)).fetchone()
+        row = conn.execute("SELECT * FROM user_bets WHERE id = %s", (aposta_id,)).fetchone()
         if row:
             d = dict(row)
             try:
@@ -613,11 +576,11 @@ def excluir_aposta(aposta_id: int, user_id: Optional[int] = None, session_id: Op
     with get_db_connection() as conn:
         cursor = conn.cursor()
         if user_id:
-            cursor.execute("DELETE FROM user_bets WHERE id = ? AND (user_id = ? OR session_id = ?)", (aposta_id, user_id, session_id or ''))
+            cursor.execute("DELETE FROM user_bets WHERE id = %s AND (user_id = %s OR session_id = %s)", (aposta_id, user_id, session_id or ''))
         elif session_id:
-            cursor.execute("DELETE FROM user_bets WHERE id = ? AND session_id = ?", (aposta_id, session_id))
+            cursor.execute("DELETE FROM user_bets WHERE id = %s AND session_id = %s", (aposta_id, session_id))
         else:
-            cursor.execute("DELETE FROM user_bets WHERE id = ?", (aposta_id,))
+            cursor.execute("DELETE FROM user_bets WHERE id = %s", (aposta_id,))
         conn.commit()
         success = cursor.rowcount > 0
 
@@ -715,7 +678,7 @@ def consume_user_credit(user_id: int) -> bool:
 
     if access.get('credits', 0) > 0:
         with get_db_connection() as conn:
-            conn.execute('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0', (user_id,))
+            conn.execute('UPDATE users SET credits = credits - 1 WHERE id = %s AND credits > 0', (user_id,))
             conn.commit()
         return True
 
@@ -741,8 +704,8 @@ def activate_vip_plan(user_id: int, days: int = 30):
     with get_db_connection() as conn:
         conn.execute('''
             UPDATE users 
-            SET plan = 'vip_mensal', vip_expires_at = ? 
-            WHERE id = ?
+            SET plan = 'vip_mensal', vip_expires_at = %s 
+            WHERE id = %s
         ''', (new_exp, user_id))
         conn.commit()
 
@@ -750,7 +713,7 @@ def activate_vip_plan(user_id: int, days: int = 30):
 def add_user_credits(user_id: int, amount: int = 1):
     """Adiciona créditos de análise ao usuário"""
     with get_db_connection() as conn:
-        conn.execute('UPDATE users SET credits = credits + ? WHERE id = ?', (amount, user_id))
+        conn.execute('UPDATE users SET credits = credits + %s WHERE id = %s', (amount, user_id))
         conn.commit()
 
 
@@ -862,6 +825,51 @@ def calcular_crc16_ccitt(payload: str) -> str:
 
 
 def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txid: str = '***') -> str:
+    """Generate the official PIX Copy‑and‑Paste payload (EMVCo / BR Code).
+    Includes validation of required fields and CRC integrity.
+    """
+    import unicodedata
+    # Normalizar chave
+    chave_clean = normalizar_chave_pix(chave)
+    # Normalizar nome e cidade para ASCII sem acentos (requisito universal de compatibilidade bancária)
+    nome_norm = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('ASCII')
+    cidade_norm = unicodedata.normalize('NFKD', cidade).encode('ASCII', 'ignore').decode('ASCII')
+    nome_clean = (nome_norm or 'Calculo da Sorte')[:25]
+    cidade_clean = (cidade_norm or 'SAO PAULO')[:15]
+    # Tag 00: Payload Format Indicator
+    p_format = "000201"
+    # Tag 01: Point of Initiation Method (11 = Estático / Reutilizável - mandatório pelo BACEN)
+    p_init = "010211"
+    # Tag 26: Merchant Account Information
+    gui = "0014br.gov.bcb.pix"
+    key_tag = f"01{len(chave_clean):02d}{chave_clean}"
+    merchant_info = gui + key_tag
+    tag_26 = f"26{len(merchant_info):02d}{merchant_info}"
+    # Tag 52: Merchant Category Code
+    tag_52 = "52040000"
+    # Tag 53: Transaction Currency (986 = Real brasileiro)
+    tag_53 = "5303986"
+    # Tag 54: Transaction Amount
+    val_str = f"{valor:.2f}"
+    tag_54 = f"54{len(val_str):02d}{val_str}"
+    # Tag 58: Country Code
+    tag_58 = "5802BR"
+    # Tag 59: Merchant Name
+    tag_59 = f"59{len(nome_clean):02d}{nome_clean}"
+    # Tag 60: Merchant City
+    tag_60 = f"60{len(cidade_clean):02d}{cidade_clean}"
+    # Tag 62: Additional Data Field (txid - '***' é o padrão BACEN para QR estático sem API de conciliação)
+    txid_clean = (txid or '***')[:25]
+    subtag_05 = f"05{len(txid_clean):02d}{txid_clean}"
+    tag_62 = f"62{len(subtag_05):02d}{subtag_05}"
+    # Tag 63: CRC16 (Payload com tag 6304 antes do cálculo)
+    raw = p_format + p_init + tag_26 + tag_52 + tag_53 + tag_54 + tag_58 + tag_59 + tag_60 + tag_62 + "6304"
+    crc = calcular_crc16_ccitt(raw)
+    payload = raw + crc
+    # Validate payload integrity
+    if not validar_payload_pix(payload):
+        raise ValueError('Payload PIX inválido ou CRC incorreto')
+    return payload
     """
     Gera o payload oficial PIX Copia e Cola no padrão EMVCo / BR Code estabelecido pelo Banco Central do Brasil.
     Garante tags TLV (Tag-Length-Value) rigorosamente corretas, inclusão da Tag 01 (010211 estático) e checksum CRC-16.
@@ -920,52 +928,8 @@ def gerar_pix_copia_e_cola(chave: str, nome: str, cidade: str, valor: float, txi
 
 
 def gerar_qrcode_pix_base64(pix_code: str) -> str:
-    """
-    Gera imagem vetorial SVG de alta resolução com fundo branco sólido e quiet zone (border=4)
-    compatível com qualquer câmera e leitor de app bancário.
-    """
-    if not pix_code:
-        return ""
-    try:
-        import qrcode
-        import qrcode.image.svg
-        import io
-        import base64
-
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(pix_code)
-        qr.make(fit=True)
-
-        factory = qrcode.image.svg.SvgPathImage
-        img = qr.make_image(image_factory=factory)
-        stream = io.BytesIO()
-        img.save(stream)
-        svg_bytes = stream.getvalue()
-        svg_str = svg_bytes.decode('utf-8')
-
-        # Inserir fundo branco retangular sólido após a tag de abertura <svg> para garantir contraste total
-        if '<rect' not in svg_str:
-            svg_pos = svg_str.find('<svg')
-            if svg_pos != -1:
-                close_bracket = svg_str.find('>', svg_pos)
-                if close_bracket != -1:
-                    svg_str = (
-                        svg_str[:close_bracket + 1] +
-                        '<rect width="100%" height="100%" fill="#ffffff"/>' +
-                        svg_str[close_bracket + 1:]
-                    )
-                    svg_bytes = svg_str.encode('utf-8')
-
-        svg_base64 = base64.b64encode(svg_bytes).decode('ascii')
-        return f"data:image/svg+xml;base64,{svg_base64}"
-    except Exception as e:
-        print(f"[QRCODE] Erro ao gerar QR Code vetorial: {e}")
-        return ""
+    """Generate a PNG QR code for a PIX payload and return as base64 data URI using the PNG helper."""
+    return gerar_qrcode_pix_png_base64(pix_code)
 
 
 def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional[str] = None) -> Dict[str, Any]:
@@ -984,14 +948,14 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
     pix_qr_code_base64 = gerar_qrcode_pix_base64(pix_copia_cola)
     
     with get_db_connection() as conn:
-        aplicar_migracoes(conn)
+        
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO payments (user_id, tipo, loteria_type, valor, status, pix_copia_cola, pix_txid, pix_qr_code_base64)
-            VALUES (?, ?, ?, ?, 'pendente', ?, ?, ?)
+            VALUES (%s, %s, %s, %s, 'pendente', %s, %s, %s) RETURNING id
         ''', (user_id, tipo, loteria_type, valor, pix_copia_cola, txid, pix_qr_code_base64))
+        payment_id = cursor.fetchone()['id']
         conn.commit()
-        payment_id = cursor.lastrowid
         
     sync_db_to_cloud()
     return get_payment_by_id(payment_id)
@@ -1000,7 +964,7 @@ def create_payment(user_id: int, tipo: str, valor: float, loteria_type: Optional
 def get_payment_by_id(payment_id: int) -> Optional[Dict[str, Any]]:
     """Obtém detalhes do pagamento garantindo disponibilização do QR Code oficial"""
     with get_db_connection() as conn:
-        row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
+        row = conn.execute('SELECT * FROM payments WHERE id = %s', (payment_id,)).fetchone()
         if row:
             res = dict(row)
             if not res.get('pix_qr_code_base64') and res.get('pix_copia_cola'):
@@ -1009,7 +973,7 @@ def get_payment_by_id(payment_id: int) -> Optional[Dict[str, Any]]:
 
     if os.environ.get('VERCEL') and sync_db_from_cloud(force=True):
         with get_db_connection() as conn:
-            row = conn.execute('SELECT * FROM payments WHERE id = ?', (payment_id,)).fetchone()
+            row = conn.execute('SELECT * FROM payments WHERE id = %s', (payment_id,)).fetchone()
             if row:
                 res = dict(row)
                 if not res.get('pix_qr_code_base64') and res.get('pix_copia_cola'):
@@ -1031,8 +995,8 @@ def approve_payment(payment_id: int) -> bool:
     with get_db_connection() as conn:
         conn.execute('''
             UPDATE payments 
-            SET status = 'aprovado', approved_at = ? 
-            WHERE id = ?
+            SET status = 'aprovado', approved_at = %s 
+            WHERE id = %s
         ''', (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), payment_id))
         conn.commit()
         
@@ -1086,15 +1050,15 @@ def delete_user_and_data(user_id: int) -> bool:
     """Direito à eliminação dos dados pessoais / Esquecimento (Art. 18, VI da LGPD)"""
     with get_db_connection() as conn:
         # 1. Excluir todas as apostas do titular
-        conn.execute('DELETE FROM user_bets WHERE user_id = ?', (user_id,))
+        conn.execute('DELETE FROM user_bets WHERE user_id = %s', (user_id,))
         # 2. Anonimizar pagamentos para fins de auditoria fiscal/contábil (Art. 16, I da LGPD)
         conn.execute('''
             UPDATE payments 
             SET user_id = NULL, pix_copia_cola = 'ANONIMIZADO_LGPD' 
-            WHERE user_id = ?
+            WHERE user_id = %s
         ''', (user_id,))
         # 3. Excluir conta do usuário
-        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
     sync_db_to_cloud()
     return True
@@ -1102,3 +1066,10 @@ def delete_user_and_data(user_id: int) -> bool:
 
 
 
+
+
+def sync_db_to_cloud(*args, **kwargs):
+    return True
+
+def sync_db_from_cloud(*args, **kwargs):
+    return True
