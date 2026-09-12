@@ -55,3 +55,19 @@ def gerar_qrcode_pix_png_base64(pix_code: str) -> str:
     except Exception as e:
         print(f"[QRCODE PNG] Erro ao gerar QR Code PNG: {e}")
         return ""
+
+def gerar_qrcode_pix_cpf_simples(cpf: str, nome: str = "Cliente", cidade: str = "São Paulo", valor: float = 0.0) -> str:
+    """Conveniência para gerar um QR Code PIX a partir apenas do número do CPF.
+
+    O CPF é usado como chave Pix; os demais campos (nome, cidade e valor)
+    são preenchidos com valores padrão, mas o payload completo segue o
+    padrão EMVCo, garantindo que o QR Code seja aceito pelos aplicativos
+    de pagamento.
+    """
+    # Import dentro da função para evitar dependências circulares.
+    from database import gerar_pix_copia_e_cola
+
+    # Monta o payload completo (inclui a tag da chave, nome, cidade etc.).
+    payload = gerar_pix_copia_e_cola(cpf, nome, cidade, valor)
+    # Converte para PNG base64 usando a função já existente.
+    return gerar_qrcode_pix_png_base64(payload)

@@ -52,11 +52,11 @@ from collections import defaultdict
 app = Flask(__name__)
 
 # Configuração Criptográfica de Sessão (Proteção contra falsificação de cookies)
-secret_from_env = os.environ.get('SECRET_KEY')
-if not secret_from_env or secret_from_env == 'loteria-canonical-secret-2026-key':
-    # Chave estável de 256 bits para consistência entre instâncias e lambdas serverless
+PRECO_AVULSO = 5.00
+PRECO_MENSAL = 29.90
+secret_from_env = os.getenv('SECRET_KEY')
+if not secret_from_env:
     secret_from_env = '6f04de83e1c5a30f789647fcece0a8052dc5ae7ecc5f08f4b75cb9f9dd8734ef'
-
 app.config['SECRET_KEY'] = secret_from_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -1160,12 +1160,10 @@ def api_gerar_multiplos_jogos(loteria_type: str):
 def api_checkout_pix():
     """Gera cobrança PIX para assinatura VIP ou recarga avulsa (Preço Único R$ 5,00)"""
     try:
-        dados = request.get_json(silent=True) or {}
-        tipo = dados.get('tipo', 'avulso')
         if tipo == 'vip_mensal':
-            valor = 29.90
+            valor = PRECO_MENSAL
         else:
-            valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
+            valor = PRECO_AVULSO  # Preço único padronizado de R$ 5,00 para qualquer loteria
         loteria_type = dados.get('loteria_type')
 
         user_id = session.get('user_id')
@@ -1223,10 +1221,10 @@ def api_checkout_infinitepay():
         dados = request.get_json(silent=True) or {}
         tipo = dados.get('tipo', 'vip_mensal')
         if tipo == 'vip_mensal':
-            valor = 29.90
+            valor = PRECO_MENSAL
             descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
         else:
-            valor = 5.00  # Preço único padronizado de R$ 5,00 para qualquer loteria
+            valor = PRECO_AVULSO  # Preço único padronizado de R$ 5,00 para qualquer loteria
             descricao = "Recarga de Análise Avulsa (R$ 5,00) - Cálculo da Sorte"
         loteria_type = dados.get('loteria_type')
 

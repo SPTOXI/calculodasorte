@@ -53,3 +53,4 @@ env/
 # Temporary files
 *.tmp
 *~
+.vercel
