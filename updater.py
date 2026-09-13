@@ -111,15 +111,30 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int 
     return None
 
 
+import time
+
+_META_CACHE = {}
+_META_CACHE_TIME = {}
+_HISTORICO_CACHE = {}
+_HISTORICO_CACHE_TIME = {}
+_CACHE_TTL = 3600  # 1 hora
+
 def carregar_meta(loteria_type: str) -> Dict[str, Any]:
     """Carrega metadados de sincronização da loteria"""
+    now = time.time()
+    if loteria_type in _META_CACHE and (now - _META_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
+        return _META_CACHE[loteria_type]
+
     path = os.path.join(DATA_DIR, f'{loteria_type}_meta.json')
     if not os.path.exists(path) and os.path.exists(os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_meta.json')):
         path = os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_meta.json')
     if os.path.exists(path):
         try:
             with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                dados = json.load(f)
+                _META_CACHE[loteria_type] = dados
+                _META_CACHE_TIME[loteria_type] = now
+                return dados
         except Exception:
             pass
     return {}
@@ -131,12 +146,18 @@ def salvar_meta(loteria_type: str, meta: Dict[str, Any]):
     try:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(meta, f, indent=2, ensure_ascii=False)
+        _META_CACHE[loteria_type] = meta
+        _META_CACHE_TIME[loteria_type] = time.time()
     except Exception as e:
         print(f"[UPDATER] Erro ao salvar meta {loteria_type}: {e}")
 
 
 def carregar_historico_local(loteria_type: str) -> List[List[int]]:
     """Carrega lista de listas de números do arquivo JSON"""
+    now = time.time()
+    if loteria_type in _HISTORICO_CACHE and (now - _HISTORICO_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
+        return _HISTORICO_CACHE[loteria_type]
+
     path = os.path.join(DATA_DIR, f'{loteria_type}_historico.json')
     if not os.path.exists(path) and os.path.exists(os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_historico.json')):
         path = os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_historico.json')
@@ -145,6 +166,8 @@ def carregar_historico_local(loteria_type: str) -> List[List[int]]:
             with open(path, 'r', encoding='utf-8') as f:
                 dados = json.load(f)
                 if isinstance(dados, list):
+                    _HISTORICO_CACHE[loteria_type] = dados
+                    _HISTORICO_CACHE_TIME[loteria_type] = now
                     return dados
         except Exception as e:
             print(f"[UPDATER] Erro ao carregar historico {loteria_type}: {e}")
@@ -156,6 +179,8 @@ def salvar_historico_local(loteria_type: str, historico: List[List[int]]):
     path = os.path.join(DATA_DIR, f'{loteria_type}_historico.json')
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(historico, f, indent=2, ensure_ascii=False)
+    _HISTORICO_CACHE[loteria_type] = historico
+    _HISTORICO_CACHE_TIME[loteria_type] = time.time()
 
 
 def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:

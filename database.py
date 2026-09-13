@@ -1,4 +1,3 @@
-
 class PostgresConnAdapter:
     def __init__(self, conn):
         self.conn = conn
@@ -18,7 +17,7 @@ class PostgresConnAdapter:
         self.conn.commit()
         
     def close(self):
-        self.conn.close()
+        pass # A pool gerencia o fechamento real
 
 """
 Módulo de Banco de Dados SQLite para Gestão de Usuários e Autenticação
@@ -29,6 +28,7 @@ import os
 import re
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2.pool import ThreadedConnectionPool
 import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -131,18 +131,29 @@ if not DATABASE_URL:
     except ImportError:
         pass
 
+_db_pool = None
+
+def get_pool():
+    global _db_pool
+    if _db_pool is None:
+        if not DATABASE_URL:
+            raise ValueError('DATABASE_URL or POSTGRES_URL is not set')
+        _db_pool = ThreadedConnectionPool(1, 20, DATABASE_URL, cursor_factory=RealDictCursor)
+    return _db_pool
+
 @contextmanager
 def get_db_connection(auto_sync: bool = True):
-    if not DATABASE_URL:
-        raise ValueError('DATABASE_URL or POSTGRES_URL is not set')
-        
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-    conn = PostgresConnAdapter(conn)
+    pool = get_pool()
+    raw_conn = pool.getconn()
+    conn = PostgresConnAdapter(raw_conn)
     try:
         yield conn
         conn.commit()
+    except Exception:
+        raw_conn.rollback()
+        raise
     finally:
-        conn.close()
+        pool.putconn(raw_conn)
 
 
 def init_db():
