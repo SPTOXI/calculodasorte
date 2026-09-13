@@ -202,7 +202,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['user_id'] = user_id
 
-        # Gerar PIX VIP R$ 29,90
+        # Gerar PIX VIP R$ 49,90
         res_pix = self.client.post('/api/checkout/pix',
             data=json.dumps({'tipo': 'vip_mensal'}),
             content_type='application/json'
@@ -210,7 +210,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertEqual(res_pix.status_code, 200)
         dados_pix = res_pix.get_json()
         self.assertTrue(dados_pix['sucesso'])
-        self.assertEqual(dados_pix['valor'], 29.90)
+        self.assertEqual(dados_pix['valor'], 49.90)
         self.assertIn('pix_copia_cola', dados_pix)
         payment_id = dados_pix['payment_id']
 

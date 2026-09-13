@@ -1627,7 +1627,7 @@ Exemplo para {{ config.nome }}:
         <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px 22px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); position: relative; text-align: center;">
             <button onclick="fecharModalPaywall()" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #cbd5e1; cursor: pointer; line-height: 1;">&times;</button>
             <div style="font-size: 2.8rem; margin-bottom: 8px;">🔒</div>
-            <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 6px; font-weight: 800;">Créditos de Análise Esgotados</h3>
+            <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 6px; font-weight: 800;">Acesso de Análise Expirado</h3>
             <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; margin-bottom: 20px;">
                 Para continuar gerando palpites otimizados, simulando fechamentos e consultando o <strong>Agente IA</strong>, escolha uma opção:
             </p>
@@ -1637,7 +1637,7 @@ Exemplo para {{ config.nome }}:
                 <div style="background: linear-gradient(180deg, rgba(5,150,105,0.15) 0%, rgba(15,23,42,0.8) 100%); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; background: rgba(16,185,129,0.25); color: #34d399; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Teste Hoje</span>
-                        <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">🪙 Palpite Avulso</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">🪙 Acesso 24 Horas</div>
                         <div style="font-size: 1.4rem; font-weight: 900; color: #34d399; margin-bottom: 8px;">R$ 5,00</div>
                         <ul style="list-style: none; font-size: 0.78rem; color: #cbd5e1; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                             <li>✅ 1 análise completa</li>
@@ -1645,25 +1645,25 @@ Exemplo para {{ config.nome }}:
                             <li>✅ Sem mensalidade</li>
                         </ul>
                     </div>
-                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(5,150,105,0.3); cursor: pointer; width: 100%;">
+                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('avulso', 5.00, 'Acesso 24 Horas (R$ 5,00)')" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(5,150,105,0.3); cursor: pointer; width: 100%;">
                         Liberar por R$ 5,00
                     </button>
                 </div>
 
-                <!-- Opção 2: VIP R$ 29,90 -->
+                <!-- Opção 2: VIP R$ 49,90 -->
                 <div style="background: linear-gradient(180deg, rgba(245,158,11,0.15) 0%, rgba(15,23,42,0.8) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; background: rgba(245,158,11,0.25); color: #fbbf24; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Mais Popular</span>
                         <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">👑 VIP Ilimitado</div>
-                        <div style="font-size: 1.4rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;">R$ 29,90<span style="font-size: 0.75rem; color: #cbd5e1; font-weight: normal;">/mês</span></div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;">R$ 49,90<span style="font-size: 0.75rem; color: #cbd5e1; font-weight: normal;">/mês</span></div>
                         <ul style="list-style: none; font-size: 0.78rem; color: #cbd5e1; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                             <li>👑 Todas as 9 loterias</li>
                             <li>👑 Fechamentos livres</li>
                             <li>👑 Consultor IA 24h</li>
                         </ul>
                     </div>
-                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Mensal (30 dias)')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(245,158,11,0.35); cursor: pointer; width: 100%;">
-                        Ativar VIP (R$ 29,90)
+                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('vip_mensal', 49.90, 'Plano VIP Mensal (30 dias)')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(245,158,11,0.35); cursor: pointer; width: 100%;">
+                        Ativar VIP (R$ 49,90)
                     </button>
                 </div>
             </div>
@@ -1778,12 +1778,12 @@ Exemplo para {{ config.nome }}:
 
     <script>
         const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
-        let compraAtualAnalise = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
+        let compraAtualAnalise = { tipo: 'avulso', valor: 5.00, titulo: 'Acesso 24 Horas (R$ 5,00)' };
         let pagamentoAtualAnaliseId = null;
 
         function abrirModalCompraRapida(tipo, valor, titulo) {
             if (!IS_AUTHENTICATED) {
-                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta ou cadastre-se.');
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso, por favor entre na sua conta ou cadastre-se.');
                 window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
                 return;
             }
@@ -1824,7 +1824,7 @@ Exemplo para {{ config.nome }}:
 
         async function executarCheckoutInfinitePay() {
             if (!IS_AUTHENTICATED) {
-                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso, por favor entre na sua conta.');
                 window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
                 return;
             }
@@ -1863,7 +1863,7 @@ Exemplo para {{ config.nome }}:
 
         async function executarCheckoutPixDireto() {
             if (!IS_AUTHENTICATED) {
-                alert('Para vincular o pagamento à sua conta e liberar seus créditos, por favor entre na sua conta.');
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso, por favor entre na sua conta.');
                 window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
                 return;
             }
@@ -1928,7 +1928,7 @@ Exemplo para {{ config.nome }}:
                     fecharModalPix();
                     fecharModalPaywall();
                     atualizarBadgeUsuario(data.access);
-                    alert('🎉 Parabéns! Pagamento aprovado com sucesso! Seus créditos já foram liberados e você pode gerar suas apostas agora.');
+                    alert('🎉 Parabéns! Pagamento aprovado com sucesso! Seu acesso já foi liberado e você pode gerar suas apostas agora.');
                 } else {
                     alert('Status: ' + (data.erro || 'Aguardando compensação do PIX. Se já pagou, aguarde alguns segundos.'));
                     btn.innerHTML = '✅ Já Paguei / Liberar Acesso Agora';
@@ -1947,7 +1947,7 @@ Exemplo para {{ config.nome }}:
             } else if (access.credits > 0) {
                 badgeEl.innerHTML = `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🪙 ${access.credits} CRÉDITO(S)</span>`;
             } else {
-                badgeEl.innerHTML = '<span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">⚠️ SEM CRÉDITOS</span>';
+                badgeEl.innerHTML = '<span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">⚠️ SEM ACESSO</span>';
             }
         }
 
@@ -1965,7 +1965,7 @@ Exemplo para {{ config.nome }}:
                                 atualizarBadgeUsuario(data.access);
                             }
                             fecharModalPaywall();
-                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seus créditos já estão liberados.');
+                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seu acesso já está liberado.');
                             const cleanUrl = window.location.pathname;
                             window.history.replaceState({}, document.title, cleanUrl);
                         })

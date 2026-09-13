@@ -636,15 +636,16 @@ def check_user_access(user_id: int) -> Dict[str, Any]:
         }
 
     # Verificar VIP
-    if user.get('plan') == 'vip_mensal':
+    if user.get('plan') in ['vip_mensal', 'vip_24h']:
         vip_expires_at = user.get('vip_expires_at')
+        current_plan = user.get('plan', 'vip_mensal')
         if not vip_expires_at:
             return {
                 'has_access': True, 
                 'reason': 'vip', 
                 'credits': user.get('credits', 0), 
                 'is_vip': True, 
-                'plan': 'vip_mensal',
+                'plan': current_plan,
                 'name': user.get('name', 'Apostador VIP')
             }
         try:
@@ -655,7 +656,7 @@ def check_user_access(user_id: int) -> Dict[str, Any]:
                     'reason': 'vip', 
                     'credits': user.get('credits', 0), 
                     'is_vip': True, 
-                    'plan': 'vip_mensal', 
+                    'plan': current_plan, 
                     'expires_at': vip_expires_at,
                     'name': user.get('name', 'Apostador VIP')
                 }
@@ -705,12 +706,17 @@ def consume_user_credit(user_id: int) -> bool:
     return False
 
 
-def activate_vip_plan(user_id: int, days: int = 30):
+def activate_vip_plan(user_id: int, days: int = 30, plan_name: str = 'vip_mensal'):
     """Ativa ou renova plano VIP por X dias"""
     now = datetime.now()
     user = get_user_by_id(user_id)
     current_exp = user.get('vip_expires_at') if user else None
+    current_plan = user.get('plan') if user else None
     
+    # Se o usuario ja for vip_mensal e comprar um avulso_24h, mantem vip_mensal para nao rebaixar o status visual
+    if current_plan == 'vip_mensal' and plan_name == 'vip_24h':
+        plan_name = 'vip_mensal'
+        
     base_date = now
     if current_exp:
         try:
@@ -724,9 +730,9 @@ def activate_vip_plan(user_id: int, days: int = 30):
     with get_db_connection() as conn:
         conn.execute('''
             UPDATE users 
-            SET plan = 'vip_mensal', vip_expires_at = %s 
+            SET plan = %s, vip_expires_at = %s 
             WHERE id = %s
-        ''', (new_exp, user_id))
+        ''', (plan_name, new_exp, user_id))
         conn.commit()
 
 
@@ -1021,9 +1027,9 @@ def approve_payment(payment_id: int) -> bool:
         conn.commit()
         
     if tipo == 'vip_mensal':
-        activate_vip_plan(user_id, days=30)
+        activate_vip_plan(user_id, days=30, plan_name='vip_mensal')
     elif tipo == 'avulso':
-        add_user_credits(user_id, amount=1)
+        activate_vip_plan(user_id, days=1, plan_name='vip_24h')
         
     sync_db_to_cloud()
     return True
