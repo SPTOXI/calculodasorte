@@ -45,6 +45,9 @@
             </div>
 
             <div class="user-top-actions">
+                {% if current_user and current_user.role == 'admin' %}
+                    <a href="/admin" class="btn-top btn-top-ghost" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);">⚙️ Admin</a>
+                {% endif %}
                 {% if not access or not access.is_vip %}
                     <a href="/planos" class="btn-top btn-top-vip">⭐ Assinar VIP</a>
                     <a href="/planos" class="btn-top btn-top-avulso">🪙 Por R$ 5,00</a>
