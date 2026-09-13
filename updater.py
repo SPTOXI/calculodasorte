@@ -69,32 +69,45 @@ def _get_session() -> requests.Session:
 
 def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int = 3) -> Optional[Dict[str, Any]]:
     """
-    Consulta o resultado de uma loteria na API oficial da Caixa.
-    Possui tolerância a falhas com retries exponenciais e headers anti-bloqueio.
-    Se concurso for None, retorna o último resultado divulgado.
+    Consulta o resultado de uma loteria na API oficial da Caixa, com fallback para API pública alternativa
+    (pois a Caixa bloqueia IPs de datacenters como Vercel/AWS).
     """
     session = _get_session()
-    url = f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}'
+    
+    urls_para_tentar = []
+    
+    # URL Primária (Caixa Oficial)
+    url_caixa = f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}'
     if concurso:
-        url += f'/{concurso}'
+        url_caixa += f'/{concurso}'
+    urls_para_tentar.append(url_caixa)
+    
+    # URL Secundária (Fallback Público - api.guidi.dev.br)
+    url_fallback = f'https://api.guidi.dev.br/loteria/{slug}'
+    if concurso:
+        url_fallback += f'/{concurso}'
+    else:
+        url_fallback += '/ultimo'
+    urls_para_tentar.append(url_fallback)
         
-    for tentativa in range(1, max_retries + 1):
-        try:
-            response = session.get(url, verify=False, timeout=12)
-            if response.status_code == 200:
-                dados = response.json()
-                if isinstance(dados, dict) and dados.get('numero'):
-                    return dados
-            elif response.status_code == 429:
-                time.sleep(1.2 * tentativa)
-            elif response.status_code in (502, 503, 504):
-                time.sleep(1.0 * tentativa)
-        except Exception as e:
-            if tentativa == max_retries:
-                print(f"[UPDATER] Erro persistente ao consultar Caixa ({slug} - {concurso}) após {max_retries} tentativas: {e}")
-            else:
-                time.sleep(0.6 * tentativa)
-                
+    for url in urls_para_tentar:
+        for tentativa in range(1, max_retries + 1):
+            try:
+                response = session.get(url, verify=False, timeout=15)
+                if response.status_code == 200:
+                    dados = response.json()
+                    if isinstance(dados, dict) and dados.get('numero'):
+                        return dados
+                elif response.status_code == 429:
+                    time.sleep(1.2 * tentativa)
+                elif response.status_code in (403, 502, 503, 504):
+                    time.sleep(1.0 * tentativa)
+            except Exception as e:
+                if tentativa == max_retries:
+                    print(f"[UPDATER] Erro persistente na URL {url} ({slug} - {concurso}): {e}")
+                else:
+                    time.sleep(1.0 * tentativa)
+                    
     return None
 
 
