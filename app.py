@@ -459,7 +459,7 @@ def cadastro():
                 if plano_desejado == 'vip':
                     return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Assine seu Plano VIP abaixo:'))
                 elif plano_desejado == 'avulso':
-                    return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Adquira sua recarga avulsa abaixo:'))
+                    return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Adquira seu Acesso de 24 Horas abaixo:'))
                 
                 return redirect(url_for('dashboard'))
             except Exception as e:
@@ -1364,7 +1364,7 @@ def api_checkout_infinitepay():
             descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
         else:
             valor = PRECO_AVULSO  # Preço único padronizado de R$ 5,00 para qualquer loteria
-            descricao = "Recarga de Análise Avulsa (R$ 5,00) - Cálculo da Sorte"
+            descricao = "Acesso 24 Horas (R$ 5,00) - Cálculo da Sorte"
         loteria_type = dados.get('loteria_type')
 
         user_id = session.get('user_id')
