@@ -129,7 +129,12 @@
                 <span>🛡️</span>
                 <span>Minha Conta</span>
             </button>
-        </div>
+                    <button class="tab-btn {% if aba_ativa == 'tab-suporte' %}active{% endif %}" onclick="ativarAba('tab-suporte')">
+                <span>💬</span>
+                <span>Suporte Usuário</span>
+                <span class="tab-counter" id="badge-total-suporte">{{ chat_logs|length }}</span>
+            </button>
+</div>
 
         <!-- ==========================================
              ABA 1: ATUALIZAÇÃO DAS LOTERIAS
@@ -499,7 +504,46 @@
         <!-- ==========================================
              ABA 4: MINHA CONTA / SEGURANÇA
              ========================================== -->
-        <div id="tab-seguranca" class="tab-content {% if aba_ativa == 'tab-seguranca' %}active{% endif %}">
+        
+        <!-- TAB SUPORTE (CHAT LOGS) -->
+        <div id="tab-suporte" class="tab-content {% if aba_ativa == 'tab-suporte' %}active{% endif %}">
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h3>💬 Histórico do Chat de Suporte</h3>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="responsive-card-table" id="table-suporte">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário (Identificador)</th>
+                                <th>Página/Loteria</th>
+                                <th>Mensagem do Usuário</th>
+                                <th>Resposta da IA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in chat_logs %}
+                            <tr>
+                                <td data-label="Data/Hora">{{ log.created_at[:16] }}</td>
+                                <td data-label="Usuário">{{ log.user_ident }}</td>
+                                <td data-label="Página">{{ log.loteria_nome }}</td>
+                                <td data-label="Mensagem" style="max-width: 250px; white-space: normal;">{{ log.mensagem_usuario }}</td>
+                                <td data-label="Resposta IA" style="max-width: 250px; white-space: normal;">{{ log.resposta_ia }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #64748b; padding: 30px;">Nenhuma interação registrada no chat ainda.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+<div id="tab-seguranca" class="tab-content {% if aba_ativa == 'tab-seguranca' %}active{% endif %}">
             <div class="card" style="max-width: 600px; margin: 0 auto; width: 100%;">
                 <div class="card-header">
                     <div>
