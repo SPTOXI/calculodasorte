@@ -2441,7 +2441,7 @@ Exemplo para {{ config.nome }}:
                 } else if (a.classe === 'C') {
                     classeBadge = '<span style="background: rgba(245,158,11,0.15); color: #d97706; border: 1px solid #f59e0b; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Frequência Média</span>';
                 } else {
-                    classeBadge = '<span style="background: rgba(100,116,139,0.15); color: #475569; border: 1px solid #94a3b8; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Menor Frequência</span>';
+                    classeBadge = '<span style="background: rgba(100,116,139,0.15); color: #475569; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Menor Frequência</span>';
                 }
                 const maturidadeLegivel = (a.maturidade || 'Equilibrado').replace('_', ' ');
                 tr.innerHTML = `
@@ -2863,7 +2863,7 @@ Exemplo para {{ config.nome }}:
             // Indicador de digitação
             const loadingBubble = document.createElement('div');
             loadingBubble.id = 'ai-chat-typing';
-            loadingBubble.style.cssText = 'background: #1e293b; color: #94a3b8; padding: 10px 14px; border-radius: 12px; border-top-left-radius: 2px; align-self: flex-start; max-width: 85%; font-size: 0.85rem; font-style: italic;';
+            loadingBubble.style.cssText = 'background: #1e293b; color: #cbd5e1; padding: 10px 14px; border-radius: 12px; border-top-left-radius: 2px; align-self: flex-start; max-width: 85%; font-size: 0.85rem; font-style: italic;';
             loadingBubble.textContent = 'O Consultor IA está pensando...';
             container.appendChild(loadingBubble);
             container.scrollTop = container.scrollHeight;
@@ -2909,7 +2909,7 @@ Exemplo para {{ config.nome }}:
     <!-- Modal de Bloqueio / Paywall Persuasivo -->
     <div id="paywall-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 16px;">
         <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px 22px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); position: relative; text-align: center;">
-            <button onclick="fecharModalPaywall()" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
+            <button onclick="fecharModalPaywall()" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #cbd5e1; cursor: pointer; line-height: 1;">&times;</button>
             <div style="font-size: 2.8rem; margin-bottom: 8px;">🔒</div>
             <h3 style="font-size: 1.45rem; color: #fbbf24; margin-bottom: 6px; font-weight: 800;">Créditos de Análise Esgotados</h3>
             <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; margin-bottom: 20px;">
@@ -2939,7 +2939,7 @@ Exemplo para {{ config.nome }}:
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; background: rgba(245,158,11,0.25); color: #fbbf24; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Mais Popular</span>
                         <div style="font-size: 1.05rem; font-weight: 800; color: white; margin: 6px 0 2px;">👑 VIP Ilimitado</div>
-                        <div style="font-size: 1.4rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;">R$ 29,90<span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">/mês</span></div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;">R$ 29,90<span style="font-size: 0.75rem; color: #cbd5e1; font-weight: normal;">/mês</span></div>
                         <ul style="list-style: none; font-size: 0.78rem; color: #cbd5e1; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                             <li>👑 Todas as 9 loterias</li>
                             <li>👑 Fechamentos livres</li>
@@ -2952,7 +2952,7 @@ Exemplo para {{ config.nome }}:
                 </div>
             </div>
 
-            <div style="font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+            <div style="font-size: 0.8rem; color: #cbd5e1; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
                 <span>⚡ Ativação Imediata via PIX</span>
                 <span>🔒 Pagamento Seguro InfinitePay</span>
             </div>
@@ -2972,10 +2972,10 @@ Exemplo para {{ config.nome }}:
                 <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
                 <div>
                     <strong style="color: #f8fafc; font-size: 0.95rem; display: block;">Consultor Estatístico IA</strong>
-                    <span style="color: #94a3b8; font-size: 0.75rem;">{{ config.nome }} &bull; Consultoria Estratégica</span>
+                    <span style="color: #cbd5e1; font-size: 0.75rem;">{{ config.nome }} &bull; Consultoria Estratégica</span>
                 </div>
             </div>
-            <button onclick="alternarChatIA()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+            <button onclick="alternarChatIA()" style="background: none; border: none; color: #cbd5e1; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
         </div>
 
         <!-- Sugestões Rápidas -->
@@ -3036,7 +3036,7 @@ Exemplo para {{ config.nome }}:
             background: none;
             border: none;
             font-size: 1.6rem;
-            color: #94a3b8;
+            color: #cbd5e1;
             cursor: pointer;
             line-height: 1;
         }
@@ -3085,7 +3085,7 @@ Exemplo para {{ config.nome }}:
             <h3 style="font-size: 1.35rem; color: white; margin-bottom: 4px;" id="pix-modal-titulo">Pagamento Instantâneo PIX</h3>
             <div style="color: #34d399; font-weight: 900; font-size: 1.45rem; margin-bottom: 12px;" id="pix-modal-valor">R$ 5,00</div>
 
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px;">
+            <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px;">
                 Abra o app do seu banco e aponte a câmera ou use o <strong>PIX Copia e Cola</strong>:
             </p>
 
@@ -3097,7 +3097,7 @@ Exemplo para {{ config.nome }}:
                 <img id="analise-pix-qrcode-img" src="" alt="QR Code PIX Oficial" style="display: none; width: 170px; height: 170px; border-radius: 6px;">
             </div>
 
-            <div style="font-size: 0.8rem; color: #94a3b8; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
+            <div style="font-size: 0.8rem; color: #cbd5e1; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
             <div class="pix-copia-cola-box" id="pix-copia-cola-texto">Gerando código PIX...</div>
 
             <button onclick="copiarPixCodigoAnalise()" style="background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 8px; padding: 11px; font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%; margin-bottom: 10px;">
