@@ -1,18 +1,12 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Conta — Cálculo da Sorte | Meus Dados e Assinatura</title>
-    <meta name="description" content="Gerencie suas informações cadastrais, consulte seus créditos, histórico de palpites e gerencie sua assinatura no Cálculo da Sorte.">
-    <meta name="robots" content="noindex, nofollow">
+{% extends 'dashboard_base.html' %}
 
-    <!-- Favicon Oficial do Dado da Sorte (.ico, .svg, .png) -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-    <style>
+{% block title %}Minha Conta — Cálculo da Sorte{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Remove the general body and container css since base handles it */
+body { padding: 0; background: none; }
+
         :root {
             --primary: #059669;
             --primary-dark: #047857;
@@ -456,30 +450,12 @@
             gap: 10px;
             justify-content: center;
         }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Navegação Superior -->
-        <nav class="top-nav">
-            <a href="/dashboard" class="brand-logo">
-                <span>🎲</span>
-                <span>Cálculo da <span class="accent">Sorte</span></span>
-            </a>
-            <div class="nav-actions">
-                <a href="/dashboard" class="btn-nav btn-nav-primary">
-                    <span>⚡</span> Gerador de Palpites
-                </a>
-                <a href="/planos" class="btn-nav btn-nav-ghost">
-                    <span>💎</span> Planos VIP
-                </a>
-                <a href="/logout" class="btn-nav btn-nav-danger">
-                    <span>🚪</span> Sair
-                </a>
-            </div>
-        </nav>
+    
+</style>
+{% endblock %}
 
-        {% if erro %}
+{% block content %}
+{% if erro %}
         <div class="alert alert-error">
             <span>❌</span>
             <div>{{ erro }}</div>
@@ -492,9 +468,7 @@
             <div>{{ sucesso }}</div>
         </div>
         {% endif %}
-
-        <!-- Cabeçalho do Perfil -->
-        <div class="profile-header-card">
+<div class="profile-header-card">
             <div class="user-avatar-group">
                 <div class="user-avatar">
                     👤
@@ -708,7 +682,11 @@
         </div>
     </div>
 
-    <script>
+    
+{% endblock %}
+
+{% block extra_js %}
+<script>
         function abrirModalExclusao() {
             document.getElementById('modal-exclusao').classList.add('active');
         }
@@ -740,5 +718,5 @@
             }
         }
     </script>
-</body>
-</html>
+
+{% endblock %}

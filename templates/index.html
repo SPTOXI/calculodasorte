@@ -1,21 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Loterias — Cálculo da Sorte | Inteligência Artificial & Estatística</title>
+{% extends 'dashboard_base.html' %}
 
-    <!-- Metatags e SEO -->
-    <meta name="description" content="Painel oficial de loterias do Cálculo da Sorte. Gere palpites matemáticos otimizados com Inteligência Artificial para Mega-Sena, Lotofácil, Quina e mais. Teste avulso por R$ 5,00 ou VIP Ilimitado.">
-    <meta name="robots" content="index, follow">
+{% block title %}Painel de Loterias — Cálculo da Sorte | Inteligência Artificial & Estatística{% endblock %}
 
-    <!-- Favicon Oficial do Dado da Sorte (.ico, .svg, .png) -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+{% block extra_css %}
+<style>
 
-    <style>
         :root {
             --bg-dark: #0b1120;
             --card-dark: #1e293b;
@@ -1203,73 +1192,44 @@
                 display: block !important;
             }
         }
-    </style>
-</head>
-<body>
+    
+/* Progressive Disclosure Styles */
+.filtros-avancados-container {
+    margin-top: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.filtros-toggle {
+    width: 100%;
+    padding: 15px;
+    background: rgba(15, 23, 42, 0.5);
+    color: #e2e8f0;
+    border: none;
+    text-align: left;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+.filtros-toggle:hover {
+    background: rgba(15, 23, 42, 0.8);
+}
+.filtros-content {
+    padding: 20px;
+    background: rgba(30, 41, 59, 0.3);
+    display: none;
+}
+.filtros-content.open {
+    display: block;
+}
+</style>
+{% endblock %}
 
-    <div class="container">
-
-        <!-- ============================================================
-             BARRA DE NAVEGAÇÃO E STATUS DO USUÁRIO
-             ============================================================ -->
-        <div class="user-top-bar">
-            <div class="user-info-group">
-                <a href="/dashboard" class="user-brand-logo">
-                    <span>🎲</span>
-                    <span>Cálculo da <span class="highlight">Sorte</span></span>
-                </a>
-
-                {% if current_user %}
-                    <a href="/minha-conta" style="font-size: 0.88rem; color: #cbd5e1; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Ver meu perfil e dados">
-                        👤 <strong>{{ current_user.name or current_user.email.split('@')[0] }}</strong>
-                    </a>
-
-                    {% if access and access.is_vip %}
-                        <span class="user-badge vip">👑 VIP ILIMITADO</span>
-                    {% elif access and access.credits > 0 %}
-                        <span class="user-badge credits">🪙 {{ access.credits }} CRÉDITO(S)</span>
-                    {% else %}
-                        <span class="user-badge no-credits">⚠️ SEM CRÉDITOS</span>
-                    {% endif %}
-                {% endif %}
-            </div>
-
-            <div class="user-top-actions">
-                <a href="/blog" class="btn-top btn-top-ghost" title="Ler nossos estudos de caso e artigos matemáticos">
-                    📚 Blog & Estudos
-                </a>
-
-                <!-- Botão Minha Conta / Meus Dados -->
-                <a href="/minha-conta" class="btn-top btn-top-ghost" title="Gerenciar meus dados cadastrais e assinatura">
-                    👤 Minha Conta
-                </a>
-
-                <!-- Botão 1: Palpite Avulso R$ 5,00 -->
-                <button class="btn-top btn-top-avulso" onclick="abrirModalCompraRapida('avulso', 5.00, 'Palpite Avulso (R$ 5,00)')">
-                    🪙 Palpite Avulso (R$ 5,00)
-                </button>
-
-                <!-- Botão 2: VIP Mensal R$ 29,90 -->
-                <button class="btn-top btn-top-vip" onclick="abrirModalCompraRapida('vip_mensal', 29.90, 'Plano VIP Ilimitado (R$ 29,90)')">
-                    👑 VIP Ilimitado (R$ 29,90)
-                </button>
-
-                {% if current_user and current_user.role == 'admin' %}
-                <a href="/admin" class="btn-top btn-top-ghost">
-                    ⚙️ Admin
-                </a>
-                {% endif %}
-
-                <a href="/logout" class="btn-top btn-top-exit">
-                    🚪 Sair
-                </a>
-            </div>
-        </div>
-
-        <!-- ============================================================
-             HERO TEMPORÁRIA: LOTOFÁCIL DA INDEPENDÊNCIA (R$ 300 MILHÕES)
-             ============================================================ -->
-        <section class="hero-independencia-section">
+{% block content %}
+<section class="hero-independencia-section">
             <!-- Glow Sutil de Topo -->
             <div class="indep-glow-bg"></div>
 
@@ -1586,7 +1546,11 @@
     <!-- ============================================================
          LOGICA DE CHECKOUT E INTERATIVIDADE
          ============================================================ -->
-    <script>
+    
+{% endblock %}
+
+{% block extra_js %}
+<script>
         const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
         let compraAtual = { tipo: 'avulso', valor: 5.00, titulo: 'Palpite Avulso (R$ 5,00)' };
         let pagamentoAtualId = null;
@@ -1804,5 +1768,44 @@
         })();
     </script>
 
-</body>
-</html>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.loteria-form');
+        forms.forEach(form => {
+            const filterGroups = form.querySelectorAll('.filter-group:not(:first-child)');
+            if(filterGroups.length > 0) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'filtros-avancados-container';
+                
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'filtros-toggle';
+                toggle.innerHTML = '⚙️ Filtros Matemáticos Avançados <span>▼</span>';
+                
+                const content = document.createElement('div');
+                content.className = 'filtros-content';
+                
+                filterGroups.forEach(fg => content.appendChild(fg));
+                
+                wrapper.appendChild(toggle);
+                wrapper.appendChild(content);
+                
+                const submitBtn = form.querySelector('.btn-gerar');
+                if (submitBtn) form.insertBefore(wrapper, submitBtn);
+                
+                toggle.addEventListener('click', () => {
+                    content.classList.toggle('open');
+                    toggle.querySelector('span').innerHTML = content.classList.contains('open') ? '▲' : '▼';
+                });
+            }
+            
+            form.addEventListener('submit', () => {
+                if (typeof showLoading === 'function') {
+                    showLoading('A IA está calculando e eliminando combinações improváveis...');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
