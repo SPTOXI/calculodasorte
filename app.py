@@ -1882,45 +1882,41 @@ def sitemap_xml():
 @app.route('/llms.txt', methods=['GET'])
 def llms_txt():
     """Especificação llms.txt para consumo por agentes de IA e busca generativa"""
-    conteudo = """# Cálculo da Sorte — Plataforma de Inteligência para Loterias
+    conteudo = """# Cálculo da Sorte
 
 > Plataforma analítica e consultiva de inteligência combinatória para apostadores das 9 loterias oficiais da Caixa Econômica Federal no Brasil.
 
-## Sobre a Plataforma
-O Cálculo da Sorte (https://calculodasorte.com.br) oferece ferramentas de geração inteligente de palpites estruturados, fechamentos e desdobramentos matemáticos no volante, conferência automática com dados oficiais da Caixa e consultoria estratégica via Agente de Inteligência Artificial.
+O [Cálculo da Sorte](https://calculodasorte.com.br) oferece ferramentas de geração inteligente de palpites estruturados, fechamentos e desdobramentos matemáticos no volante, conferência automática com dados oficiais da Caixa e consultoria estratégica via Agente de Inteligência Artificial.
 
-## As 9 Loterias Oficiais Suportadas
-1. Mega-Sena (6 dezenas de 60 números)
-2. Lotofácil (15 dezenas de 25 números)
-3. Quina (5 dezenas de 80 números)
-4. Lotomania (50 números de 100)
-5. +Milionária (6 dezenas de 50 + 2 trevos de 6)
-6. Dia de Sorte (7 dezenas de 31 + Mês da Sorte)
-7. Dupla Sena (6 dezenas de 50, 2 sorteios)
-8. Timemania (10 dezenas de 80 + Time do Coração)
-9. Super Sete (7 números em 7 colunas de 0 a 9)
+## URLs e Mapas
+- [Página Inicial](https://calculodasorte.com.br/)
+- [Planos e Preços](https://calculodasorte.com.br/planos)
+- [Página de Login](https://calculodasorte.com.br/login)
+- [Criar Conta](https://calculodasorte.com.br/cadastro)
+- [Blog de Dicas](https://calculodasorte.com.br/blog)
 
-## Principais Funcionalidades
-- Gerador Inteligente de Palpites: Gera cartelas combinatórias balanceadas em paridade, dispersão e equilíbrio estatístico.
-- Fechamentos no Volante: O apostador seleciona suas dezenas prediletas e o sistema gera matrizes combinatórias com garantia de acertos no volante.
-- Agente IA Consultor: Assistente conversacional para responder dúvidas de probabilidades, sugerir estratégias e avaliar jogos.
-- Sincronização Diária Caixa: Conexão automática diária às 23:59h com os servidores oficiais da Caixa para atualização imediata dos resultados de todos os concursos.
-- Jogo Responsável (+18): Ferramenta estritamente voltada a estudo probabilístico e apoio a apostas conscientes.
+## Resultados Oficiais das Loterias
+- [Mega-Sena](https://calculodasorte.com.br/resultados/mega_sena)
+- [Lotofácil](https://calculodasorte.com.br/resultados/lotofacil)
+- [Quina](https://calculodasorte.com.br/resultados/quina)
+- [Lotomania](https://calculodasorte.com.br/resultados/lotomania)
+- [Timemania](https://calculodasorte.com.br/resultados/timemania)
+- [Dupla Sena](https://calculodasorte.com.br/resultados/dupla_sena)
+- [Dia de Sorte](https://calculodasorte.com.br/resultados/dia_da_sorte)
+- [Super Sete](https://calculodasorte.com.br/resultados/super_sete)
+- [+Milionária](https://calculodasorte.com.br/resultados/milionaria)
 
-## Planos e Preços
-- Cadastro com Cortesia: 1 crédito de análise avulsa gratuito no primeiro acesso.
-- Análise Avulsa: R$ 5,00 por análise em qualquer uma das 9 loterias.
-- Plano VIP Mensal: R$ 29,90/mês com acesso ilimitado a todas as 9 loterias, gerações sem limite e consultoria com IA.
+## Documentação Legal
+- [Termos de Uso](https://calculodasorte.com.br/termos)
+- [Política de Privacidade](https://calculodasorte.com.br/privacidade)
 
-## Links Canônicos
-- Página Inicial: https://calculodasorte.com.br/
-- Planos e Preços: https://calculodasorte.com.br/planos
-- Cadastro com 1 Crédito Grátis: https://calculodasorte.com.br/cadastro
-- Termos de Uso: https://calculodasorte.com.br/termos
-- Política de Privacidade: https://calculodasorte.com.br/privacidade
+## Sobre as Ferramentas
+- **Gerador Inteligente de Palpites**: Gera cartelas combinatórias balanceadas.
+- **Fechamentos no Volante**: O apostador seleciona suas dezenas prediletas e o sistema gera matrizes combinatórias.
+- **Agente IA Consultor**: Assistente conversacional para responder dúvidas de probabilidades.
+- **Jogo Responsável (+18)**: Ferramenta estritamente voltada a estudo probabilístico.
 """
-    return Response(conteudo.strip(), mimetype='text/plain; charset=utf-8')
-
+    return Response(conteudo, mimetype='text/markdown')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
