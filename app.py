@@ -52,7 +52,7 @@ app = Flask(__name__)
 
 # Configuração Criptográfica de Sessão (Proteção contra falsificação de cookies)
 PRECO_AVULSO = 5.00
-PRECO_MENSAL = 29.90
+PRECO_MENSAL = 49.90
 secret_from_env = os.getenv('SECRET_KEY')
 if not secret_from_env:
     secret_from_env = '6f04de83e1c5a30f789647fcece0a8052dc5ae7ecc5f08f4b75cb9f9dd8734ef'
@@ -1241,7 +1241,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         if not access.get('has_access'):
             return jsonify({
                 'sucesso': False,
-                'erro': 'Você utilizou todos os seus créditos de análise. Assine o Plano VIP (R$ 29,90/mês) ou adquira uma recarga avulsa para continuar gerando jogos.',
+                'erro': 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.',
                 'precisa_plano': True
             }), 403
 
