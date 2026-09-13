@@ -1010,27 +1010,26 @@ body { padding: 0; background: none; }
                 padding-top: 8px;
             }
 
-            /* Sistema de Abas com Scroll Horizontal Touch */
+            /* Menu de Abas em Grid Responsivo para Melhor UX */
             .tabs {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 8px;
-                margin-bottom: 14px;
-                padding-bottom: 6px;
-                scrollbar-width: none;
-            }
-
-            .tabs::-webkit-scrollbar {
-                display: none;
+                margin-bottom: 20px;
+                padding-bottom: 0;
             }
 
             .tab-btn {
-                flex: 0 0 auto;
-                padding: 9px 14px;
-                font-size: 0.85rem;
-                white-space: nowrap;
+                padding: 10px 8px;
+                font-size: 0.82rem;
+                white-space: normal;
+                line-height: 1.3;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                border-radius: 10px;
             }
 
             /* Caixa de Conteúdo da Aba */
