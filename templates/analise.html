@@ -985,6 +985,10 @@ Exemplo para {{ config.nome }}:
                     return;
                 }
             }
+            
+            if (typeof showLoading === 'function') {
+                showLoading('Gerando combinações com Inteligência Artificial...');
+            }
 
             try {
                 const res = await fetch(`/api/gerar-multiplos-jogos/${loteriaType}`, {
@@ -1015,6 +1019,10 @@ Exemplo para {{ config.nome }}:
                 obterParecerIA(data.jogos);
             } catch (e) {
                 alert('Erro ao conectar com o gerador: ' + e.message);
+            } finally {
+                if (typeof hideLoading === 'function') {
+                    hideLoading();
+                }
             }
         }
 
