@@ -1096,3 +1096,26 @@ def get_all_chat_logs(limit: int = 50) -> list:
     except Exception as e:
         print(f"Erro ao listar logs do chat: {e}")
         return []
+
+
+def log_system_error(module: str, error_message: str):
+    """Grava erros críticos do sistema (APIs, Motor Heurístico, etc) no banco"""
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO system_errors (module, error_message) VALUES (?, ?)",
+                (module, str(error_message))
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"Erro falho ao gravar log de erro no sistema: {e}")
+
+def get_system_errors(limit: int = 50) -> list:
+    """Recupera os últimos erros do sistema"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.execute("SELECT * FROM system_errors ORDER BY created_at DESC LIMIT ?", (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Erro ao listar erros do sistema: {e}")
+        return []

@@ -749,25 +749,17 @@ def admin_dashboard():
     user = database.get_user_by_id(session['user_id'])
     usuarios = database.get_all_users()
     pagamentos = database.get_all_payments()
-    logs = database.get_latest_sync_logs(15)
-    status_loterias = updater.obter_status_loterias(consultar_online=False)
+    chat_logs = database.get_all_chat_logs()
+    system_errors = database.get_system_errors()
     
-    total_usuarios = len(usuarios)
-    usuarios_ativos = sum(1 for u in usuarios if not u.get('is_blocked'))
-    total_pagamentos = len(pagamentos)
-    pagamentos_aprovados = sum(1 for p in pagamentos if p.get('status') == 'aprovado')
-    receita_total = sum(float(p.get('valor', 0)) for p in pagamentos if p.get('status') == 'aprovado')
-    
-    metricas = {
-        'total_usuarios': total_usuarios,
-        'usuarios_ativos': usuarios_ativos,
-        'total_pagamentos': total_pagamentos,
-        'pagamentos_aprovados': pagamentos_aprovados,
-        'receita_total': receita_total
+    # Check API Status via environment variables
+    import os
+    api_status = {
+        'gemini': bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')),
+        'claude': bool(os.environ.get('ANTHROPIC_API_KEY')),
+        'kimi': bool(os.environ.get('MOONSHOT_API_KEY') or os.environ.get('KIMI_API_KEY')),
+        'caixa': True # Caixa always enabled, but fails are tracked in system_errors
     }
-    
-    aba_ativa = request.args.get('aba', 'tab-loterias')
-    storage_status = {}
 
     return render_template(
         'admin.html', 

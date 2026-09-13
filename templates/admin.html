@@ -125,7 +125,11 @@
                 <span>Pagamentos PIX</span>
                 <span class="tab-counter" id="badge-total-pagamentos">{{ pagamentos|length }}</span>
             </button>
-            <button class="tab-btn {% if aba_ativa == 'tab-seguranca' %}active{% endif %}" onclick="ativarAba('tab-seguranca')">
+                        <button class="tab-btn {% if aba_ativa == 'tab-sistema' %}active{% endif %}" onclick="ativarAba('tab-sistema')">
+                <span>🛠️</span>
+                <span>Sistema & Logs</span>
+            </button>
+<button class="tab-btn {% if aba_ativa == 'tab-seguranca' %}active{% endif %}" onclick="ativarAba('tab-seguranca')">
                 <span>🛡️</span>
                 <span>Minha Conta</span>
             </button>
@@ -535,6 +539,75 @@
                             {% else %}
                             <tr>
                                 <td colspan="5" style="text-align: center; color: #64748b; padding: 30px;">Nenhuma interação registrada no chat ainda.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- TAB SISTEMA & LOGS DE ERRO -->
+        <div id="tab-sistema" class="tab-content {% if aba_ativa == 'tab-sistema' %}active{% endif %}">
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h3>🛠️ Status das APIs e Variáveis</h3>
+                </div>
+                <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+                    <div class="metric-card" style="background: rgba(16, 185, 129, 0.1);">
+                        <div class="metric-icon">🏦</div>
+                        <div class="metric-info">
+                            <h4>Loterias Caixa</h4>
+                            <div class="metric-value" style="color: #10b981;">Online</div>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: {% if api_status.gemini %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %};">
+                        <div class="metric-icon">G</div>
+                        <div class="metric-info">
+                            <h4>Google Gemini</h4>
+                            <div class="metric-value" style="color: {% if api_status.gemini %}#10b981{% else %}#ef4444{% endif %};">{% if api_status.gemini %}Chave OK{% else %}Desconectado{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: {% if api_status.claude %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %};">
+                        <div class="metric-icon">C</div>
+                        <div class="metric-info">
+                            <h4>Anthropic Claude</h4>
+                            <div class="metric-value" style="color: {% if api_status.claude %}#10b981{% else %}#ef4444{% endif %};">{% if api_status.claude %}Chave OK{% else %}Desconectado{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: {% if api_status.kimi %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %};">
+                        <div class="metric-icon">K</div>
+                        <div class="metric-info">
+                            <h4>Moonshot Kimi</h4>
+                            <div class="metric-value" style="color: {% if api_status.kimi %}#10b981{% else %}#ef4444{% endif %};">{% if api_status.kimi %}Chave OK{% else %}Desconectado{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-header">
+                    <h3>🚨 Log de Erros do Sistema (APIs e Motores)</h3>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="responsive-card-table" id="table-erros">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Módulo</th>
+                                <th>Mensagem de Erro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for erro in system_errors %}
+                            <tr>
+                                <td data-label="Data/Hora">{{ erro.created_at[:16] }}</td>
+                                <td data-label="Módulo"><span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">{{ erro.module }}</span></td>
+                                <td data-label="Erro" style="max-width: 400px; white-space: normal; color: #ef4444;">{{ erro.error_message }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #10b981; padding: 30px; font-weight: bold;">Nenhum erro registrado! Tudo operando 100%.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
