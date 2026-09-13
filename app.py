@@ -248,6 +248,8 @@ LOTERIAS_THEME = {
         'tag_bg': 'rgba(32, 152, 105, 0.25)',
         'tag_cor': '#34d399',
         'dias_resumo': 'Ter, Qui, Sáb',
+        'seo_title': 'Gerador de Números e Fechamento Mega-Sena | Inteligência Artificial',
+        'seo_desc': 'Use nosso simulador de fechamento para a Mega-Sena. Gere palpites matemáticos, veja os números que mais saem e utilize nossa IA para otimizar suas apostas.',
     },
     'lotofacil': {
         'cor': '#930089',
@@ -259,6 +261,8 @@ LOTERIAS_THEME = {
         'tag_bg': 'rgba(244, 63, 94, 0.25)',
         'tag_cor': '#fb7185',
         'dias_resumo': 'Seg a Sáb',
+        'seo_title': 'Desdobramento e Simulador Lotofácil 15 a 20 números | Grátis',
+        'seo_desc': 'Simulador de desdobramento Lotofácil com inteligência artificial. Gere combinações precisas baseadas nos padrões históricos para 14 e 15 pontos.',
     },
     'quina': {
         'cor': '#260085',
@@ -603,6 +607,27 @@ BLOG_POSTS = {
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Loterias possuem Valor Esperado (EV) negativo. Descubra as táticas de Bankroll Management para mitigar perdas enquanto mira no jackpot.',
         'template': 'blog/artigo_10.html'
+    },
+    'quais-os-numeros-que-mais-saem-na-lotofacil': {
+        'title': 'Quais os números que mais saem na Lotofácil? (Atualizado 2026)',
+        'date': '2026-09-13',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Analisamos todos os sorteios da história para descobrir quais as dezenas mais sorteadas na Lotofácil e como usar isso a seu favor com um gerador inteligente.',
+        'template': 'blog/artigo_11.html'
+    },
+    'como-ganhar-na-lotofacil-garantido': {
+        'title': 'Como ganhar na Lotofácil garantido: O fim do mito e a estatística real',
+        'date': '2026-09-13',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Existe método 100% garantido? Desmistificamos falsas promessas e ensinamos como simuladores de desdobramento da Lotofácil aumentam suas chances.',
+        'template': 'blog/artigo_12.html'
+    },
+    'diferenca-entre-desdobramento-e-fechamento': {
+        'title': 'Diferença entre Desdobramento e Fechamento Matemático',
+        'date': '2026-09-13',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Aprenda de uma vez por todas a diferença técnica entre desdobramento e fechamento para economizar nas suas apostas da Mega-Sena e Quina.',
+        'template': 'blog/artigo_13.html'
     }
 }
 
