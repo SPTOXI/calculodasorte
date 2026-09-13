@@ -608,48 +608,93 @@
                         </div>
                     </div>
                     
-                    <form id="form-config-ia" onsubmit="salvarConfigIA(event)">
+                    <div class="ia-provider-list" style="display: flex; flex-direction: column; gap: 15px;">
+                        
                         <!-- Gemini -->
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <strong style="color: #1e293b; font-size: 1.05rem;">Google Gemini (Recomendado)</strong>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="ia-active-gemini" {% if api_keys_config.get('gemini', {}).get('active', True) %}checked{% endif %}>
-                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Gemini</span>
+                        <div class="ia-provider-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.5rem; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #4f46e5;">G</span>
+                                    <div>
+                                        <strong style="color: #1e293b; font-size: 1.1rem; display: block;">Google Gemini</strong>
+                                        <span class="badge {% if api_keys_config.get('gemini', {}).get('active', True) %}badge-success{% else %}badge-warning{% endif %}" style="margin-top: 4px;">
+                                            {% if api_keys_config.get('gemini', {}).get('active', True) %}Ativo{% else %}Inativo{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: white; padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; user-select: none;">
+                                    <input type="checkbox" id="ia-active-gemini" {% if api_keys_config.get('gemini', {}).get('active', True) %}checked{% endif %} onchange="toggleIAActive('gemini')">
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitado</span>
                                 </label>
                             </div>
-                            <input type="text" id="ia-key-gemini" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('gemini', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                            
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="ia-key-gemini" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('gemini', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn-secondary" onclick="editarChaveIA('gemini')" id="btn-edit-gemini">✏️ Editar</button>
+                                    <button type="button" class="btn-primary" onclick="salvarChaveIA('gemini')" id="btn-save-gemini" style="display: none;">💾 Salvar</button>
+                                    <button type="button" class="btn-delete-sm" onclick="removerChaveIA('gemini')" style="padding: 10px 14px; font-size: 0.95rem; border-radius: 8px;">🗑️ Remover</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Claude -->
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <strong style="color: #1e293b; font-size: 1.05rem;">Anthropic Claude (Fallback Opcional)</strong>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="ia-active-claude" {% if api_keys_config.get('claude', {}).get('active', False) %}checked{% endif %}>
-                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Claude</span>
+                        <div class="ia-provider-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.5rem; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #4f46e5;">C</span>
+                                    <div>
+                                        <strong style="color: #1e293b; font-size: 1.1rem; display: block;">Anthropic Claude</strong>
+                                        <span class="badge {% if api_keys_config.get('claude', {}).get('active', False) %}badge-success{% else %}badge-warning{% endif %}" style="margin-top: 4px;">
+                                            {% if api_keys_config.get('claude', {}).get('active', False) %}Ativo{% else %}Inativo{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: white; padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; user-select: none;">
+                                    <input type="checkbox" id="ia-active-claude" {% if api_keys_config.get('claude', {}).get('active', False) %}checked{% endif %} onchange="toggleIAActive('claude')">
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitado</span>
                                 </label>
                             </div>
-                            <input type="text" id="ia-key-claude" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('claude', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                            
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="ia-key-claude" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('claude', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn-secondary" onclick="editarChaveIA('claude')" id="btn-edit-claude">✏️ Editar</button>
+                                    <button type="button" class="btn-primary" onclick="salvarChaveIA('claude')" id="btn-save-claude" style="display: none;">💾 Salvar</button>
+                                    <button type="button" class="btn-delete-sm" onclick="removerChaveIA('claude')" style="padding: 10px 14px; font-size: 0.95rem; border-radius: 8px;">🗑️ Remover</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Kimi -->
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <strong style="color: #1e293b; font-size: 1.05rem;">Moonshot Kimi (Fallback Opcional)</strong>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="ia-active-kimi" {% if api_keys_config.get('kimi', {}).get('active', False) %}checked{% endif %}>
-                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Kimi</span>
+                        <div class="ia-provider-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.5rem; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #4f46e5;">K</span>
+                                    <div>
+                                        <strong style="color: #1e293b; font-size: 1.1rem; display: block;">Moonshot Kimi</strong>
+                                        <span class="badge {% if api_keys_config.get('kimi', {}).get('active', False) %}badge-success{% else %}badge-warning{% endif %}" style="margin-top: 4px;">
+                                            {% if api_keys_config.get('kimi', {}).get('active', False) %}Ativo{% else %}Inativo{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: white; padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e8f0; user-select: none;">
+                                    <input type="checkbox" id="ia-active-kimi" {% if api_keys_config.get('kimi', {}).get('active', False) %}checked{% endif %} onchange="toggleIAActive('kimi')">
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitado</span>
                                 </label>
                             </div>
-                            <input type="text" id="ia-key-kimi" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('kimi', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                            
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="ia-key-kimi" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('kimi', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn-secondary" onclick="editarChaveIA('kimi')" id="btn-edit-kimi">✏️ Editar</button>
+                                    <button type="button" class="btn-primary" onclick="salvarChaveIA('kimi')" id="btn-save-kimi" style="display: none;">💾 Salvar</button>
+                                    <button type="button" class="btn-delete-sm" onclick="removerChaveIA('kimi')" style="padding: 10px 14px; font-size: 0.95rem; border-radius: 8px;">🗑️ Remover</button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                            <button type="button" class="btn-secondary" onclick="limparChavesIA()">Limpar Campos</button>
-                            <button type="submit" class="btn-primary" id="btn-save-ia">💾 Salvar Configurações de IA</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="card-header">
@@ -1443,34 +1488,45 @@
                 showToast('Código PIX copiado com sucesso!', 'success');
             }
         }
-        function limparChavesIA() {
-            document.getElementById('ia-key-gemini').value = '';
-            document.getElementById('ia-key-claude').value = '';
-            document.getElementById('ia-key-kimi').value = '';
+        function editarChaveIA(provider) {
+            const input = document.getElementById(`ia-key-${provider}`);
+            input.removeAttribute('readonly');
+            input.style.background = 'white';
+            input.style.color = '#1e293b';
+            input.style.cursor = 'text';
+            input.value = '';
+            input.focus();
+            
+            document.getElementById(`btn-edit-${provider}`).style.display = 'none';
+            document.getElementById(`btn-save-${provider}`).style.display = 'inline-flex';
         }
 
-        async function salvarConfigIA(event) {
-            event.preventDefault();
-            const btn = document.getElementById('btn-save-ia');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<span class="spinner"></span> Salvando...`;
-            btn.disabled = true;
+        async function salvarChaveIA(provider) {
+            const active = document.getElementById(`ia-active-${provider}`).checked;
+            const key = document.getElementById(`ia-key-${provider}`).value;
+            await enviarConfigIA(provider, active, key);
+        }
 
-            const payload = {
-                gemini: {
-                    active: document.getElementById('ia-active-gemini').checked,
-                    key: document.getElementById('ia-key-gemini').value
-                },
-                claude: {
-                    active: document.getElementById('ia-active-claude').checked,
-                    key: document.getElementById('ia-key-claude').value
-                },
-                kimi: {
-                    active: document.getElementById('ia-active-kimi').checked,
-                    key: document.getElementById('ia-key-kimi').value
-                }
-            };
+        async function removerChaveIA(provider) {
+            if(!confirm(`Tem certeza que deseja remover a chave do provedor ${provider.toUpperCase()}?`)) return;
+            const active = document.getElementById(`ia-active-${provider}`).checked;
+            await enviarConfigIA(provider, active, '');
+        }
 
+        async function toggleIAActive(provider) {
+            const active = document.getElementById(`ia-active-${provider}`).checked;
+            await enviarConfigIA(provider, active, null); 
+        }
+
+        async function enviarConfigIA(provider, active, key) {
+            showLoading(`Atualizando configuração do ${provider}...`);
+            
+            const payload = {};
+            payload[provider] = { active: active };
+            if (key !== null) {
+                payload[provider].key = key;
+            }
+            
             try {
                 const res = await fetch('/admin/config-ia', {
                     method: 'POST',
@@ -1479,16 +1535,15 @@
                 });
                 const data = await res.json();
                 if (data.sucesso) {
-                    showToast('Configurações de IA salvas com sucesso!', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
+                    showToast('Configuração atualizada com sucesso!', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(data.erro || 'Erro ao salvar', 'error');
                 }
             } catch (e) {
                 showToast('Erro de conexão: ' + e.message, 'error');
             } finally {
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
+                hideLoading();
             }
         }
     </script>
