@@ -600,6 +600,58 @@
                     </div>
                 </div>
 
+                <div class="card" style="margin-top: 20px; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: none;">
+                    <div class="card-header" style="margin-bottom: 15px;">
+                        <div>
+                            <h3>🔑 Gerenciar Chaves de IA (Inteligência Artificial)</h3>
+                            <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Cadastre, ative, ou remova as chaves das provedoras de IA.</p>
+                        </div>
+                    </div>
+                    
+                    <form id="form-config-ia" onsubmit="salvarConfigIA(event)">
+                        <!-- Gemini -->
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong style="color: #1e293b; font-size: 1.05rem;">Google Gemini (Recomendado)</strong>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="ia-active-gemini" {% if api_keys_config.get('gemini', {}).get('active', True) %}checked{% endif %}>
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Gemini</span>
+                                </label>
+                            </div>
+                            <input type="text" id="ia-key-gemini" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('gemini', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                        </div>
+
+                        <!-- Claude -->
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong style="color: #1e293b; font-size: 1.05rem;">Anthropic Claude (Fallback Opcional)</strong>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="ia-active-claude" {% if api_keys_config.get('claude', {}).get('active', False) %}checked{% endif %}>
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Claude</span>
+                                </label>
+                            </div>
+                            <input type="text" id="ia-key-claude" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('claude', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                        </div>
+
+                        <!-- Kimi -->
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong style="color: #1e293b; font-size: 1.05rem;">Moonshot Kimi (Fallback Opcional)</strong>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="ia-active-kimi" {% if api_keys_config.get('kimi', {}).get('active', False) %}checked{% endif %}>
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #475569;">Habilitar Kimi</span>
+                                </label>
+                            </div>
+                            <input type="text" id="ia-key-kimi" placeholder="Deixe em branco para deletar/não usar a chave, ou cole a nova chave" value="{% if api_keys_config.get('kimi', {}).get('key') %}***MASCARADO***{% endif %}" style="width: 100%; font-family: monospace;">
+                        </div>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button type="button" class="btn-secondary" onclick="limparChavesIA()">Limpar Campos</button>
+                            <button type="submit" class="btn-primary" id="btn-save-ia">💾 Salvar Configurações de IA</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="card-header">
                     <h3>🚨 Log de Erros do Sistema (APIs e Motores)</h3>
                 </div>
@@ -1389,6 +1441,54 @@
             } catch (e) {
                 document.execCommand('copy');
                 showToast('Código PIX copiado com sucesso!', 'success');
+            }
+        }
+        function limparChavesIA() {
+            document.getElementById('ia-key-gemini').value = '';
+            document.getElementById('ia-key-claude').value = '';
+            document.getElementById('ia-key-kimi').value = '';
+        }
+
+        async function salvarConfigIA(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-save-ia');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<span class="spinner"></span> Salvando...`;
+            btn.disabled = true;
+
+            const payload = {
+                gemini: {
+                    active: document.getElementById('ia-active-gemini').checked,
+                    key: document.getElementById('ia-key-gemini').value
+                },
+                claude: {
+                    active: document.getElementById('ia-active-claude').checked,
+                    key: document.getElementById('ia-key-claude').value
+                },
+                kimi: {
+                    active: document.getElementById('ia-active-kimi').checked,
+                    key: document.getElementById('ia-key-kimi').value
+                }
+            };
+
+            try {
+                const res = await fetch('/admin/config-ia', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    showToast('Configurações de IA salvas com sucesso!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(data.erro || 'Erro ao salvar', 'error');
+                }
+            } catch (e) {
+                showToast('Erro de conexão: ' + e.message, 'error');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
             }
         }
     </script>

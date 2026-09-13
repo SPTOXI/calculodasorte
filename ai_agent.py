@@ -14,6 +14,8 @@ import json
 import requests
 from typing import Dict, List, Optional, Any
 
+import database
+
 def _mascarar_segredos(texto: Any) -> str:
     """Mascara chaves de API, credenciais e tokens para que nunca vazem em logs de servidor"""
     if not texto:
@@ -44,17 +46,37 @@ def _carregar_env():
 
 _carregar_env()
 
-def _get_gemini_key() -> Optional[str]:
+def _get_api_config() -> dict:
+    val = database.get_setting('ai_api_keys', '{}')
+    try:
+        return json.loads(val)
+    except Exception:
+        return {}
+
+def _get_api_key(provider_id: str, env_vars: List[str]) -> Optional[str]:
+    config = _get_api_config()
+    provider_config = config.get(provider_id)
+    if provider_config is not None:
+        if not provider_config.get('active', False):
+            return None
+        if provider_config.get('key'):
+            return provider_config.get('key')
+
     _carregar_env()
-    return os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    for var in env_vars:
+        val = os.environ.get(var)
+        if val:
+            return val
+    return None
+
+def _get_gemini_key() -> Optional[str]:
+    return _get_api_key('gemini', ['GEMINI_API_KEY', 'GOOGLE_API_KEY'])
 
 def _get_moonshot_key() -> Optional[str]:
-    _carregar_env()
-    return os.environ.get('MOONSHOT_API_KEY') or os.environ.get('KIMI_API_KEY')
+    return _get_api_key('kimi', ['MOONSHOT_API_KEY', 'KIMI_API_KEY'])
 
 def _get_claude_key() -> Optional[str]:
-    _carregar_env()
-    return os.environ.get('ANTHROPIC_API_KEY')
+    return _get_api_key('claude', ['ANTHROPIC_API_KEY'])
 
 PROMPT_SISTEMA_CONSULTOR = """
 Você é exclusivamente o Agente de Suporte ao Usuário do aplicativo Cálculo da Sorte.

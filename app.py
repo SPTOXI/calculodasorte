@@ -797,14 +797,21 @@ def admin_dashboard():
     aba_ativa = request.args.get('aba', 'tab-loterias')
     storage_status = {}
     
-    # Check API Status via environment variables
-    import os
+    import ai_agent
+    import json
+    
     api_status = {
-        'gemini': bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')),
-        'claude': bool(os.environ.get('ANTHROPIC_API_KEY')),
-        'kimi': bool(os.environ.get('MOONSHOT_API_KEY') or os.environ.get('KIMI_API_KEY')),
-        'caixa': True # Caixa always enabled, but fails are tracked in system_errors
+        'gemini': bool(ai_agent._get_gemini_key()),
+        'claude': bool(ai_agent._get_claude_key()),
+        'kimi': bool(ai_agent._get_moonshot_key()),
+        'caixa': True
     }
+    
+    ai_keys_json = database.get_setting('ai_api_keys', '{}')
+    try:
+        api_keys_config = json.loads(ai_keys_json)
+    except Exception:
+        api_keys_config = {}
 
     return render_template(
         'admin.html', 
@@ -819,8 +826,41 @@ def admin_dashboard():
         pix_config=database.get_pix_config(),
         chat_logs=chat_logs,
         system_errors=system_errors,
-        api_status=api_status
+        api_status=api_status,
+        api_keys_config=api_keys_config
     )
+
+
+@app.route('/admin/config-ia', methods=['POST'])
+@login_required
+def salvar_config_ia():
+    import json
+    dados = request.get_json() or {}
+    
+    config_atual_json = database.get_setting('ai_api_keys', '{}')
+    try:
+        config_atual = json.loads(config_atual_json)
+    except Exception:
+        config_atual = {}
+        
+    for provider in ['gemini', 'claude', 'kimi']:
+        if provider in dados:
+            provider_data = dados[provider]
+            if provider not in config_atual:
+                config_atual[provider] = {}
+            if 'active' in provider_data:
+                config_atual[provider]['active'] = bool(provider_data['active'])
+            if 'key' in provider_data:
+                # Only update if the user actually sent a new key and not the masked one
+                new_key = provider_data['key'].strip()
+                if new_key and new_key != '***MASCARADO***':
+                    config_atual[provider]['key'] = new_key
+                elif not new_key:
+                    # User sent empty string, meaning they want to remove it
+                    config_atual[provider]['key'] = ''
+                    
+    database.set_setting('ai_api_keys', json.dumps(config_atual))
+    return jsonify({'sucesso': True})
 
 
 @app.route('/admin/alterar-senha', methods=['POST'])
