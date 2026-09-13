@@ -1838,11 +1838,30 @@ def sitemap_xml():
     paginas = [
         {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
         {"loc": f"{base_url}/planos", "changefreq": "weekly", "priority": "0.9"},
+        {"loc": f"{base_url}/blog", "changefreq": "daily", "priority": "0.9"},
         {"loc": f"{base_url}/cadastro", "changefreq": "monthly", "priority": "0.8"},
         {"loc": f"{base_url}/login", "changefreq": "monthly", "priority": "0.7"},
         {"loc": f"{base_url}/termos", "changefreq": "monthly", "priority": "0.5"},
         {"loc": f"{base_url}/privacidade", "changefreq": "monthly", "priority": "0.5"},
     ]
+    
+    # Adicionar as 9 loterias oficiais (Páginas de SEO / Resultados)
+    loterias_slugs = [
+        "mega_sena", "lotofacil", "quina", "lotomania", 
+        "timemania", "dupla_sena", "dia_da_sorte", "super_sete", "milionaria"
+    ]
+    for slug in loterias_slugs:
+        paginas.append({"loc": f"{base_url}/resultados/{slug}", "changefreq": "hourly", "priority": "0.95"})
+    
+    # Adicionar páginas do blog (Carregadas da pasta data/blog)
+    try:
+        if os.path.exists('data/blog'):
+            for filename in os.listdir('data/blog'):
+                if filename.endswith('.md'):
+                    slug = filename.replace('.md', '')
+                    paginas.append({"loc": f"{base_url}/blog/{slug}", "changefreq": "weekly", "priority": "0.85"})
+    except Exception as e:
+        print(f"Erro ao gerar sitemap do blog: {e}")
     
     xml_linhas = [
         '<?xml version="1.0" encoding="UTF-8"?>',
