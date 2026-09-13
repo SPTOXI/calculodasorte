@@ -57,15 +57,15 @@ def _get_claude_key() -> Optional[str]:
     return os.environ.get('ANTHROPIC_API_KEY')
 
 PROMPT_SISTEMA_CONSULTOR = """
-Você é o Agente Consultor do Cálculo da Sorte, um especialista sênior em probabilidade, estatística estocástica e análise de loterias da Caixa Econômica Federal (Mega-Sena, Lotofácil, Quina, etc.).
-Seu objetivo é orientar o apostador com base nos dados reais do Modelo Canônico 3.0 (MCSCE) e Microdinâmica MCP-MD.
-Você traduz métricas técnicas (como ICT - Índice de Convergência Temporal, Classes A/B/C/D, Entropia de Shannon e Fator de Recorrência FR) em orientações práticas, didáticas e persuasivas em Português do Brasil.
+Você é exclusivamente o Agente de Suporte ao Usuário do aplicativo Cálculo da Sorte.
+Seu ÚNICO objetivo é oferecer suporte técnico, ajudar o usuário a navegar pela plataforma, abrir chamados, relatar bugs, ou esclarecer dúvidas de usabilidade (como assinar um plano, como gerar um jogo, onde ver resultados).
 
-Diretrizes:
-1. Destaque o equilíbrio entre ciência probabilística e gestão inteligente de apostas.
-2. Evite promessas mágicas de enriquecimento fácil ou garantia de acertos de 100% (seja transparente sobre a natureza dos jogos de azar).
-3. Seja amigável, motivador, empático e focado em valorizar a inteligência das combinações.
-4. Utilize formatação clara em tópicos com emojis modernos.
+REGRAS ESTRITAS (NÃO VIOLAR SOB NENHUMA HIPÓTESE):
+1. VOCÊ É APENAS SUPORTE TÉCNICO. Não atue como consultor matemático, não dê dicas de apostas, não sugira números.
+2. É ESTRITAMENTE PROIBIDO revelar, explicar, confirmar ou detalhar qualquer parte do sistema interno, fórmulas matemáticas, "Documento Canônico", "Microdinâmica MCP-MD", "ICT", "Entropia", "Classes", ou qualquer tecnologia proprietária do site.
+3. Se o usuário perguntar sobre estratégias de loteria, fórmulas, como o sistema funciona por baixo dos panos, ou pedir dicas matemáticas, você DEVE RECUSAR educadamente dizendo que o chat é exclusivo para suporte de uso da plataforma e que essas informações são propriedades intelectuais protegidas.
+4. Você está aqui para acolher o usuário e não deixá-lo desamparado caso tenha problemas técnicos com o site.
+5. Seja empático, claro e direto.
 """
 
 
@@ -342,55 +342,46 @@ def gerar_parecer_ia(loteria_nome: str, dados_analise: Dict[str, Any], jogos_ger
     return _gerar_parecer_heuristico_canonico(loteria_nome, dados_analise, jogos_gerados)
 
 
-def responder_chat_consultor(pergunta: str, loteria_nome: str, dados_analise: Optional[Dict[str, Any]] = None) -> str:
+def responder_chat_consultor(pergunta: str, loteria_nome: str, dados_analise: Optional[Dict[str, Any]] = None, user_ident: str = "anon") -> str:
     """
-    Responde perguntas do apostador no Chat Consultor da Sorte
+    Responde perguntas do apostador no Chat Consultor da Sorte (AGORA APENAS SUPORTE TÉCNICO)
     """
     prompt = (
-        f"O apostador perguntou sobre a {loteria_nome}: '{pergunta}'.\n"
-        f"Responda como um especialista amigável em loterias e estatística canônica, dando dicas práticas e seguras."
+        f"O apostador perguntou sobre a plataforma (seção {loteria_nome}): '{pergunta}'.\n"
+        f"Responda como Suporte Técnico, conforme as suas diretrizes estritas."
     )
 
+    resp = None
+
     # Tenta Moonshot Kimi
-    if _get_moonshot_key():
+    if _get_moonshot_key() and not resp:
         res_kimi = _chamar_kimi(prompt)
         if res_kimi:
-            return res_kimi[0]
+            resp = res_kimi[0]
 
     # Tenta Gemini
-    resp = _chamar_gemini(prompt)
-    if resp:
-        return resp
-
+    if not resp:
+        resp = _chamar_gemini(prompt)
 
     # Tenta Claude
-    resp = _chamar_claude(prompt)
-    if resp:
-        return resp
+    if not resp:
+        resp = _chamar_claude(prompt)
 
-    # Fallback consultivo nativo
-    p_lower = pergunta.lower()
-    if 'par' in p_lower or 'impar' in p_lower:
-        return (
-            f"Ótima pergunta! Na {loteria_nome}, a distribuição ideal observada em mais de 80% dos sorteios oficiais "
-            f"é o equilíbrio entre pares e ímpares (ex: 3 pares e 3 ímpares na Mega-Sena, ou 8 ímpares e 7 pares na Lotofácil). "
-            f"Evite apostar exclusivamente em todos pares ou todos ímpares, pois a probabilidade histórica desse evento é inferior a 1.2%."
-        )
-    elif 'mais saem' in p_lower or 'frequente' in p_lower or 'quente' in p_lower:
-        return (
-            f"Pelo Modelo Canônico 3.0, os números mais frequentes entram na Classe A (Alta Estabilidade). "
-            f"Porém, a nossa recomendação matemática não é jogar apenas os números mais quentes, mas combiná-los com números "
-            f"em maturidade de retorno recente (Fator de Recorrência harmônico) para fechar o ciclo de convergência da Caixa!"
-        )
-    elif 'fechamento' in p_lower or 'desdobramento' in p_lower:
-        return (
-            f"Os fechamentos matemáticos são a maneira mais eficiente de apostar na {loteria_nome}! "
-            f"Em vez de fazer apostas avulsas aleatórias, você escolhe um grupo de números favoritos (ex: 10 ou 12 dezenas) "
-            f"e o nosso Gerador no Modo 2 monta cartelas garantindo premiações múltiplas caso as dezenas sorteadas estejam no seu grupo."
-        )
-    else:
-        return (
-            f"Para a {loteria_nome}, o segredo estatístico está no equilíbrio das 7 Camadas Canônicas: "
-            f"distribuição equilibrada no volante (sem aglomerar tudo em um único quadrante), proporção 50/50 de pares e ímpares, "
-            f"e mescla de dezenas estáveis com dezenas de retorno iminente. Utilize o nosso Gerador Inteligente para compor suas cartelas com precisão!"
-        )
+    # Fallback consultivo nativo (Se não tiver chave)
+    if not resp:
+        p_lower = pergunta.lower()
+        if "erro" in p_lower or "bug" in p_lower or "não funciona" in p_lower:
+            resp = "Lamento pelo transtorno! Por favor, detalhe o problema que você está enfrentando e encaminharei para a equipe de desenvolvimento."
+        elif "pagar" in p_lower or "plano" in p_lower or "vip" in p_lower:
+            resp = "Para assinar o VIP ou comprar créditos, acesse a página 'Planos' no menu principal."
+        else:
+            resp = "Olá! Sou o assistente de suporte da plataforma. Posso te ajudar com alguma dúvida sobre como usar o aplicativo Cálculo da Sorte?"
+
+    # LOGAR NO BANCO DE DADOS
+    try:
+        import database
+        database.log_chat_message(user_ident, loteria_nome, pergunta, resp)
+    except Exception as e:
+        print(f"[AI AGENT] Erro ao gravar log: {e}")
+
+    return resp

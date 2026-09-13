@@ -1073,3 +1073,26 @@ def sync_db_to_cloud(*args, **kwargs):
 
 def sync_db_from_cloud(*args, **kwargs):
     return True
+
+
+def log_chat_message(user_ident: str, loteria_nome: str, mensagem_usuario: str, resposta_ia: str):
+    """Grava as conversas do chat de suporte no banco"""
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO chat_logs (user_ident, loteria_nome, mensagem_usuario, resposta_ia) VALUES (?, ?, ?, ?)",
+                (user_ident, loteria_nome, mensagem_usuario, resposta_ia)
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"Erro ao gravar log do chat: {e}")
+
+def get_all_chat_logs(limit: int = 50) -> list:
+    """Recupera logs do chat de suporte"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.execute("SELECT * FROM chat_logs ORDER BY created_at DESC LIMIT ?", (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Erro ao listar logs do chat: {e}")
+        return []

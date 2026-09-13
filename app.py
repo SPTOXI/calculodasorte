@@ -1581,7 +1581,15 @@ def api_ia_chat():
     except ValueError:
         loteria_nome = 'Loteria da Caixa'
 
-    resposta = ai_agent.responder_chat_consultor(pergunta, loteria_nome)
+    
+    # Identificar usuário logado ou anonimo
+    user_ident = "Anônimo"
+    if 'user_id' in session:
+        usr = database.get_user_by_id(session['user_id'])
+        if usr:
+            user_ident = usr.get('email', f"ID: {session['user_id']}")
+            
+    resposta = ai_agent.responder_chat_consultor(pergunta, loteria_nome, user_ident=user_ident)
     return jsonify({'sucesso': True, 'resposta': resposta})
 
 
