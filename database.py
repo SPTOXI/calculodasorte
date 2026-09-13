@@ -1100,7 +1100,7 @@ def log_chat_message(user_ident: str, loteria_nome: str, mensagem_usuario: str, 
     try:
         with get_db_connection() as conn:
             conn.execute(
-                "INSERT INTO chat_logs (user_ident, loteria_nome, mensagem_usuario, resposta_ia) VALUES (?, ?, ?, ?)",
+                "INSERT INTO chat_logs (user_ident, loteria_nome, pergunta, resposta) VALUES (%s, %s, %s, %s)",
                 (user_ident, loteria_nome, mensagem_usuario, resposta_ia)
             )
             conn.commit()
@@ -1111,7 +1111,7 @@ def get_all_chat_logs(limit: int = 50) -> list:
     """Recupera logs do chat de suporte"""
     try:
         with get_db_connection() as conn:
-            cursor = conn.execute("SELECT * FROM chat_logs ORDER BY created_at DESC LIMIT ?", (limit,))
+            cursor = conn.execute("SELECT * FROM chat_logs ORDER BY created_at DESC LIMIT %s", (limit,))
             return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
         print(f"Erro ao listar logs do chat: {e}")
@@ -1123,7 +1123,7 @@ def log_system_error(module: str, error_message: str):
     try:
         with get_db_connection() as conn:
             conn.execute(
-                "INSERT INTO system_errors (module, error_message) VALUES (?, ?)",
+                "INSERT INTO system_errors (module, error_message) VALUES (%s, %s)",
                 (module, str(error_message))
             )
             conn.commit()
@@ -1134,7 +1134,7 @@ def get_system_errors(limit: int = 50) -> list:
     """Recupera os últimos erros do sistema"""
     try:
         with get_db_connection() as conn:
-            cursor = conn.execute("SELECT * FROM system_errors ORDER BY created_at DESC LIMIT ?", (limit,))
+            cursor = conn.execute("SELECT * FROM system_errors ORDER BY created_at DESC LIMIT %s", (limit,))
             return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
         print(f"Erro ao listar erros do sistema: {e}")
