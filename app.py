@@ -749,8 +749,28 @@ def admin_dashboard():
     user = database.get_user_by_id(session['user_id'])
     usuarios = database.get_all_users()
     pagamentos = database.get_all_payments()
+    
     chat_logs = database.get_all_chat_logs()
     system_errors = database.get_system_errors()
+    logs = database.get_latest_sync_logs(15)
+    status_loterias = updater.obter_status_loterias(consultar_online=False)
+    
+    total_usuarios = len(usuarios)
+    usuarios_ativos = sum(1 for u in usuarios if not u.get('is_blocked'))
+    total_pagamentos = len(pagamentos)
+    pagamentos_aprovados = sum(1 for p in pagamentos if p.get('status') == 'aprovado')
+    receita_total = sum(float(p.get('valor', 0)) for p in pagamentos if p.get('status') == 'aprovado')
+    
+    metricas = {
+        'total_usuarios': total_usuarios,
+        'usuarios_ativos': usuarios_ativos,
+        'total_pagamentos': total_pagamentos,
+        'pagamentos_aprovados': pagamentos_aprovados,
+        'receita_total': receita_total
+    }
+    
+    aba_ativa = request.args.get('aba', 'tab-loterias')
+    storage_status = {}
     
     # Check API Status via environment variables
     import os
@@ -771,7 +791,10 @@ def admin_dashboard():
         metricas=metricas,
         storage_status=storage_status,
         aba_ativa=aba_ativa,
-        pix_config=database.get_pix_config()
+        pix_config=database.get_pix_config(),
+        chat_logs=chat_logs,
+        system_errors=system_errors,
+        api_status=api_status
     )
 
 

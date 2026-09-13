@@ -219,6 +219,26 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS chat_logs (
+                id SERIAL PRIMARY KEY,
+                user_ident TEXT NOT NULL,
+                loteria_nome TEXT,
+                pergunta TEXT NOT NULL,
+                resposta TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS system_errors (
+                id SERIAL PRIMARY KEY,
+                module TEXT NOT NULL,
+                error_message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
 
     seed_admin()
