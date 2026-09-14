@@ -806,12 +806,35 @@ def admin_dashboard():
         'kimi': bool(ai_agent._get_moonshot_key()),
         'caixa': True
     }
+    import os
     
     ai_keys_json = database.get_setting('ai_api_keys', '{}')
     try:
-        api_keys_config = json.loads(ai_keys_json)
+        db_api_keys_config = json.loads(ai_keys_json)
     except Exception:
-        api_keys_config = {}
+        db_api_keys_config = {}
+        
+    has_env = {
+        'gemini': bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')),
+        'claude': bool(os.environ.get('ANTHROPIC_API_KEY')),
+        'kimi': bool(os.environ.get('MOONSHOT_API_KEY') or os.environ.get('KIMI_API_KEY'))
+    }
+    
+    ui_api_keys_config = {}
+    for prov in ['gemini', 'claude', 'kimi']:
+        db_conf = db_api_keys_config.get(prov, {})
+        active = db_conf.get('active', True if prov == 'gemini' else False)
+        
+        display_key = ''
+        if db_conf.get('key'):
+            display_key = '***MASCARADO (Via Painel/DB)***'
+        elif has_env[prov]:
+            display_key = '***MASCARADO (Via arquivo .env)***'
+            
+        ui_api_keys_config[prov] = {
+            'active': active,
+            'display_key': display_key
+        }
 
     return render_template(
         'admin.html', 
@@ -827,7 +850,7 @@ def admin_dashboard():
         chat_logs=chat_logs,
         system_errors=system_errors,
         api_status=api_status,
-        api_keys_config=api_keys_config
+        api_keys_config=ui_api_keys_config
     )
 
 
@@ -853,7 +876,7 @@ def salvar_config_ia():
             if 'key' in provider_data:
                 # Only update if the user actually sent a new key and not the masked one
                 new_key = provider_data['key'].strip()
-                if new_key and new_key != '***MASCARADO***':
+                if new_key and '***MASCARADO' not in new_key:
                     config_atual[provider]['key'] = new_key
                 elif not new_key:
                     # User sent empty string, meaning they want to remove it

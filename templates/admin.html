@@ -629,7 +629,7 @@
                             </div>
                             
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <input type="text" id="ia-key-gemini" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('gemini', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <input type="text" id="ia-key-gemini" readonly placeholder="Nenhuma chave configurada" value="{{ api_keys_config.get('gemini', {}).get('display_key', '') }}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
                                 <div style="display: flex; gap: 8px;">
                                     <button type="button" class="btn-secondary" onclick="editarChaveIA('gemini')" id="btn-edit-gemini">✏️ Editar</button>
                                     <button type="button" class="btn-primary" onclick="salvarChaveIA('gemini')" id="btn-save-gemini" style="display: none;">💾 Salvar</button>
@@ -657,7 +657,7 @@
                             </div>
                             
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <input type="text" id="ia-key-claude" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('claude', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <input type="text" id="ia-key-claude" readonly placeholder="Nenhuma chave configurada" value="{{ api_keys_config.get('claude', {}).get('display_key', '') }}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
                                 <div style="display: flex; gap: 8px;">
                                     <button type="button" class="btn-secondary" onclick="editarChaveIA('claude')" id="btn-edit-claude">✏️ Editar</button>
                                     <button type="button" class="btn-primary" onclick="salvarChaveIA('claude')" id="btn-save-claude" style="display: none;">💾 Salvar</button>
@@ -685,7 +685,7 @@
                             </div>
                             
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <input type="text" id="ia-key-kimi" readonly placeholder="Nenhuma chave configurada" value="{% if api_keys_config.get('kimi', {}).get('key') %}***MASCARADO***{% endif %}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
+                                <input type="text" id="ia-key-kimi" readonly placeholder="Nenhuma chave configurada" value="{{ api_keys_config.get('kimi', {}).get('display_key', '') }}" style="flex: 1; min-width: 250px; font-family: monospace; background: #e2e8f0; color: #64748b; cursor: not-allowed; border: 1px solid #cbd5e1;">
                                 <div style="display: flex; gap: 8px;">
                                     <button type="button" class="btn-secondary" onclick="editarChaveIA('kimi')" id="btn-edit-kimi">✏️ Editar</button>
                                     <button type="button" class="btn-primary" onclick="salvarChaveIA('kimi')" id="btn-save-kimi" style="display: none;">💾 Salvar</button>
