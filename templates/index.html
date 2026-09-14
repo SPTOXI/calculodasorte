@@ -1,0 +1,554 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Painel de Loterias — Cálculo da Sorte | Inteligência Artificial & Estatística{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>.hero-independencia-section,.hero-independencia-section *{font-family:'Manrope',-apple-system,sans-serif}.hero-novo-title,.hero-novo-prize-amount,.hero-novo-timer-unit .num,.hero-novo-stat-num{font-family:'Space Grotesk',sans-serif}</style>
+<style>:root{--bg-dark:#0b1120;--card-dark:#1e293b;--card-border:rgba(255,255,255,0.08);--primary:#059669;--primary-light:#10b981;--gold:#f59e0b;--gold-dark:#d97706;--text-main:#f8fafc;--text-muted:#cbd5e1}*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}body{background-color:var(--bg-dark);color:var(--text-main);min-height:100vh;padding:24px 16px;background:radial-gradient(circle at 50% 0%,rgba(16,185,129,0.12) 0%,#0b1120 70%);-webkit-font-smoothing:antialiased}.container{max-width:1200px;margin:0 auto}.user-top-bar{display:flex;justify-content:space-between;align-items:center;background:rgba(30,41,59,0.7);border:1px solid var(--card-border);border-radius:16px;padding:12px 20px;margin-bottom:25px;backdrop-filter:blur(12px);gap:12px;flex-wrap:wrap}.user-info-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.user-brand-logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:white;font-weight:800;font-size:1.05rem;margin-right:6px}.user-brand-logo span.highlight{color:#34d399}.user-badge{padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:800;display:inline-flex;align-items:center;gap:5px;letter-spacing:0.3px}.user-badge.vip{background:rgba(245,158,11,0.2);color:var(--gold);border:1px solid rgba(245,158,11,0.4)}.user-badge.credits{background:rgba(16,185,129,0.2);color:var(--primary-light);border:1px solid rgba(16,185,129,0.4)}.user-badge.no-credits{background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.4)}.user-top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.btn-top{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:24px;font-size:0.88rem;font-weight:700;text-decoration:none;transition:all 0.2s ease;cursor:pointer;border:none;white-space:nowrap}.btn-top-avulso{background:linear-gradient(135deg,#059669 0%,#047857 100%);color:#ffffff;border:1px solid rgba(52,211,153,0.4);box-shadow:0 4px 12px rgba(5,150,105,0.3)}.btn-top-avulso:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(5,150,105,0.45)}.btn-top-vip{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#0f172a;box-shadow:0 4px 12px rgba(245,158,11,0.35)}.btn-top-vip:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(245,158,11,0.5)}.btn-top-ghost{background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.15)}.btn-top-ghost:hover{background:rgba(255,255,255,0.15);color:white}.btn-top-exit{background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}.btn-top-exit:hover{background:rgba(239,68,68,0.25)}.hero-banner{background:linear-gradient(135deg,rgba(30,41,59,0.95) 0%,rgba(15,23,42,0.95) 100%);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:34px 30px;margin-bottom:35px;box-shadow:0 15px 35px rgba(0,0,0,0.4);position:relative;overflow:hidden}.hero-banner::after{content:'';position:absolute;top:-40px;right:-40px;width:250px;height:250px;background:radial-gradient(circle,rgba(16,185,129,0.18) 0%,transparent 70%);border-radius:50%;pointer-events:none}.hero-header-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);color:#34d399;font-size:0.8rem;font-weight:800;padding:5px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px}.hero-title{font-size:2.15rem;font-weight:900;line-height:1.2;color:#ffffff;margin-bottom:12px;letter-spacing:-0.5px}.hero-title .title-accent{color:#34d399;background:linear-gradient(135deg,#34d399 0%,#fbbf24 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.hero-subtitle{font-size:1.05rem;color:#cbd5e1;line-height:1.6;max-width:820px;margin-bottom:28px}.hero-offers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:24px}.offer-card{background:rgba(15,23,42,0.7);border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.2s ease,border-color 0.2s ease}.offer-card:hover{transform:translateY(-2px)}.offer-card.avulso{border-color:rgba(16,185,129,0.4);background:linear-gradient(180deg,rgba(5,150,105,0.12) 0%,rgba(15,23,42,0.8) 100%)}.offer-card.vip{border-color:rgba(245,158,11,0.4);background:linear-gradient(180deg,rgba(245,158,11,0.12) 0%,rgba(15,23,42,0.8) 100%)}.offer-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}.offer-pill{font-size:0.72rem;font-weight:800;text-transform:uppercase;padding:3px 10px;border-radius:12px;letter-spacing:0.4px}.offer-pill.green{background:rgba(16,185,129,0.25);color:#34d399;border:1px solid rgba(16,185,129,0.4)}.offer-pill.gold{background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.4)}.offer-title{font-size:1.25rem;font-weight:800;color:white;margin-bottom:4px}.offer-price{font-size:1.85rem;font-weight:900;color:white;margin-bottom:12px;display:flex;align-items:baseline;gap:6px}.offer-price span{font-size:0.85rem;color:#cbd5e1;font-weight:normal}.offer-benefits{list-style:none;margin-bottom:18px;display:flex;flex-direction:column;gap:8px}.offer-benefits li{font-size:0.86rem;color:#cbd5e1;display:flex;align-items:center;gap:8px}.btn-offer{width:100%;min-height:48px;border-radius:10px;border:none;font-size:0.95rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;transition:all 0.2s ease}.btn-offer-green{background:linear-gradient(135deg,#059669 0%,#047857 100%);color:white;box-shadow:0 4px 12px rgba(5,150,105,0.35)}.btn-offer-green:hover{opacity:0.95;box-shadow:0 6px 18px rgba(5,150,105,0.5)}.btn-offer-gold{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#0f172a;box-shadow:0 4px 12px rgba(245,158,11,0.35)}.btn-offer-gold:hover{opacity:0.95;box-shadow:0 6px 18px rgba(245,158,11,0.5)}.hero-trust-badges{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.84rem;color:#cbd5e1}.trust-item{display:inline-flex;align-items:center;gap:6px}.section-header{text-align:center;margin-bottom:25px}.section-header h2{font-size:1.8rem;font-weight:800;color:white;letter-spacing:-0.3px}.section-header p{font-size:0.95rem;color:#cbd5e1;margin-top:6px}.loterias-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:45px}.loteria-card{background:var(--card-dark);border-radius:18px;padding:24px 22px;border:1px solid var(--card-border);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;transition:all 0.25s ease;box-shadow:0 6px 20px rgba(0,0,0,0.25)}.loteria-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,0.2);box-shadow:0 12px 30px rgba(0,0,0,0.45)}.loteria-card-glow{position:absolute;top:0;left:0;right:0;height:4px;transition:height 0.2s ease}.loteria-card:hover .loteria-card-glow{height:6px}.loteria-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.loteria-brand{display:flex;align-items:center;gap:12px}.loteria-icon-box{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;box-shadow:0 4px 10px rgba(0,0,0,0.25)}.loteria-name{font-size:1.35rem;font-weight:800;color:#ffffff;letter-spacing:-0.2px}.loteria-tag{font-size:0.72rem;font-weight:800;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap}.loteria-specs{list-style:none;margin:14px 0 20px;display:flex;flex-direction:column;gap:10px;background:rgba(15,23,42,0.55);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.04)}.loteria-spec-row{display:flex;justify-content:space-between;align-items:center;font-size:0.86rem;color:#cbd5e1}.loteria-spec-row strong{color:#f1f5f9;font-weight:600}.loteria-spec-badge{background:rgba(255,255,255,0.08);color:#e2e8f0;padding:2px 8px;border-radius:6px;font-size:0.8rem;font-weight:700}.btn-analisar-loteria{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border-radius:12px;color:white;font-size:0.95rem;font-weight:800;text-decoration:none;transition:all 0.2s ease;cursor:pointer;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.3)}.btn-analisar-loteria:hover{opacity:0.94;transform:translateY(-1px)}.checkout-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:16px}.checkout-modal{background:#1e293b;border:1px solid rgba(255,255,255,0.15);border-radius:20px;max-width:480px;width:100%;padding:28px 24px;text-align:center;position:relative;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7)}.checkout-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.6rem;color:#cbd5e1;cursor:pointer;line-height:1}.pix-qrcode-box{background:white;padding:14px;border-radius:12px;display:inline-block;margin:16px 0}.pix-copia-cola-box{background:#0f172a;border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:8px;font-family:monospace;font-size:0.8rem;color:#38bdf8;word-break:break-all;margin-bottom:16px;max-height:80px;overflow-y:auto;text-align:left}footer{text-align:center;border-top:1px solid rgba(255,255,255,0.08);padding:30px 16px 20px;font-size:0.86rem;color:#cbd5e1;line-height:1.6}.footer-links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:14px}.footer-links a{color:#cbd5e1;text-decoration:none;transition:color 0.2s}.footer-links a:hover{color:#34d399;text-decoration:underline}@media (max-width:768px){body{padding:14px 10px}.user-top-bar{flex-direction:column;align-items:stretch;padding:14px;gap:12px;margin-bottom:18px}.user-info-group{justify-content:space-between;width:100%}.user-top-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}.btn-top{width:100%;padding:10px 8px;font-size:0.82rem;min-height:44px}.btn-top-exit{grid-column:span 2}.hero-banner{padding:22px 16px;margin-bottom:24px;border-radius:16px}.hero-title{font-size:1.55rem;line-height:1.25}.hero-subtitle{font-size:0.9rem;margin-bottom:20px}.hero-offers-grid{grid-template-columns:1fr;gap:14px}.offer-card{padding:16px}.offer-price{font-size:1.65rem;margin-bottom:10px}.section-header h2{font-size:1.45rem}.loterias-grid{grid-template-columns:1fr;gap:14px}.loteria-card{padding:18px 16px}.checkout-modal{padding:20px 14px}}@media (max-width:480px){.hero-title{font-size:1.35rem}.user-brand-logo{font-size:0.95rem}.btn-top{font-size:0.78rem}}.hero-independencia-section{position:relative;background:#ffffff;border-radius:16px;margin-bottom:32px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.35)}.hero-novo-inner{padding:clamp(28px,4vw,48px) clamp(20px,4vw,44px) clamp(36px,5vw,52px)}.hero-novo-row{display:flex;flex-wrap:wrap;gap:clamp(28px,4vw,48px);align-items:center}.hero-novo-col-text{flex:1 1 380px;min-width:280px}.hero-novo-badge{display:inline-flex;align-items:center;gap:8px;color:#003399;font-weight:700;font-size:0.78rem;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:16px;background:#eaf0fb;padding:6px 14px;border-radius:20px}.hero-novo-title{font-weight:800;font-size:clamp(2rem,4vw,3rem);line-height:1.1;color:#0a2463;margin:0 0 16px;letter-spacing:-0.5px}.hero-novo-title span{color:#f39200}.hero-novo-lead{font-size:clamp(0.98rem,1.5vw,1.08rem);color:#4a5568;line-height:1.6;max-width:480px;margin:0 0 26px}.hero-novo-ctas{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:22px}.hero-novo-cta-primary{text-decoration:none;background:#f39200;color:#ffffff;font-weight:700;font-size:1rem;padding:14px 26px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(243,146,0,0.3)}.hero-novo-cta-secondary{text-decoration:none;color:#0a2463;font-weight:600;font-size:0.92rem;border-bottom:1px solid #0a2463;padding-bottom:2px}.hero-novo-trust{font-size:0.82rem;color:#6b7688;display:flex;flex-wrap:wrap;gap:0 10px}.hero-novo-ticket-col{flex:1 1 300px;max-width:380px;min-width:260px;margin:0 auto}.hero-novo-ticket{position:relative;background:#f7f9fd;border:1px solid #d7dfef;border-radius:12px;box-shadow:0 12px 30px rgba(10,36,99,0.08)}.hero-novo-notch{position:absolute;top:calc(64% - 12px);width:24px;height:24px;border-radius:50%;background:#ffffff;border:1px solid #d7dfef}.hero-novo-notch.left{left:-12px}.hero-novo-notch.right{right:-12px}.hero-novo-prize{padding:24px 24px 20px;text-align:center;background:#003399;border-radius:12px 12px 0 0}.hero-novo-prize-label{font-size:0.72rem;font-weight:700;letter-spacing:1.6px;color:#a9c1f2;text-transform:uppercase;margin-bottom:10px}.hero-novo-prize-amount{font-weight:800;color:#ffffff}.hero-novo-prize-amount .valor{font-size:clamp(2.2rem,6vw,2.9rem);line-height:1.05}.hero-novo-prize-amount .unidade{font-size:clamp(1.15rem,3vw,1.5rem);letter-spacing:2px;margin-top:4px;color:#f39200;display:block}.hero-novo-prize-date{font-size:0.82rem;color:#c7d6f5;margin-top:10px}.hero-novo-countdown-box{border-top:2px dashed #d7dfef;padding:20px 22px 22px}.hero-novo-countdown-label{text-align:center;font-size:0.7rem;font-weight:700;letter-spacing:1.4px;color:#6b7688;text-transform:uppercase;margin-bottom:12px}.hero-novo-timer{display:flex;justify-content:center;gap:8px}.hero-novo-timer-unit{text-align:center}.hero-novo-timer-unit .num{font-size:1.4rem;font-weight:700;color:#0a2463;font-variant-numeric:tabular-nums}.hero-novo-timer-unit .lbl{font-size:0.6rem;color:#6b7688;text-transform:uppercase;letter-spacing:0.5px}.hero-novo-timer-sep{font-size:1.2rem;color:#c7d0e0;align-self:flex-start}.hero-novo-footnote{font-size:0.74rem;color:#6b7688;text-align:center;line-height:1.5;margin-top:14px}.hero-novo-photo{margin-top:clamp(28px,4vw,40px);border-radius:12px;overflow:hidden;width:100%;aspect-ratio:21/8;min-height:160px;background:#eef2f8}.hero-novo-photo img{width:100%;height:100%;object-fit:cover;display:block}.hero-novo-stats{display:flex;flex-wrap:wrap;margin-top:clamp(32px,4vw,44px);border-top:1px solid #e4e8f0;padding-top:24px}.hero-novo-stat{flex:1 1 200px;padding:0 20px 14px 0}.hero-novo-stat+.hero-novo-stat{border-left:1px solid #e4e8f0;padding-left:20px}.hero-novo-stat-num{font-weight:700;font-size:1.3rem;color:#0a2463}.hero-novo-stat-desc{font-size:0.82rem;color:#6b7688;margin-top:4px}@media (max-width:640px){.hero-novo-stat+.hero-novo-stat{border-left:none;padding-left:0;border-top:1px solid #e4e8f0;padding-top:14px}}.filtros-avancados-container{margin-top:15px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden}.filtros-toggle{width:100%;padding:15px;background:rgba(15,23,42,0.5);color:#e2e8f0;border:none;text-align:left;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s}.filtros-toggle:hover{background:rgba(15,23,42,0.8)}.filtros-content{padding:20px;background:rgba(30,41,59,0.3);display:none}.filtros-content.open{display:block}</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero-independencia-section">
+  <div class="hero-novo-inner">
+    <div class="hero-novo-row">
+      <div class="hero-novo-col-text">
+        <div class="hero-novo-badge">Concurso especial &bull; até 15 de setembro</div>
+        <h1 class="hero-novo-title">A Lotofácil da<br><span>Independência</span></h1>
+        <p class="hero-novo-lead">R$300 milhões em jogo no maior concurso do ano. Gere fechamentos matemáticos para cercar 14 e 15 pontos antes do sorteio de terça-feira.</p>
+        <div class="hero-novo-ctas">
+          <a href="/analise/lotofacil" class="hero-novo-cta-primary">Gerar fechamento agora &rarr;</a>
+          <a href="#loterias-grid" class="hero-novo-cta-secondary">Ver como funciona</a>
+        </div>
+        <div class="hero-novo-trust">
+          <span>9 loterias oficiais</span><span>&middot;</span>
+          <span>Sincronizado com a Caixa</span><span>&middot;</span>
+          <span>Liberação via PIX</span>
+        </div>
+      </div>
+
+      <div class="hero-novo-ticket-col">
+        <div class="hero-novo-ticket">
+          <div class="hero-novo-notch left"></div>
+          <div class="hero-novo-notch right"></div>
+          <div class="hero-novo-prize">
+            <div class="hero-novo-prize-label">Prêmio estimado</div>
+            <div class="hero-novo-prize-amount">
+              <span class="valor">R$300</span>
+              <span class="unidade">MILHÕES</span>
+            </div>
+            <div class="hero-novo-prize-date">Sorteio às 20h de terça, 15/09</div>
+          </div>
+          <div class="hero-novo-countdown-box">
+            <div class="indep-countdown-header hero-novo-countdown-label">Encerra em</div>
+            <div class="hero-novo-timer">
+              <div class="hero-novo-timer-unit"><div class="num" id="indep-days-dash">--</div><div class="lbl">dias</div></div>
+              <div class="hero-novo-timer-sep">:</div>
+              <div class="hero-novo-timer-unit"><div class="num" id="indep-hours-dash">--</div><div class="lbl">horas</div></div>
+              <div class="hero-novo-timer-sep">:</div>
+              <div class="hero-novo-timer-unit"><div class="num" id="indep-minutes-dash">--</div><div class="lbl">min</div></div>
+              <div class="hero-novo-timer-sep">:</div>
+              <div class="hero-novo-timer-unit"><div class="num" id="indep-seconds-dash">--</div><div class="lbl">seg</div></div>
+            </div>
+            <div class="hero-novo-footnote">Não acumula: se ninguém fizer 15 pontos, o prêmio é dividido entre quem fizer 14.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-novo-photo">
+      <img src="/static/lotofacil_hero_image.jpg" alt="Lotofácil da Independência">
+    </div>
+
+    <div class="hero-novo-stats">
+      <div class="hero-novo-stat"><div class="hero-novo-stat-num">9 dezenas</div><div class="hero-novo-stat-desc">repetem do concurso anterior, em média, a cada sorteio</div></div>
+      <div class="hero-novo-stat"><div class="hero-novo-stat-num">8 / 7</div><div class="hero-novo-stat-desc">proporção ímpar/par mais frequente na história da Lotofácil</div></div>
+      <div class="hero-novo-stat"><div class="hero-novo-stat-num">até 70%</div><div class="hero-novo-stat-desc">de economia ao usar fechamentos no volante</div></div>
+    </div>
+  </div>
+</section>
+
+        <!-- ============================================================
+             HERO BANNER DE PERSUASÃO & SEDUÇÃO DO LEAD
+             ============================================================ -->
+        <section class="hero-banner">
+            <div class="hero-header-tag">
+                <span>⚡</span> Inteligência Artificial & Estatística Caixa
+            </div>
+
+            <h1 class="hero-title">
+                Gere Palpites Inteligentes com <span class="title-accent">Estatística Real</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Elimine apostas cegas e jogos aleatórios. Nossos algoritmos analisam o histórico oficial completo das loterias da Caixa para gerar combinações matematicamente equilibradas, fechamentos combinatórios e recomendações estratégicas com o Agente IA.
+            </p>
+
+            <!-- Cards de Oferta: Acesso 24 Horas R$ 5,00 vs VIP Mensal R$ 49,90 -->
+            <div class="hero-offers-grid">
+                <!-- Oferta 1: Acesso 24 Horas R$ 5,00 -->
+                <div class="offer-card avulso">
+                    <div>
+                        <div class="offer-header">
+                            <h3 class="offer-title">🪙 Acesso 24 Horas</h3>
+                            <span class="offer-pill green">Teste Hoje</span>
+                        </div>
+                        <div class="offer-price">
+                            R$ 5,00 <span>/ 24 horas</span>
+                        </div>
+                        <ul class="offer-benefits">
+                            <li>✅ <strong>Preço Único de R$ 5,00</strong> para qualquer loteria</li>
+                            <li>✅ Gera até 20 palpites otimizados para o concurso</li>
+                            <li>✅ Análise estatística e parecer com o Agente IA</li>
+                            <li>✅ Sem assinatura ou fidelidade — use quando quiser</li>
+                        </ul>
+                    </div>
+                    <button class="btn-offer btn-offer-green" onclick="abrirModalCompraRapida('avulso', 5.00, 'Acesso 24 Horas (R$ 5,00)')">
+                        🪙 Testar Agora por R$ 5,00
+                    </button>
+                </div>
+
+                <!-- Oferta 2: VIP Ilimitado R$ 49,90 -->
+                <div class="offer-card vip">
+                    <div>
+                        <div class="offer-header">
+                            <h3 class="offer-title">👑 VIP Ilimitado</h3>
+                            <span class="offer-pill gold">Mais Vantajoso</span>
+                        </div>
+                        <div class="offer-price">
+                            R$ 49,90 <span>/ mês</span>
+                        </div>
+                        <ul class="offer-benefits">
+                            <li>👑 <strong>Acesso total e livre a todas as 9 loterias</strong></li>
+                            <li>👑 Fechamentos combinatórios e volantes ilimitados</li>
+                            <li>👑 Consultoria em tempo real com o Consultor IA</li>
+                            <li>👑 Conferência automática de acertos e prêmios</li>
+                        </ul>
+                    </div>
+                    <button class="btn-offer btn-offer-gold" onclick="abrirModalCompraRapida('vip_mensal', 49.90, 'Plano VIP Ilimitado (R$ 49,90)')">
+                        👑 Ativar Acesso VIP (R$ 49,90)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selos de Confiança -->
+            <div class="hero-trust-badges">
+                <div class="trust-item">
+                    <span>⚡</span> <strong>Ativação Instantânea:</strong> PIX liberado em 3 segundos
+                </div>
+                <div class="trust-item">
+                    <span>🔒</span> <strong>Pagamento Seguro:</strong> InfinitePay & Criptografia SSL
+                </div>
+                <div class="trust-item">
+                    <span>🏛️</span> <strong>Resultados Oficiais:</strong> Sincronizados com a Caixa
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             SELEÇÃO DAS 9 LOTERIAS OFICIAIS DA CAIXA
+             ============================================================ -->
+        <div class="section-header">
+            <h2>Escolha a sua Loteria para Analisar</h2>
+            <p>Selecione uma das 9 modalidades oficiais para explorar frequências, gerar fechamentos e testar palpites</p>
+        </div>
+
+        <div class="loterias-grid">
+            {% for loteria in loterias %}
+            <div class="loteria-card" style="border-top: 3px solid {{ loteria.theme.cor }};">
+                <div class="loteria-card-glow" style="background: {{ loteria.theme.cor_gradiente }};"></div>
+
+                <div>
+                    <div class="loteria-card-header">
+                        <div class="loteria-brand">
+                            <div class="loteria-icon-box" style="background: {{ loteria.theme.cor_gradiente }}; box-shadow: 0 4px 12px {{ loteria.theme.cor_glow }};">
+                                {{ loteria.theme.icone }}
+                            </div>
+                            <div>
+                                <h3 class="loteria-name">{{ loteria.nome }}</h3>
+                                <span style="font-size: 0.78rem; color: #cbd5e1;">{{ loteria.config.universo }} dezenas no volante</span>
+                            </div>
+                        </div>
+
+                        <span class="loteria-tag" style="background: {{ loteria.theme.tag_bg }}; color: {{ loteria.theme.tag_cor }}; border: 1px solid {{ loteria.theme.tag_cor }}44;">
+                            {{ loteria.theme.tag }}
+                        </span>
+                    </div>
+
+                    <ul class="loteria-specs">
+                        <li class="loteria-spec-row">
+                            <span>Sorteados por Concurso:</span>
+                            <span class="loteria-spec-badge">{{ loteria.config.sorteados }} números</span>
+                        </li>
+                        <li class="loteria-spec-row">
+                            <span>Aposta Oficial Caixa:</span>
+                            <strong>{{ loteria.config.minimo_aposta }} a {{ loteria.config.maximo_aposta }} dezenas</strong>
+                        </li>
+                        <li class="loteria-spec-row">
+                            <span>Custo Mínimo Caixa:</span>
+                            <strong>R$ {{ "%.2f"|format(loteria.config.custo_minimo) }}</strong>
+                        </li>
+                        <li class="loteria-spec-row">
+                            <span>Dias de Sorteio:</span>
+                            <span style="color: {{ loteria.theme.tag_cor }}; font-weight: 700;">{{ loteria.theme.dias_resumo }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <a href="/analise/{{ loteria.id }}" class="btn-analisar-loteria" style="background: {{ loteria.theme.cor_gradiente }};">
+                    <span>Analisar {{ loteria.nome }}</span>
+                    <span>→</span>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ============================================================
+             FOOTER & LGPD
+             ============================================================ -->
+        <footer>
+            <div class="footer-links">
+                <a href="/planos">Planos & Preços (R$ 5,00 e R$ 49,90)</a>
+                <span>•</span>
+                <a href="/termos" target="_blank">Termos de Uso</a>
+                <span>•</span>
+                <a href="/privacidade" target="_blank">Política de Privacidade</a>
+                <span>•</span>
+                <a href="/blog">Blog e Artigos</a>
+                <span>•</span>
+                <a href="/minha-conta">Meus Dados / Minha Conta</a>
+            </div>
+            <p style="margin-bottom: 8px;">
+                ⚠️ <strong>Aviso Legal:</strong> O Cálculo da Sorte é uma ferramenta de estudo probabilístico e geração de palpites inteligentes. Loterias são jogos de azar estocásticos. Jogue com responsabilidade e moderação (+18).
+            </p>
+            <p style="color: #64748b; font-size: 0.8rem;">
+                © 2026 Cálculo da Sorte &bull; Todos os direitos reservados &bull; Sincronizado com os dados oficiais da Caixa Econômica Federal.
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- ============================================================
+         MODAL DE ESCOLHA DE FORMA DE PAGAMENTO (INFINITEPAY OU PIX)
+         ============================================================ -->
+    <div class="checkout-modal-backdrop" id="modal-escolha-pagamento">
+        <div class="checkout-modal">
+            <button class="checkout-modal-close" onclick="fecharModalEscolha()">&times;</button>
+            <div style="font-size: 2.8rem; margin-bottom: 8px;">⚡</div>
+            <h3 style="font-size: 1.4rem; color: white; margin-bottom: 6px;" id="modal-escolha-titulo">Finalizar Pedido</h3>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399; margin-bottom: 16px;" id="modal-escolha-valor">R$ 5,00</div>
+
+            <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 22px; line-height: 1.5;">
+                Escolha a forma mais conveniente para liberação imediata em sua conta:
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Opção 1: InfinitePay (Cartão ou PIX Direto) -->
+                <button class="btn-offer btn-offer-green" id="btn-infinite-dashboard" onclick="executarCheckoutInfinitePay()">
+                    <span>⚡ Pagar com InfinitePay (PIX / Cartão)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL PIX QR CODE & COPIA E COLA
+         ============================================================ -->
+    <div class="checkout-modal-backdrop" id="modal-pix-qrcode">
+        <div class="checkout-modal">
+            <button class="checkout-modal-close" onclick="fecharModalPix()">&times;</button>
+            <h3 style="font-size: 1.35rem; color: white; margin-bottom: 4px;" id="pix-modal-titulo">Pagamento Instantâneo PIX</h3>
+            <div style="color: #34d399; font-weight: 900; font-size: 1.45rem; margin-bottom: 12px;" id="pix-modal-valor">R$ 5,00</div>
+
+            <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px;">
+                Abra o app do seu banco e aponte a câmera ou use o <strong>PIX Copia e Cola</strong>:
+            </p>
+
+            <div class="pix-qrcode-box" id="pix-qrcode-container" style="background: white; padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; min-width: 190px; min-height: 190px; margin: 0 auto 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <div id="pix-qrcode-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; height: 170px; color: #475569; font-size: 0.85rem;">
+                    <div style="font-size: 2rem; margin-bottom: 6px;">⏳</div>
+                    <span style="font-weight: 600;">Gerando QR Code PIX oficial...</span>
+                </div>
+                <img id="pix-qrcode-img" src="" alt="QR Code PIX Oficial" style="display: none; width: 170px; height: 170px; border-radius: 6px;">
+            </div>
+
+            <div style="font-size: 0.8rem; color: #cbd5e1; text-align: left; margin-bottom: 6px; font-weight: 600;">Código PIX Copia e Cola:</div>
+            <div class="pix-copia-cola-box" id="pix-copia-cola-texto">Gerando código PIX...</div>
+
+            <button class="btn-offer btn-offer-green" onclick="copiarPixCodigoDashboard()" style="margin-bottom: 12px;">
+                📋 Copiar Código PIX
+            </button>
+
+            <button class="btn-offer btn-offer-gold" id="btn-confirmar-pix-dashboard" onclick="confirmarPixDashboard()">
+                ✅ Já Paguei / Liberar Acesso Agora
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         LOGICA DE CHECKOUT E INTERATIVIDADE
+         ============================================================ -->
+    
+{% endblock %}
+
+{% block extra_js %}
+<script>
+        const IS_AUTHENTICATED = {{ 'true' if current_user else 'false' }};
+        let compraAtual = { tipo: 'avulso', valor: 5.00, titulo: 'Acesso 24 Horas (R$ 5,00)' };
+        let pagamentoAtualId = null;
+
+        function abrirModalCompraRapida(tipo, valor, titulo) {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seus palpites, por favor entre na sua conta ou cadastre-se.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            compraAtual = { tipo, valor, titulo };
+            document.getElementById('modal-escolha-titulo').textContent = titulo;
+            document.getElementById('modal-escolha-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+            document.getElementById('modal-escolha-pagamento').style.display = 'flex';
+        }
+
+        function fecharModalEscolha() {
+            document.getElementById('modal-escolha-pagamento').style.display = 'none';
+        }
+
+        function fecharModalPix() {
+            document.getElementById('modal-pix-qrcode').style.display = 'none';
+        }
+
+        async function parseJsonResponse(res, redirectPath = '/dashboard') {
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
+            }
+            if (res.status === 401 || (data && data.requer_login)) {
+                alert('Sua sessão expirou ou é necessário entrar na sua conta. Redirecionando...');
+                window.location.href = '/login?next=' + encodeURIComponent(redirectPath);
+                return null;
+            }
+            if (!data) {
+                throw new Error(res.statusText || 'Resposta inesperada do servidor.');
+            }
+            return data;
+        }
+
+        // Checkout InfinitePay com redirecionamento direto
+        async function executarCheckoutInfinitePay() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            const btn = document.getElementById('btn-infinite-dashboard');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ <em>Conectando à InfinitePay...</em>';
+
+            try {
+                const res = await fetch('/api/checkout/infinitepay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor, redirect_path: '/dashboard' })
+                });
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
+                if (data.sucesso && data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    alert('Não foi possível iniciar InfinitePay: ' + (data.erro || 'Tente novamente.'));
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                }
+            } catch (e) {
+                alert('Erro ao conectar com InfinitePay: ' + e.message);
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+
+        // Checkout PIX Direto no Modal com QR Code Real
+        async function executarCheckoutPixDireto() {
+            if (!IS_AUTHENTICATED) {
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso, por favor entre na sua conta.');
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            fecharModalEscolha();
+            document.getElementById('pix-modal-titulo').textContent = compraAtual.titulo;
+            document.getElementById('pix-modal-valor').textContent = 'R$ ' + compraAtual.valor.toFixed(2).replace('.', ',');
+            document.getElementById('pix-copia-cola-texto').textContent = 'Gerando cobrança PIX oficial...';
+            const qrImg = document.getElementById('pix-qrcode-img');
+            const qrLoading = document.getElementById('pix-qrcode-loading');
+            if (qrImg) qrImg.style.display = 'none';
+            if (qrLoading) qrLoading.style.display = 'flex';
+            document.getElementById('modal-pix-qrcode').style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/checkout/pix', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo: compraAtual.tipo, valor: compraAtual.valor })
+                });
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
+                if (data.sucesso) {
+                    pagamentoAtualId = data.pagamento.id;
+                    document.getElementById('pix-copia-cola-texto').textContent = data.pagamento.pix_copia_cola;
+                    const qrSrc = data.pix_qr_code_base64 || (data.pagamento && data.pagamento.pix_qr_code_base64);
+                    if (qrSrc && qrImg) {
+                        qrImg.src = qrSrc;
+                        qrImg.style.display = 'block';
+                        if (qrLoading) qrLoading.style.display = 'none';
+                    }
+                } else {
+                    alert('Erro ao gerar cobrança PIX: ' + (data.erro || 'Falha'));
+                }
+            } catch (e) {
+                alert('Erro ao gerar PIX: ' + e.message);
+            }
+        }
+
+        function copiarPixCodigoDashboard() {
+            const codigo = document.getElementById('pix-copia-cola-texto').textContent;
+            navigator.clipboard.writeText(codigo).then(() => {
+                alert('Código PIX copiado com sucesso! Abra seu aplicativo bancário e utilize o PIX Copia e Cola.');
+            });
+        }
+
+        async function confirmarPixDashboard() {
+            if (!pagamentoAtualId) return;
+            const btn = document.getElementById('btn-confirmar-pix-dashboard');
+            btn.innerHTML = '⏳ <em>Validando pagamento...</em>';
+
+            try {
+                const res = await fetch(`/api/checkout/confirmar/${pagamentoAtualId}`, { method: 'POST' });
+                const data = await parseJsonResponse(res, '/dashboard');
+                if (!data) return;
+
+                if (data.sucesso) {
+                    alert('🎉 Parabéns! Pagamento aprovado com sucesso! Seu acesso já foi liberado.');
+                    window.location.reload();
+                } else {
+                    alert('Status: ' + (data.erro || 'Aguardando compensação do PIX. Se já pagou, aguarde alguns segundos.'));
+                    btn.innerHTML = '✅ Já Paguei / Liberar Acesso Agora';
+                }
+            } catch (e) {
+                alert('Erro na confirmação: ' + e.message);
+                btn.innerHTML = '✅ Já Paguei / Liberar Acesso Agora';
+            }
+        }
+
+        // Verificação se retornou da InfinitePay com sucesso
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('checkout') === 'sucesso') {
+                const pId = urlParams.get('payment_id');
+                if (pId) {
+                    fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
+                        .then(r => parseJsonResponse(r, '/dashboard'))
+                        .then(data => {
+                            if (!data) return;
+                            alert('🎉 Parabéns! Seu pagamento foi confirmado com sucesso e seu acesso está 100% liberado!');
+                            window.location.href = '/dashboard';
+                        })
+                        .catch(() => {
+                            window.location.href = '/dashboard';
+                        });
+                } else {
+                    alert('🎉 Pagamento concluído com sucesso!');
+                    window.location.href = '/dashboard';
+                }
+            }
+        });
+
+        // Contador Regressivo da Lotofácil da Independência (15/09/2026 às 20:00 Horário de Brasília)
+        (function() {
+            const targetDate = new Date('2026-09-15T20:00:00-03:00').getTime();
+
+            function updateCountdownDash() {
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                const dEl = document.getElementById('indep-days-dash');
+                const hEl = document.getElementById('indep-hours-dash');
+                const mEl = document.getElementById('indep-minutes-dash');
+                const sEl = document.getElementById('indep-seconds-dash');
+
+                if (!dEl || !hEl || !mEl || !sEl) return;
+
+                if (diff <= 0) {
+                    dEl.innerText = '00';
+                    hEl.innerText = '00';
+                    mEl.innerText = '00';
+                    sEl.innerText = '00';
+                    const header = document.querySelector('.hero-independencia-section .indep-countdown-header');
+                    if (header) header.innerHTML = '🔴 SORTEIO EM ANDAMENTO OU CONCLUÍDO!';
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                dEl.innerText = String(days).padStart(2, '0');
+                hEl.innerText = String(hours).padStart(2, '0');
+                mEl.innerText = String(minutes).padStart(2, '0');
+                sEl.innerText = String(seconds).padStart(2, '0');
+            }
+
+            updateCountdownDash();
+            setInterval(updateCountdownDash, 1000);
+        })();
+    </script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.loteria-form');
+        forms.forEach(form => {
+            const filterGroups = form.querySelectorAll('.filter-group:not(:first-child)');
+            if(filterGroups.length > 0) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'filtros-avancados-container';
+                
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'filtros-toggle';
+                toggle.innerHTML = '⚙️ Filtros Matemáticos Avançados <span>▼</span>';
+                
+                const content = document.createElement('div');
+                content.className = 'filtros-content';
+                
+                filterGroups.forEach(fg => content.appendChild(fg));
+                
+                wrapper.appendChild(toggle);
+                wrapper.appendChild(content);
+                
+                const submitBtn = form.querySelector('.btn-gerar');
+                if (submitBtn) form.insertBefore(wrapper, submitBtn);
+                
+                toggle.addEventListener('click', () => {
+                    content.classList.toggle('open');
+                    toggle.querySelector('span').innerHTML = content.classList.contains('open') ? '▲' : '▼';
+                });
+            }
+            
+            form.addEventListener('submit', () => {
+                if (typeof showLoading === 'function') {
+                    showLoading('A IA está calculando e eliminando combinações improváveis...');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
