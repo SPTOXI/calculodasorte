@@ -489,8 +489,8 @@ def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
             return False
             
         # Se a última atualização foi ontem, SÓ tenta sincronizar se 
-        # já estivermos no horário de liberação dos resultados (após as 20:30)
-        if agora.hour >= 20 and (agora.hour > 20 or agora.minute >= 30) and atualizado_dt.date() < agora.date():
+        # já tiver passado das 23:00 de hoje (horário em que a Caixa já atualizou tudo)
+        if agora.hour >= 23 and atualizado_dt.date() < agora.date():
             return True
             
         return False
