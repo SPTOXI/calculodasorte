@@ -485,8 +485,8 @@
                                         <strong>R$ {{ "%.2f"|format(p.valor)|replace('.', ',') }}</strong>
                                     </td>
                                     <td data-label="Status">
-                                        <span class="badge {{ 'badge-success' if p.status == 'aprovado' else 'badge-warning' }}">
-                                            {{ '✅ Aprovado' if p.status == 'aprovado' else '⏳ Pendente' }}
+                                        <span class="badge {% if p.status == 'aprovado' %}badge-success{% elif p.status == 'cancelado' %}badge-danger{% else %}badge-warning{% endif %}">
+                                            {% if p.status == 'aprovado' %}✅ Aprovado{% elif p.status == 'cancelado' %}❌ Cancelado{% else %}⏳ Pendente{% endif %}
                                         </span>
                                     </td>
                                     <td data-label="Data" style="font-size: 0.85rem; color: #64748b;">
@@ -496,14 +496,19 @@
                                         {% set txid = p.pix_txid or p.order_nsu or '-' %}
                                         <span class="col-txid" title="{{ txid }}">{{ txid }}</span>
                                     </td>
-                                    <td data-label="Ações">
-                                        {% if p.status != 'aprovado' %}
+                                    <td data-label="Ações" style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                                        {% if p.status == 'cancelado' %}
+                                            <span style="color: #ef4444; font-weight: 700; font-size: 0.85rem; margin-right: auto;">Cancelado</span>
+                                        {% elif p.status != 'aprovado' %}
                                             <button class="btn-primary" style="padding: 7px 14px; font-size: 0.82rem; background: #059669; white-space: nowrap;" onclick="aprovarPagamentoAdmin({{ p.id }})">
                                                 ✅ Aprovar
                                             </button>
                                         {% else %}
-                                            <span style="color: #10b981; font-weight: 700; font-size: 0.85rem;">Liberado</span>
+                                            <span style="color: #10b981; font-weight: 700; font-size: 0.85rem; margin-right: auto;">Liberado</span>
                                         {% endif %}
+                                        <button class="btn-delete-sm" style="padding: 7px 14px; font-size: 0.82rem; border-radius: 8px; flex-shrink: 0;" onclick="removerPagamentoAdmin({{ p.id }})" title="Apagar registro de pagamento">
+                                            🗑️ Remover
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -1299,23 +1304,30 @@
 
                 let html = '';
                 data.pagamentos.forEach(p => {
-                    const statusClass = p.status === 'aprovado' ? 'badge-success' : 'badge-warning';
-                    const statusTexto = p.status === 'aprovado' ? '✅ Aprovado' : '⏳ Pendente';
+                    const statusClass = p.status === 'aprovado' ? 'badge-success' : (p.status === 'cancelado' ? 'badge-danger' : 'badge-warning');
+                    const statusTexto = p.status === 'aprovado' ? '✅ Aprovado' : (p.status === 'cancelado' ? '❌ Cancelado' : '⏳ Pendente');
                     const tipoLabel = p.tipo === 'vip_mensal' ? '👑 VIP Mensal (30d)' : '🪙 Acesso 24 Horas';
                     const dataFormatada = p.created_at || '-';
                     const apostador = p.user_email ? `<div style="text-align: right; line-height: 1.3;"><strong>${p.user_name || 'Apostador'}</strong><br><small style="color: #64748b; font-size: 0.78rem; word-break: break-all;">${p.user_email}</small></div>` : `<span>Usuário #${p.user_id}</span>`;
                     const txid = p.pix_txid || p.order_nsu || '-';
 
-                    let acaoBtn = '';
-                    if (p.status !== 'aprovado') {
-                        acaoBtn = `
+                    let acaoBtn = '<div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">';
+                    if (p.status === 'cancelado') {
+                        acaoBtn += '<span style="color: #ef4444; font-weight: 700; font-size: 0.85rem; margin-right: auto;">Cancelado</span>';
+                    } else if (p.status !== 'aprovado') {
+                        acaoBtn += `
                             <button class="btn-primary" style="padding: 7px 14px; font-size: 0.82rem; background: #059669; white-space: nowrap;" onclick="aprovarPagamentoAdmin(${p.id})">
                                 ✅ Aprovar
                             </button>
                         `;
                     } else {
-                        acaoBtn = '<span style="color: #10b981; font-weight: 700; font-size: 0.85rem;">Liberado</span>';
+                        acaoBtn += '<span style="color: #10b981; font-weight: 700; font-size: 0.85rem; margin-right: auto;">Liberado</span>';
                     }
+                    acaoBtn += `
+                        <button class="btn-delete-sm" style="padding: 7px 14px; font-size: 0.82rem; border-radius: 8px; flex-shrink: 0;" onclick="removerPagamentoAdmin(${p.id})" title="Apagar registro de pagamento">
+                            🗑️ Remover
+                        </button>
+                    </div>`;
 
                     html += `
                         <tr>
@@ -1354,6 +1366,23 @@
                 }
             } catch (e) {
                 showToast('Erro: ' + e.message, 'error');
+            }
+        }
+
+        async function removerPagamentoAdmin(paymentId) {
+            if (!confirm(`Deseja realmente REMOVER o pagamento #${paymentId}? Esta ação não pode ser desfeita.`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/pagamentos/${paymentId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok && data.sucesso) {
+                    showToast(data.mensagem, 'success');
+                    carregarPagamentos();
+                } else {
+                    showToast(data.erro || 'Erro ao remover pagamento', 'error');
+                }
+            } catch (e) {
+                showToast('Erro de conexão: ' + e.message, 'error');
             }
         }
 

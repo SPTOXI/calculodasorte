@@ -1582,6 +1582,20 @@ def api_admin_aprovar_pagamento(payment_id: int):
     return jsonify({'erro': 'Pagamento não encontrado ou já aprovado'}), 400
 
 
+@app.route('/api/admin/pagamentos/<int:payment_id>', methods=['DELETE'])
+@admin_required
+def api_admin_excluir_pagamento(payment_id: int):
+    """Exclui um pagamento no painel admin"""
+    try:
+        sucesso = database.delete_payment(payment_id)
+        if sucesso:
+            return jsonify({'sucesso': True, 'mensagem': f'Pagamento #{payment_id} removido com sucesso!'})
+        return jsonify({'erro': 'Pagamento não encontrado'}), 400
+    except Exception as e:
+        print(f"[ADMIN PAGAMENTOS] Erro ao excluir pagamento {payment_id}: {e}")
+        return jsonify({'sucesso': False, 'erro': str(e)}), 500
+
+
 @app.route('/api/admin/config-pix', methods=['GET', 'POST'])
 @admin_required
 def api_admin_config_pix():

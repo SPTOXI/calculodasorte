@@ -1051,6 +1051,15 @@ def get_all_payments() -> List[Dict[str, Any]]:
     if os.environ.get('VERCEL') or blob_storage.get_blob_token():
         sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
+        # Cancela pagamentos pendentes criados há mais de 24 horas
+        limite_tempo = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute('''
+            UPDATE payments
+            SET status = 'cancelado'
+            WHERE status = 'pendente' AND created_at < %s
+        ''', (limite_tempo,))
+        conn.commit()
+
         rows = conn.execute('''
             SELECT p.*, u.email as user_email, u.name as user_name
             FROM payments p
@@ -1058,6 +1067,14 @@ def get_all_payments() -> List[Dict[str, Any]]:
             ORDER BY p.id DESC
         ''').fetchall()
         return [dict(r) for r in rows]
+
+def delete_payment(payment_id: int) -> bool:
+    """Exclui um pagamento do banco de dados (ex: cancelados ou rejeitados)"""
+    with get_db_connection() as conn:
+        conn.execute('DELETE FROM payments WHERE id = %s', (payment_id,))
+        conn.commit()
+    sync_db_to_cloud()
+    return True
 
 
 # ==========================================
