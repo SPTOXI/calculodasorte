@@ -264,6 +264,11 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
 
     session = _get_session()
     
+    # Registra a tentativa para respeitar o cooldown de 30 min (mesmo se der erro)
+    meta = carregar_meta(loteria_type)
+    meta['ultima_tentativa'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    salvar_meta(loteria_type, meta)
+    
     # 1. Buscar último concurso na Caixa
     ultimo_dados = consultar_caixa(slug)
     if not ultimo_dados or not ultimo_dados.get('numero'):
@@ -275,7 +280,6 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
     
     # 2. Carregar dados locais existentes
     historico_local = carregar_historico_local(loteria_type)
-    meta = carregar_meta(loteria_type)
     ultimo_local = meta.get('ultimo_concurso')
     
     novos_concursos = []
@@ -449,9 +453,9 @@ def calcular_segundos_proximo_checkpoint() -> tuple[float, str]:
 
 def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
     """
-    Verifica de forma estritamente conservadora se uma loteria necessita de sincronização.
-    Evita excesso de requisições e risco de bloqueio: só sincroniza se não houver histórico
-    ou se já tiver passado das 23:00h do dia atual sem atualização.
+    Verifica se a loteria precisa de atualização automática.
+    Bloqueia verificações fora do horário de sorteios (madrugada/dia)
+    e implementa cooldown para evitar bloqueios da API da Caixa.
     """
     meta = carregar_meta(loteria_type)
     if not meta or not meta.get('ultimo_concurso'):
@@ -461,19 +465,33 @@ def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
     if not atualizado_em_str:
         return True
         
+    # Cooldown de tentativas (seja sucesso ou falha)
+    ultima_tentativa_str = meta.get('ultima_tentativa')
+    if ultima_tentativa_str:
+        try:
+            ultima_dt = datetime.strptime(ultima_tentativa_str, '%d/%m/%Y %H:%M:%S')
+            if (datetime.now() - ultima_dt) < timedelta(minutes=30):
+                return False
+        except Exception:
+            pass
+            
     try:
         atualizado_dt = datetime.strptime(atualizado_em_str, '%d/%m/%Y %H:%M:%S')
         agora = datetime.now()
-        # Se foi atualizado hoje, não faz nova solicitação
+        diferenca = agora - atualizado_dt
+        
+        # Se tem mais de 24 horas que não atualiza com sucesso, permite a tentativa
+        if diferenca > timedelta(hours=24):
+            return True
+            
+        # Se foi atualizado com sucesso hoje, não tenta de novo
         if atualizado_dt.date() == agora.date():
             return False
             
-        # Se for no dia seguinte ou após as 23:00h do dia atual
-        if agora.hour >= 23 or agora.date() > atualizado_dt.date():
-            diferenca = agora - atualizado_dt
-            # Proteção adicional: no mínimo 2 horas desde a última verificação
-            if diferenca > timedelta(hours=2):
-                return True
+        # Se a última atualização foi ontem, SÓ tenta sincronizar se 
+        # já estivermos no horário de liberação dos resultados (após as 20:30)
+        if agora.hour >= 20 and (agora.hour > 20 or agora.minute >= 30) and atualizado_dt.date() < agora.date():
+            return True
             
         return False
     except Exception:
