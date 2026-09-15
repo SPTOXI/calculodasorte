@@ -557,6 +557,20 @@ Exemplo para {{ config.nome }}:
                         </div>
                     </div>
                 </div>
+
+                {% if loteria.value == 'timemania' %}
+                <div class="resultado-section">
+                    <h3>🏆 Time do Coração Mais Sorteado</h3>
+                    <p style="color: #5B6B82; font-size: 0.9rem; margin: 4px 0 14px;">
+                        Cada concurso é independente e o time sorteado é imponderável. Ainda assim, pela Lei dos
+                        Grandes Números, quanto mais concursos se acumulam, mais a frequência observada tende a
+                        refletir a chance real de cada time — veja abaixo o ranking do mais para o menos sorteado.
+                    </p>
+                    <div id="ranking-times-coracao" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="text-align: center; color: #5B6B82; padding: 16px;">Carregando ranking...</div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -676,14 +690,18 @@ Exemplo para {{ config.nome }}:
                 if (result.historico && result.historico.length > 0) {
                     historicoCaixaOficial = result.historico;
                     const meta = result.meta || {};
-                    
+
                     const ultimoNum = meta.ultimo_concurso ? `#${meta.ultimo_concurso}` : `#${result.concursos_count}`;
                     const dataApuracao = meta.data_apuracao ? ` em ${meta.data_apuracao}` : '';
                     const atualizadoEm = meta.atualizado_em ? ` (Última sincronização: ${meta.atualizado_em})` : '';
 
-                    document.getElementById('caixa-status-texto').innerHTML = 
+                    document.getElementById('caixa-status-texto').innerHTML =
                         `Último concurso oficial apurado: <strong>${ultimoNum}${dataApuracao}</strong> | <strong>${result.concursos_count} concursos</strong> no banco de dados${atualizadoEm}.`;
-                    
+
+                    if (loteriaType === 'timemania') {
+                        renderizarRankingTimesCoracao(result.times_coracao || []);
+                    }
+
                     // Renderiza a lista visual dos concursos da Caixa
                     renderizarListaConcursosCaixa(result.historico, meta);
 
@@ -735,6 +753,47 @@ Exemplo para {{ config.nome }}:
                     </div>
                 `;
             }
+            container.innerHTML = html;
+        }
+
+        // Ranking do "Time do Coração" (exclusivo da Timemania): do mais para o menos sorteado
+        function renderizarRankingTimesCoracao(timesCoracao) {
+            const container = document.getElementById('ranking-times-coracao');
+            if (!container) return;
+
+            const contagem = {};
+            let totalValidos = 0;
+            (timesCoracao || []).forEach(nome => {
+                if (!nome) return;
+                contagem[nome] = (contagem[nome] || 0) + 1;
+                totalValidos++;
+            });
+
+            const ranking = Object.keys(contagem)
+                .map(nome => ({ nome, vezes: contagem[nome] }))
+                .sort((a, b) => b.vezes - a.vezes || a.nome.localeCompare(b.nome));
+
+            if (ranking.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #5B6B82; padding: 16px;">Ainda não há dados suficientes do Time do Coração para gerar o ranking. Assim que novos concursos forem sincronizados, o ranking aparece aqui.</div>';
+                return;
+            }
+
+            const maxVezes = ranking[0].vezes;
+            let html = '';
+            ranking.forEach((item, i) => {
+                const pct = totalValidos > 0 ? ((item.vezes / totalValidos) * 100).toFixed(1) : '0.0';
+                const larguraBarra = maxVezes > 0 ? Math.max(6, (item.vezes / maxVezes) * 100) : 0;
+                html += `
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: ${i < 3 ? 'rgba(0,70,173,0.05)' : '#FFFFFF'}; border: 1px solid var(--card-border); border-radius: 8px;">
+                        <div style="min-width: 28px; font-weight: 800; color: ${i === 0 ? '#C97400' : '#5B6B82'}; font-size: 0.95rem;">${i + 1}º</div>
+                        <div style="flex: 1; min-width: 140px; font-weight: 700; color: var(--text-main);">${item.nome}</div>
+                        <div style="flex: 2; min-width: 100px; background: rgba(10,26,63,0.06); border-radius: 6px; overflow: hidden; height: 10px;">
+                            <div style="width: ${larguraBarra}%; height: 100%; background: linear-gradient(90deg, #0046AD, #2E7DE1);"></div>
+                        </div>
+                        <div style="min-width: 90px; text-align: right; font-size: 0.88rem; color: #5B6B82;"><strong style="color: #0046AD;">${item.vezes}x</strong> (${pct}%)</div>
+                    </div>
+                `;
+            });
             container.innerHTML = html;
         }
 

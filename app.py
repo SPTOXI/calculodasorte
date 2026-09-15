@@ -1262,11 +1262,14 @@ def api_carregar_historico(loteria_type: str):
 
     historico = carregar_historico(loteria_type)
     meta = updater.carregar_meta(loteria_type)
-    return jsonify({
+    resposta = {
         'historico': historico,
         'concursos_count': len(historico),
         'meta': meta
-    })
+    }
+    if loteria_type == 'timemania':
+        resposta['times_coracao'] = updater.carregar_times_local(loteria_type)
+    return jsonify(resposta)
 
 
 @app.route('/api/sincronizar/<loteria_type>', methods=['POST'])
