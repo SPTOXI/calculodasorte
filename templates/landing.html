@@ -217,6 +217,27 @@
         .loteria-card-details{font-size:0.9rem;color:var(--text-muted);margin-bottom:20px}
         .loteria-card-details li{list-style:none;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 
+        /* Botão "Analisar" na cor oficial de cada loteria */
+        .btn-loteria{background:transparent}
+        .btn-mega{border-color:#17845E !important;color:#17845E !important}
+        .btn-mega:hover{background:rgba(23,132,94,0.08)}
+        .btn-lotofacil{border-color:#7A0774 !important;color:#7A0774 !important}
+        .btn-lotofacil:hover{background:rgba(122,7,116,0.08)}
+        .btn-quina{border-color:#2B0A6B !important;color:#2B0A6B !important}
+        .btn-quina:hover{background:rgba(43,10,107,0.08)}
+        .btn-lotomania{border-color:#C96700 !important;color:#C96700 !important}
+        .btn-lotomania:hover{background:rgba(201,103,0,0.08)}
+        .btn-milionaria{border-color:#00204B !important;color:#00204B !important}
+        .btn-milionaria:hover{background:rgba(0,32,75,0.08)}
+        .btn-diadesorte{border-color:#8A6008 !important;color:#8A6008 !important}
+        .btn-diadesorte:hover{background:rgba(138,96,8,0.08)}
+        .btn-duplasena{border-color:#8E1020 !important;color:#8E1020 !important}
+        .btn-duplasena:hover{background:rgba(142,16,32,0.08)}
+        .btn-timemania{border-color:#036B54 !important;color:#036B54 !important}
+        .btn-timemania:hover{background:rgba(3,107,84,0.08)}
+        .btn-supersete{border-color:#5C7A1B !important;color:#5C7A1B !important}
+        .btn-supersete:hover{background:rgba(92,122,27,0.08)}
+
         .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:30px}
         .feature-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:36px 28px;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(10,26,63,0.05)}
         .feature-icon{width:60px;height:60px;border-radius:12px;background:rgba(0,70,173,0.1);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:20px;color:var(--primary)}
@@ -370,26 +391,17 @@
             <span>✨</span> CONCURSO ESPECIAL &bull; R$ 300 MILHÕES
         </div>
 
-        <div class="indep-subtitle-top">
-            📅 GRANDE SORTEIO &bull; TERÇA-FEIRA, 15/09 ÀS 20H
-        </div>
-
         <h1 class="indep-main-title">
             LOTOFÁCIL DA <br class="indep-br-mobile"><span class="indep-title-gold">INDEPENDÊNCIA</span>
         </h1>
 
         <div class="indep-prize-card">
-            <span class="indep-prize-tag">MAIOR PRÊMIO DO ANO NO BRASIL</span>
+            <span class="indep-prize-tag">📅 SORTEIO TERÇA-FEIRA, 15/09 ÀS 20H</span>
             <div class="indep-prize-amount">R$ 300 MILHÕES</div>
             <div class="indep-nao-acumula-badge">
-                🔥 <strong style="color: #FFE0B2;">NÃO ACUMULA!</strong> Se ninguém fizer 15, divide entre quem fizer 14 pontos!
+                🔥 <strong style="color: #FFE0B2;">NÃO ACUMULA!</strong> Divide entre quem fizer 14 pontos.
             </div>
         </div>
-
-        <p class="indep-lead-text">
-            <strong class="indep-lead-highlight">R$ 300 Milhões serão pagos no dia 15/09 — o maior prêmio do ano!</strong>
-            Não jogue no escuro com datas de aniversário. Gere agora fechamentos matemáticos avançados para cercar 14 e 15 pontos com a menor quantidade de bilhetes e a máxima probabilidade.
-        </p>
 
         <!-- Contador Regressivo da Independência -->
         <div class="indep-countdown-container">
@@ -438,21 +450,21 @@
                 <div class="stat-pill-icon">🔁</div>
                 <div>
                     <strong>9 Dezenas Repetidas</strong>
-                    <span>Historicamente, cerca de 60% dos números sorteados saem do concurso anterior. Nosso algoritmo já aplica essa regra.</span>
+                    <span>~60% dos números repetem o concurso anterior</span>
                 </div>
             </div>
             <div class="indep-stat-pill">
                 <div class="stat-pill-icon">⚖️</div>
                 <div>
-                    <strong>Equilíbrio 8 Ímpares / 7 Pares</strong>
-                    <span>A distribuição matemática presente em mais de 80% de todos os concursos premiados da história.</span>
+                    <strong>Equilíbrio 8/7</strong>
+                    <span>Proporção ímpar/par mais premiada da história</span>
                 </div>
             </div>
             <div class="indep-stat-pill">
                 <div class="stat-pill-icon">🛡️</div>
                 <div>
                     <strong>Fechamentos no Volante</strong>
-                    <span>Economize até 70% nas apostas com matrizes inteligentes com garantias de premiação.</span>
+                    <span>Economize até 70% nas suas apostas</span>
                 </div>
             </div>
         </div>
@@ -480,7 +492,7 @@
                         <li>🟣 Fechamentos até: 20 dezenas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Mega-Sena</a>
+                <a href="/cadastro" class="btn-secondary btn-mega" style="text-align: center;">Analisar Mega-Sena</a>
             </div>
 
             <!-- Lotofacil -->
@@ -497,7 +509,7 @@
                         <li>🟣 Fechamentos até: 20 dezenas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Lotofácil</a>
+                <a href="/cadastro" class="btn-secondary btn-lotofacil" style="text-align: center;">Analisar Lotofácil</a>
             </div>
 
             <!-- Quina -->
@@ -514,7 +526,7 @@
                         <li>🟣 Fechamentos até: 15 dezenas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Quina</a>
+                <a href="/cadastro" class="btn-secondary btn-quina" style="text-align: center;">Analisar Quina</a>
             </div>
 
             <!-- Lotomania -->
@@ -531,7 +543,7 @@
                         <li>🟣 Faixas de acerto: 20, 19, 18, 17, 16, 15 ou 0</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Lotomania</a>
+                <a href="/cadastro" class="btn-secondary btn-lotomania" style="text-align: center;">Analisar Lotomania</a>
             </div>
 
             <!-- +Milionária -->
@@ -548,7 +560,7 @@
                         <li>🟣 Análise estocástica combinada</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar +Milionária</a>
+                <a href="/cadastro" class="btn-secondary btn-milionaria" style="text-align: center;">Analisar +Milionária</a>
             </div>
 
             <!-- Dia de Sorte -->
@@ -565,7 +577,7 @@
                         <li>🟣 Fechamentos até: 14 dezenas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Dia de Sorte</a>
+                <a href="/cadastro" class="btn-secondary btn-diadesorte" style="text-align: center;">Analisar Dia de Sorte</a>
             </div>
 
             <!-- Dupla Sena -->
@@ -582,7 +594,7 @@
                         <li>🟣 Fechamentos até: 15 dezenas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Dupla Sena</a>
+                <a href="/cadastro" class="btn-secondary btn-duplasena" style="text-align: center;">Analisar Dupla Sena</a>
             </div>
 
             <!-- Timemania -->
@@ -599,7 +611,7 @@
                         <li>🟣 Prêmios de 7 a 3 acertos e Time</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Timemania</a>
+                <a href="/cadastro" class="btn-secondary btn-timemania" style="text-align: center;">Analisar Timemania</a>
             </div>
 
             <!-- Super Sete -->
@@ -616,7 +628,7 @@
                         <li>🟣 Prêmios de 7 a 3 colunas acertadas</li>
                     </ul>
                 </div>
-                <a href="/cadastro" class="btn-secondary" style="text-align: center;">Analisar Super Sete</a>
+                <a href="/cadastro" class="btn-secondary btn-supersete" style="text-align: center;">Analisar Super Sete</a>
             </div>
         </div>
     </section>
