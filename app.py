@@ -17,11 +17,12 @@ import database
 import updater
 import ai_agent
 from core import (
-    ModeloCanonico30, 
-    ValidaçãoCamada7, 
+    ModeloCanonico30,
+    ValidaçãoCamada7,
     gerar_jogo_sugerido,
     gerar_multiplos_jogos,
-    LoteriaType, 
+    LoteriaType,
+    LoteriaConfig,
     LOTERIAS_CONFIG
 )
 
@@ -235,6 +236,20 @@ def index():
         if user and not user['is_blocked']:
             return redirect(url_for('dashboard'))
     return render_template('landing.html')
+
+
+# Configuração sintética do universo dos "trevos" da +Milionária (1 a 6, 2 sorteados),
+# usada para rodar o mesmo Modelo Canônico 3.0 sobre o segundo sorteio da loteria.
+TREVO_CONFIG = LoteriaConfig(
+    nome="Trevo da Sorte",
+    universo=6,
+    sorteados=2,
+    minimo_aposta=2,
+    maximo_aposta=2,
+    custo_minimo=0.0,
+    dias_sorteio=[],
+    faixas_premiacao=[]
+)
 
 
 LOTERIAS_THEME = {
@@ -1269,6 +1284,8 @@ def api_carregar_historico(loteria_type: str):
     }
     if loteria_type == 'timemania':
         resposta['times_coracao'] = updater.carregar_times_local(loteria_type)
+    if loteria_type == 'mais_milionaria':
+        resposta['trevos'] = updater.carregar_trevos_local(loteria_type)
     return jsonify(resposta)
 
 
@@ -1359,6 +1376,16 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     modelo = ModeloCanonico30(historico_input, loteria)
     jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
 
+    # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 3.0,
+    # aplicado separadamente sobre o histórico de trevos. Um par por jogo, podendo repetir entre
+    # os jogos (o universo de apenas 6 números não permite pares exclusivos para dezenas de jogos).
+    trevos = None
+    if loteria == LoteriaType.MAIS_MILIONARIA:
+        trevos_historico = [t for t in updater.carregar_trevos_local('mais_milionaria') if t and len(t) == 2]
+        if len(trevos_historico) >= 10:
+            modelo_trevo = ModeloCanonico30(trevos_historico, loteria, config_override=TREVO_CONFIG)
+            trevos = [gerar_jogo_sugerido(modelo_trevo, 2) for _ in range(len(jogos))]
+
     # Consumir crédito de usuário se for avulso/free
     if user_id:
         database.consume_user_credit(user_id)
@@ -1370,6 +1397,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'quantidade_jogos': len(jogos),
         'dezenas_por_jogo': dezenas,
         'jogos': jogos,
+        'trevos': trevos,
         'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),

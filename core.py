@@ -153,10 +153,10 @@ class ModeloCanonico30:
     Modelo de Convergência, Saturação e Complexidade Estatística
     """
     
-    def __init__(self, historico: List, loteria_type: LoteriaType):
+    def __init__(self, historico: List, loteria_type: LoteriaType, config_override: Optional[LoteriaConfig] = None):
         self.loteria_type = loteria_type
-        self.config = LOTERIAS_CONFIG[loteria_type]
-        
+        self.config = config_override or LOTERIAS_CONFIG[loteria_type]
+
         # Normalizar histórico: aceita tanto lista de listas quanto lista de dicts
         self.historico = []
         for item in historico:
