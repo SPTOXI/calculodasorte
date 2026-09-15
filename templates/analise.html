@@ -1665,7 +1665,7 @@ Exemplo para {{ config.nome }}:
                 if (data.sucesso && data.parecer) {
                     const p = data.parecer;
                     if (tagEl) {
-                        tagEl.textContent = `IA: ${p.provedor_ia || 'Cálculo da Sorte IA'}`;
+                        tagEl.textContent = 'Inteligência Artificial Ativa';
                     }
                     textoEl.innerHTML = p.parecer_texto ? p.parecer_texto.replace(/\n/g, '<br>') : 'Análise realizada com sucesso.';
                     
