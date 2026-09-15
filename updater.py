@@ -183,6 +183,42 @@ def salvar_historico_local(loteria_type: str, historico: List[List[int]]):
     _HISTORICO_CACHE_TIME[loteria_type] = time.time()
 
 
+_TIMES_CACHE = {}
+_TIMES_CACHE_TIME = {}
+
+
+def carregar_times_local(loteria_type: str) -> List[Optional[str]]:
+    """Carrega a lista do 'Time do Coração' sorteado em cada concurso (exclusivo da Timemania),
+    alinhada por posição com o histórico de dezenas da mesma loteria."""
+    now = time.time()
+    if loteria_type in _TIMES_CACHE and (now - _TIMES_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
+        return _TIMES_CACHE[loteria_type]
+
+    path = os.path.join(DATA_DIR, f'{loteria_type}_times.json')
+    if not os.path.exists(path) and os.path.exists(os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_times.json')):
+        path = os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_times.json')
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                dados = json.load(f)
+                if isinstance(dados, list):
+                    _TIMES_CACHE[loteria_type] = dados
+                    _TIMES_CACHE_TIME[loteria_type] = now
+                    return dados
+        except Exception as e:
+            print(f"[UPDATER] Erro ao carregar times {loteria_type}: {e}")
+    return []
+
+
+def salvar_times_local(loteria_type: str, times: List[Optional[str]]):
+    """Salva a lista do 'Time do Coração' sorteado em cada concurso"""
+    path = os.path.join(DATA_DIR, f'{loteria_type}_times.json')
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(times, f, indent=2, ensure_ascii=False)
+    _TIMES_CACHE[loteria_type] = times
+    _TIMES_CACHE_TIME[loteria_type] = time.time()
+
+
 def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:
     """Extrai e formata a lista de dezenas sorteadas"""
     lista = dados_caixa.get('listaDezenas') or dados_caixa.get('dezenasSorteadasOrdemSorteio') or []
@@ -194,6 +230,17 @@ def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:
         return numeros
     except Exception:
         return []
+
+
+def extrair_time_coracao(dados_caixa: Dict[str, Any]) -> Optional[str]:
+    """Extrai o nome do 'Time do Coração' sorteado no concurso (exclusivo da Timemania).
+    A API da Caixa já usou nomes de campo distintos ao longo do tempo, então tenta
+    várias chaves conhecidas antes de desistir."""
+    for chave in ('nomeTimeCoracaoMesSorte', 'timeCoracaoMesSorte', 'nomeTimeCoracao', 'timeDoCoracao'):
+        valor = dados_caixa.get(chave)
+        if valor:
+            return str(valor).strip()
+    return None
 
 
 def obter_status_loterias(consultar_online: bool = True) -> List[Dict[str, Any]]:
@@ -281,7 +328,26 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
     # 2. Carregar dados locais existentes
     historico_local = carregar_historico_local(loteria_type)
     ultimo_local = meta.get('ultimo_concurso')
-    
+
+    # Backfill específico da Timemania: preenche o "Time do Coração" dos concursos
+    # que já estavam salvos antes desta funcionalidade existir. Não afeta as outras loterias.
+    if loteria_type == 'timemania' and ultimo_local and len(historico_local) >= 20:
+        times_local_atual = carregar_times_local(loteria_type)
+        deficit = len(historico_local) - len(times_local_atual)
+        if deficit > 0:
+            concurso_inicial_backfill = ultimo_local - len(historico_local) + 1
+            print(f"[UPDATER] Backfill de 'Time do Coração' para {deficit} concurso(s) da Timemania...")
+            times_backfill = []
+            for c in range(concurso_inicial_backfill, concurso_inicial_backfill + deficit):
+                try:
+                    res = session.get(f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}/{c}', verify=False, timeout=6)
+                    d = res.json() if res.status_code == 200 else None
+                except Exception:
+                    d = None
+                times_backfill.append(extrair_time_coracao(d) if d else None)
+                time.sleep(0.04)
+            salvar_times_local(loteria_type, times_backfill + times_local_atual)
+
     novos_concursos = []
     
     # Caso 1: Sem histórico ou histórico muito curto (< 20 sorteios), baixa lote de n_historico
@@ -290,6 +356,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         print(f"[UPDATER] Carga inicial de {inicio} até {ultimo_numero} para {loteria_type}...")
         
         historico_acumulado = []
+        times_acumulado = [] if loteria_type == 'timemania' else None
         for c in range(inicio, ultimo_numero + 1):
             if c == ultimo_numero:
                 d = ultimo_dados
@@ -299,16 +366,20 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                     d = res.json() if res.status_code == 200 else None
                 except Exception:
                     d = None
-            
+
             if d:
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     historico_acumulado.append(dezenas)
+                    if times_acumulado is not None:
+                        times_acumulado.append(extrair_time_coracao(d))
             # Pequena pausa para estabilidade
             time.sleep(0.04)
 
         if len(historico_acumulado) >= 10:
             salvar_historico_local(loteria_type, historico_acumulado)
+            if times_acumulado is not None:
+                salvar_times_local(loteria_type, times_acumulado)
             salvar_meta(loteria_type, {
                 'ultimo_concurso': ultimo_numero,
                 'data_apuracao': data_apuracao,
@@ -337,6 +408,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         qtd_pendentes = ultimo_numero - ultimo_local
         print(f"[UPDATER] Baixando {qtd_pendentes} novos concursos de {ultimo_local + 1} a {ultimo_numero}...")
         
+        novos_times = [] if loteria_type == 'timemania' else None
         for c in range(ultimo_local + 1, ultimo_numero + 1):
             if c == ultimo_numero:
                 d = ultimo_dados
@@ -346,15 +418,21 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                     d = res.json() if res.status_code == 200 else None
                 except Exception:
                     d = None
-            
+
             if d:
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     novos_concursos.append(dezenas)
+                    if novos_times is not None:
+                        novos_times.append(extrair_time_coracao(d))
             time.sleep(0.04)
 
         historico_local.extend(novos_concursos)
         salvar_historico_local(loteria_type, historico_local)
+        if novos_times is not None:
+            times_local = carregar_times_local(loteria_type)
+            times_local.extend(novos_times)
+            salvar_times_local(loteria_type, times_local)
         salvar_meta(loteria_type, {
             'ultimo_concurso': ultimo_numero,
             'data_apuracao': data_apuracao,
