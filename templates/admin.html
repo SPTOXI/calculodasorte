@@ -555,7 +555,7 @@
                         <tbody>
                             {% for log in chat_logs %}
                             <tr>
-                                <td data-label="Data/Hora">{{ log.created_at[:16] }}</td>
+                                <td data-label="Data/Hora">{{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '-' }}</td>
                                 <td data-label="Usuário">{{ log.user_ident }}</td>
                                 <td data-label="Página">{{ log.loteria_nome }}</td>
                                 <td data-label="Mensagem" style="max-width: 250px; white-space: normal;">{{ log.mensagem_usuario }}</td>
@@ -723,7 +723,7 @@
                         <tbody>
                             {% for erro in system_errors %}
                             <tr>
-                                <td data-label="Data/Hora">{{ erro.created_at[:16] }}</td>
+                                <td data-label="Data/Hora">{{ erro.created_at.strftime('%Y-%m-%d %H:%M') if erro.created_at else '-' }}</td>
                                 <td data-label="Módulo"><span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">{{ erro.module }}</span></td>
                                 <td data-label="Erro" style="max-width: 400px; white-space: normal; color: #ef4444;">{{ erro.error_message }}</td>
                             </tr>
