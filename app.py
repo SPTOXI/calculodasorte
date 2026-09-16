@@ -2009,15 +2009,9 @@ def sitemap_xml():
     for slug in loterias_slugs:
         paginas.append({"loc": f"{base_url}/resultados/{slug}", "changefreq": "hourly", "priority": "0.95"})
     
-    # Adicionar páginas do blog (Carregadas da pasta data/blog)
-    try:
-        if os.path.exists('data/blog'):
-            for filename in os.listdir('data/blog'):
-                if filename.endswith('.md'):
-                    slug = filename.replace('.md', '')
-                    paginas.append({"loc": f"{base_url}/blog/{slug}", "changefreq": "weekly", "priority": "0.85"})
-    except Exception as e:
-        print(f"Erro ao gerar sitemap do blog: {e}")
+    # Adicionar páginas do blog (Dinâmico a partir de BLOG_POSTS)
+    for slug in BLOG_POSTS:
+        paginas.append({"loc": f"{base_url}/blog/{slug}", "changefreq": "weekly", "priority": "0.85"})
     
     xml_linhas = [
         '<?xml version="1.0" encoding="UTF-8"?>',
