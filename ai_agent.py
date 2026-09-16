@@ -78,20 +78,33 @@ def _get_moonshot_key() -> Optional[str]:
 def _get_claude_key() -> Optional[str]:
     return _get_api_key('claude', ['ANTHROPIC_API_KEY'])
 
-PROMPT_SISTEMA_CONSULTOR = """
+PROMPT_SISTEMA_PARECER = """
+Você é o Agente de Inteligência Artificial Especialista em Análise Estatística e Estratégia do Cálculo da Sorte.
+Sua missão é ler o cenário do sorteio e os dados matemáticos fornecidos (base histórica oficial da Caixa Econômica Federal, ICT - Índice de Convergência Temporal, Entropia de Shannon, Distribuição de Classes A/B/C/D, Score MCP e jogos gerados) e gerar um parecer didático, profissional, motivador e estratégico em português claro do Brasil.
+
+DIRETRIZES ESSENCIAIS:
+1. Explique a estratégia estatística de forma simples, elegante e transparente, traduzindo métricas matemáticas em conceitos fáceis de entender pelo apostador comum.
+2. Destaque por que as combinações são equilibradas (equilíbrio par/ímpar, dispersão de quadrantes/moldura, eliminação de sequências consecutivas improváveis).
+3. Seja responsável e ético: não faça promessas mágicas de enriquecimento fácil ou garantia de 100% de acertos máximos. Destaque que a matemática atua como otimização probabilística contra erros ingênuos.
+4. Estruture seu parecer de forma clara e visual com emojis:
+   - 📊 Diagnóstico do Cenário Atual (análise do ICT, Entropia e maturidade das dezenas)
+   - 🎯 Avaliação da Estratégia dos Jogos Gerados
+   - 💡 3 Recomendações Práticas para a Rodada
+"""
+
+PROMPT_SISTEMA_SUPORTE = """
 Você é exclusivamente o Agente de Suporte ao Usuário do aplicativo Cálculo da Sorte.
 Seu ÚNICO objetivo é oferecer suporte técnico, ajudar o usuário a navegar pela plataforma, abrir chamados, relatar bugs, ou esclarecer dúvidas de usabilidade (como assinar um plano, como gerar um jogo, onde ver resultados).
 
 REGRAS ESTRITAS (NÃO VIOLAR SOB NENHUMA HIPÓTESE):
-1. VOCÊ É APENAS SUPORTE TÉCNICO. Não atue como consultor matemático, não dê dicas de apostas, não sugira números.
-2. É ESTRITAMENTE PROIBIDO revelar, explicar, confirmar ou detalhar qualquer parte do sistema interno, fórmulas matemáticas, "Documento Canônico", "Microdinâmica MCP-MD", "ICT", "Entropia", "Classes", ou qualquer tecnologia proprietária do site.
-3. Se o usuário perguntar sobre estratégias de loteria, fórmulas, como o sistema funciona por baixo dos panos, ou pedir dicas matemáticas, você DEVE RECUSAR educadamente dizendo que o chat é exclusivo para suporte de uso da plataforma e que essas informações são propriedades intelectuais protegidas.
-4. Você está aqui para acolher o usuário e não deixá-lo desamparado caso tenha problemas técnicos com o site.
-5. Seja empático, claro e direto.
+1. VOCÊ É APENAS SUPORTE TÉCNICO. Não atue como consultor matemático, não dê palpites de apostas nem invente números no chat de suporte.
+2. Se o usuário quiser análise estatística profunda ou pareceres de IA, oriente-o a utilizar o botão "Gerar Palpite com IA" ou "Análise Completa" na tela da loteria correspondente, onde o motor estatístico processa os dados automaticamente.
+3. É estritamente proibido revelar códigos-fonte ou credenciais internas do servidor.
+4. Seja empático, claro, acolhedor e direto.
 """
 
 
-def _chamar_kimi(prompt: str, max_tokens: int = 2500) -> Optional[tuple]:
+def _chamar_kimi(prompt: str, max_tokens: int = 2500, system_prompt: str = PROMPT_SISTEMA_PARECER) -> Optional[tuple]:
     """
     Chama a API do Moonshot AI (Kimi K3 / Kimi models) compatível com OpenAI.
     Retorna (texto_resposta, nome_modelo) ou None se falhar.
@@ -117,7 +130,7 @@ def _chamar_kimi(prompt: str, max_tokens: int = 2500) -> Optional[tuple]:
         payload = {
             "model": modelo,
             "messages": [
-                {"role": "system", "content": PROMPT_SISTEMA_CONSULTOR},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 1,
@@ -155,10 +168,7 @@ def _chamar_kimi(prompt: str, max_tokens: int = 2500) -> Optional[tuple]:
     return None
 
 
-
-
-
-def _chamar_gemini(prompt: str) -> Optional[str]:
+def _chamar_gemini(prompt: str, system_prompt: str = PROMPT_SISTEMA_PARECER) -> Optional[str]:
     """Chama a API do Google Gemini via REST puro com fallback automático entre modelos ativos"""
     gemini_key = _get_gemini_key()
     if not gemini_key:
@@ -167,11 +177,11 @@ def _chamar_gemini(prompt: str) -> Optional[str]:
     modelos = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-1.5-flash"]
     headers = {"Content-Type": "application/json"}
     payload = {
-        "system_instruction": {"parts": [{"text": PROMPT_SISTEMA_CONSULTOR}]},
+        "system_instruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.6,
-            "maxOutputTokens": 1000
+            "maxOutputTokens": 1500
         }
     }
     
@@ -192,7 +202,7 @@ def _chamar_gemini(prompt: str) -> Optional[str]:
     return None
 
 
-def _chamar_claude(prompt: str) -> Optional[str]:
+def _chamar_claude(prompt: str, system_prompt: str = PROMPT_SISTEMA_PARECER) -> Optional[str]:
     """Chama a API da Anthropic Claude via REST"""
     claude_key = _get_claude_key()
     if not claude_key:
@@ -206,8 +216,8 @@ def _chamar_claude(prompt: str) -> Optional[str]:
     }
     payload = {
         "model": "claude-3-5-haiku-20241022",
-        "system": PROMPT_SISTEMA_CONSULTOR,
-        "max_tokens": 1000,
+        "system": system_prompt,
+        "max_tokens": 1500,
         "messages": [{"role": "user", "content": prompt}]
     }
 
@@ -232,11 +242,13 @@ def _gerar_parecer_heuristico_canonico(loteria_nome: str, dados_analise: Dict[st
     Motor Heurístico de IA Nativo do Sistema (Fallback inteligente sem depender de chaves de API).
     Analisa os dados estatísticos reais e sintetiza um relatório humanizado.
     """
-    resumo_geral = dados_analise.get('resumo_geral', {})
     classes = dados_analise.get('distribuicao_classes', {})
-    ict_medio = resumo_geral.get('ict_medio', 0.5)
-    entropia = resumo_geral.get('entropia', 0.8)
-    concursos = resumo_geral.get('total_concursos', 50)
+    estatisticas = dados_analise.get('estatisticas_gerais', {})
+    camada_inf = dados_analise.get('camada_informacional', {})
+
+    concursos = dados_analise.get('total_concursos') or dados_analise.get('resumo_geral', {}).get('total_concursos', 50)
+    ict_medio = estatisticas.get('ict_medio') or dados_analise.get('resumo_geral', {}).get('ict_medio', 0.5)
+    entropia = camada_inf.get('entropia') or dados_analise.get('resumo_geral', {}).get('entropia', 0.8)
 
     classe_a = classes.get('A', 0)
     classe_b = classes.get('B', 0)
@@ -293,20 +305,25 @@ def gerar_parecer_ia(loteria_nome: str, dados_analise: Dict[str, Any], jogos_ger
     Tenta chamar Google Gemini -> Tenta Anthropic Claude -> Executa Fallback Heurístico
     """
     # 1. Preparar prompt contextualizado
-    resumo_geral = dados_analise.get('resumo_geral', {})
     classes = dados_analise.get('distribuicao_classes', {})
+    estatisticas = dados_analise.get('estatisticas_gerais', {})
+    camada_inf = dados_analise.get('camada_informacional', {})
+
+    concursos = dados_analise.get('total_concursos') or dados_analise.get('resumo_geral', {}).get('total_concursos', 50)
+    ict_medio = estatisticas.get('ict_medio') or dados_analise.get('resumo_geral', {}).get('ict_medio', 0.5)
+    entropia = camada_inf.get('entropia') or dados_analise.get('resumo_geral', {}).get('entropia', 0.8)
 
     prompt = (
-        f"Analise os dados matemáticos da loteria {loteria_nome}:\n"
-        f"- Total de concursos históricos analisados: {resumo_geral.get('total_concursos')}\n"
-        f"- ICT Médio: {resumo_geral.get('ict_medio')}\n"
-        f"- Entropia de Shannon: {resumo_geral.get('entropia')}\n"
-        f"- Distribuição de Classes: {classes}\n"
+        f"Analise o cenário e os dados matemáticos da loteria {loteria_nome}:\n"
+        f"- Total de concursos históricos analisados: {concursos}\n"
+        f"- ICT Médio (Índice de Convergência Temporal): {ict_medio:.4f}\n"
+        f"- Entropia de Shannon (Grau de dispersão estocástica): {entropia:.4f}\n"
+        f"- Distribuição de Classes (A=Alta Estabilidade, B/C=Equilíbrio, D=Atrasadas): {classes}\n"
     )
     if jogos_gerados:
         prompt += f"- Quantidade de jogos gerados para o apostador: {len(jogos_gerados)}\n"
-        prompt += f"- Primeiros jogos gerados: {jogos_gerados[:3]}\n"
-    prompt += "\nPor favor, elabore um parecer consultivo profissional, didático e motivador para o apostador, com tópicos e recomendações práticas para a rodada."
+        prompt += f"- Exemplos de jogos gerados: {jogos_gerados[:3]}\n"
+    prompt += "\nPor favor, elabore um parecer consultivo profissional, didático e encorajador para o apostador em português claro, explicando a estratégia das combinações, analisando o cenário e fornecendo 3 recomendações práticas para a rodada."
 
     # 2. Tentativa Moonshot Kimi (se configurada)
     if _get_moonshot_key():
@@ -379,17 +396,17 @@ def responder_chat_consultor(pergunta: str, loteria_nome: str, dados_analise: Op
 
     # Tenta Moonshot Kimi
     if _get_moonshot_key() and not resp:
-        res_kimi = _chamar_kimi(prompt)
+        res_kimi = _chamar_kimi(prompt, system_prompt=PROMPT_SISTEMA_SUPORTE)
         if res_kimi:
             resp = res_kimi[0]
 
     # Tenta Gemini
     if not resp:
-        resp = _chamar_gemini(prompt)
+        resp = _chamar_gemini(prompt, system_prompt=PROMPT_SISTEMA_SUPORTE)
 
     # Tenta Claude
     if not resp:
-        resp = _chamar_claude(prompt)
+        resp = _chamar_claude(prompt, system_prompt=PROMPT_SISTEMA_SUPORTE)
 
     # Fallback consultivo nativo (Se não tiver chave)
     if not resp:
