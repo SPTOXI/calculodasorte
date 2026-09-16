@@ -316,20 +316,14 @@
         .indep-main-title{font-family:var(--font-heading);font-size:clamp(1.75rem,4.5vw,3rem);font-weight:900;color:#ffffff;letter-spacing:-0.5px;line-height:1.15;margin-bottom:12px;text-transform:uppercase;position:relative;z-index:1;text-shadow:0 2px 12px rgba(0,20,50,0.5)}
         .indep-br-mobile{display:none}
         .indep-title-gold{color:#FFC670;text-shadow:0 0 25px rgba(255,198,112,0.5),0 2px 4px rgba(0,20,50,0.6)}
-        .indep-prize-card{margin:10px auto 16px;max-width:700px;position:relative;z-index:1}
-        .indep-prize-tag{font-size:0.82rem;font-weight:800;color:#FFD27A;text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:4px}
-        .indep-prize-amount{font-family:var(--font-heading);font-size:clamp(2.2rem,7.8vw,4.8rem);font-weight:900;line-height:1;letter-spacing:-0.5px;color:#FFE0B2;text-shadow:0 0 35px rgba(255,178,32,0.4),0 4px 14px rgba(0,20,50,0.6)}
-        .indep-nao-acumula-badge{display:inline-block;background:rgba(220,38,38,0.22);border:1px solid #ef4444;color:#ffffff;font-weight:800;font-size:clamp(0.76rem,2.2vw,0.88rem);padding:8px 20px;border-radius:999px;letter-spacing:0.4px;margin-top:10px;box-shadow:0 4px 18px rgba(220,38,38,0.25);max-width:95%;line-height:1.4}
+        .indep-prize-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:920px;margin:14px auto 24px;position:relative;z-index:1}
+        .indep-prize-mini-card{background:rgba(0,30,74,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:14px;padding:14px 10px;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(0,20,50,0.3);transition:transform 0.2s,border-color 0.2s}
+        .indep-prize-mini-card:hover{transform:translateY(-2px);border-color:rgba(255,178,32,0.6)}
+        .indep-prize-mini-name{display:block;font-size:0.78rem;font-weight:800;color:#FFD27A;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+        .indep-prize-mini-amount{display:block;font-family:var(--font-heading);font-size:clamp(1.1rem,3.1vw,1.5rem);font-weight:900;color:#ffffff;line-height:1.15;text-shadow:0 2px 10px rgba(0,20,50,0.5)}
         .indep-lead-text{color:#f1f5f9;font-size:clamp(0.98rem,2.1vw,1.15rem);max-width:800px;margin:18px auto 24px;line-height:1.7;position:relative;z-index:1}
         .indep-lead-highlight{display:block;font-size:clamp(1.1rem,2.5vw,1.35rem);color:#FFE0B2 !important;font-weight:900;margin-bottom:8px;letter-spacing:-0.2px;text-shadow:0 2px 10px rgba(0,20,50,0.5)}
         .indep-lead-text strong{color:#FFE0B2;font-weight:800}
-        .indep-countdown-container{background:rgba(0,30,74,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:14px 22px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 24px;box-shadow:0 10px 30px rgba(0,20,50,0.35),inset 0 1px 0 rgba(255,255,255,0.08);position:relative;z-index:1}
-        .indep-countdown-header{font-size:0.84rem;color:#FFD27A;font-weight:800;letter-spacing:0.6px;display:flex;align-items:center;gap:8px}
-        .indep-timer-boxes{display:flex;gap:10px;align-items:center}
-        .indep-timer-unit{background:rgba(0,38,92,0.55);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:8px 14px;min-width:62px;text-align:center;box-shadow:0 4px 12px rgba(0,20,50,0.3)}
-        .indep-timer-num{display:block;font-family:var(--font-heading);font-size:clamp(1.4rem,3.4vw,1.9rem);font-weight:900;color:#ffffff;font-variant-numeric:tabular-nums;line-height:1.1}
-        .indep-timer-label{font-size:0.7rem;color:rgba(255,255,255,0.8);text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-top:3px;display:block}
-        .indep-timer-sep{font-size:1.5rem;font-weight:900;color:#FFB020;margin-top:-10px}
         .indep-cta-group{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:24px;position:relative;z-index:1}
         .btn-indep-gold{background:linear-gradient(135deg,#FFB020 0%,#F39200 50%,#C97400 100%);color:#1a1200 !important;font-family:var(--font-heading);font-weight:900;font-size:1.05rem;padding:14px 28px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;box-shadow:0 6px 22px rgba(243,146,0,0.5);transition:transform 0.2s,box-shadow 0.2s}
         .btn-indep-gold:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(243,146,0,0.7);color:#1a1200 !important}
@@ -351,16 +345,10 @@
             .indep-badge{font-size:0.72rem !important;padding:5px 12px !important;white-space:normal !important}
             .indep-subtitle-top{font-size:0.74rem !important;letter-spacing:1px !important}
             .indep-main-title{font-size:1.6rem !important;line-height:1.15 !important}
-            .indep-prize-amount{font-size:2.3rem !important}
-            .indep-nao-acumula-badge{font-size:0.74rem !important;padding:6px 12px !important;line-height:1.35 !important}
+            .indep-prize-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin:12px auto 20px}
+            .indep-prize-mini-amount{font-size:1.15rem !important}
             .indep-lead-highlight{font-size:1.05rem !important}
             .indep-lead-text{font-size:0.92rem !important;margin:14px auto 18px !important}
-            .indep-countdown-container{padding:12px 14px !important;width:100% !important;max-width:360px !important}
-            .indep-countdown-header{font-size:0.78rem !important}
-            .indep-timer-boxes{gap:6px}
-            .indep-timer-unit{min-width:50px;padding:6px 6px}
-            .indep-timer-num{font-size:1.25rem}
-            .indep-timer-sep{font-size:1.1rem;margin-top:-6px}
             .indep-cta-group{flex-direction:column;gap:10px}
             .indep-cta-group a,.indep-cta-group button{width:100%;padding:14px 18px !important;font-size:0.96rem !important}
             .indep-br-mobile{display:block !important}
@@ -389,61 +377,49 @@
     </nav>
 
     <!-- ============================================================
-         HERO TEMPORÁRIA: LOTOFÁCIL DA INDEPENDÊNCIA (R$ 300 MILHÕES)
+         HERO: PRÊMIOS ACUMULADOS DAS LOTERIAS DA CAIXA
          ============================================================ -->
     <section class="hero-independencia-section">
         <!-- Glow Sutil de Topo -->
         <div class="indep-glow-bg"></div>
 
-        <!-- Badge Oficial Especial -->
+        <!-- Badge Oficial -->
         <div class="indep-badge">
-            <span>✨</span> CONCURSO ESPECIAL &bull; R$ 300 MILHÕES
+            <span>✨</span> PRÊMIOS ACUMULADOS AGORA
         </div>
 
         <h1 class="indep-main-title">
-            LOTOFÁCIL DA <br class="indep-br-mobile"><span class="indep-title-gold">INDEPENDÊNCIA</span>
+            5 LOTERIAS COM <br class="indep-br-mobile"><span class="indep-title-gold">PRÊMIOS MILIONÁRIOS</span>
         </h1>
 
-        <div class="indep-prize-card">
-            <span class="indep-prize-tag">📅 SORTEIO TERÇA-FEIRA, 15/09 ÀS 20H</span>
-            <div class="indep-prize-amount">R$ 300 MILHÕES</div>
-            <div class="indep-nao-acumula-badge">
-                🔥 <strong style="color: #FFE0B2;">NÃO ACUMULA!</strong> Divide entre quem fizer 14 pontos.
-            </div>
-        </div>
-
-        <!-- Contador Regressivo da Independência -->
-        <div class="indep-countdown-container">
-            <div class="indep-countdown-header">
-                <span>⏳</span> CONTAGEM REGRESSIVA ATÉ 15/09 ÀS 20H:
-            </div>
-            <div class="indep-timer-boxes">
-                <div class="indep-timer-unit">
-                    <span class="indep-timer-num" id="indep-days-dash">--</span>
-                    <span class="indep-timer-label">Dias</span>
-                </div>
-                <span class="indep-timer-sep">:</span>
-                <div class="indep-timer-unit">
-                    <span class="indep-timer-num" id="indep-hours-dash">--</span>
-                    <span class="indep-timer-label">Horas</span>
-                </div>
-                <span class="indep-timer-sep">:</span>
-                <div class="indep-timer-unit">
-                    <span class="indep-timer-num" id="indep-minutes-dash">--</span>
-                    <span class="indep-timer-label">Min</span>
-                </div>
-                <span class="indep-timer-sep">:</span>
-                <div class="indep-timer-unit">
-                    <span class="indep-timer-num" id="indep-seconds-dash">--</span>
-                    <span class="indep-timer-label">Seg</span>
-                </div>
-            </div>
+        <!-- Grade de Prêmios Acumulados -->
+        <div class="indep-prize-grid">
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Mega-Sena</span>
+                <span class="indep-prize-mini-amount">R$ 102 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">+Milionária</span>
+                <span class="indep-prize-mini-amount">R$ 95 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Timemania</span>
+                <span class="indep-prize-mini-amount">R$ 14,3 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Super Sete</span>
+                <span class="indep-prize-mini-amount">R$ 8,1 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Dupla Sena</span>
+                <span class="indep-prize-mini-amount">R$ 4,1 Milhões</span>
+            </a>
         </div>
 
         <!-- Botões de Ação Imediata -->
         <div class="indep-cta-group">
-            <a href="/analise/lotofacil" class="btn-indep-gold btn-indep-pulse">
-                🎯 Fechamento da Independência &rarr;
+            <a href="/cadastro" class="btn-indep-gold btn-indep-pulse">
+                🎯 Gerar Meu Palpite Agora &rarr;
             </a>
             <a href="/cadastro?plano=avulso" class="btn-indep-green">
                 🪙 Acesso 24 Horas por apenas R$ 5,00
@@ -456,17 +432,17 @@
         <!-- 3 Pílulas de Inteligência Estratégica -->
         <div class="indep-stats-trio">
             <div class="indep-stat-pill">
-                <div class="stat-pill-icon">🔁</div>
+                <div class="stat-pill-icon">📡</div>
                 <div>
-                    <strong>9 Dezenas Repetidas</strong>
-                    <span>~60% dos números repetem o concurso anterior</span>
+                    <strong>Sincronizado com a Caixa</strong>
+                    <span>Histórico oficial atualizado diariamente</span>
                 </div>
             </div>
             <div class="indep-stat-pill">
-                <div class="stat-pill-icon">⚖️</div>
+                <div class="stat-pill-icon">🤖</div>
                 <div>
-                    <strong>Equilíbrio 8/7</strong>
-                    <span>Proporção ímpar/par mais premiada da história</span>
+                    <strong>IA + Estatística Real</strong>
+                    <span>Modelo Canônico 3.0 analisa cada dezena</span>
                 </div>
             </div>
             <div class="indep-stat-pill">
@@ -864,46 +840,6 @@
             banner.style.transition = 'opacity 0.3s ease';
             setTimeout(() => { banner.style.display = 'none'; }, 300);
         }
-
-        // Contador Regressivo da Lotofácil da Independência (15/09/2026 às 20:00 Horário de Brasília)
-        (function() {
-            const targetDate = new Date('2026-09-15T20:00:00-03:00').getTime();
-
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const diff = targetDate - now;
-
-                const dEl = document.getElementById('indep-days-dash');
-                const hEl = document.getElementById('indep-hours-dash');
-                const mEl = document.getElementById('indep-minutes-dash');
-                const sEl = document.getElementById('indep-seconds-dash');
-
-                if (!dEl || !hEl || !mEl || !sEl) return;
-
-                if (diff <= 0) {
-                    dEl.innerText = '00';
-                    hEl.innerText = '00';
-                    mEl.innerText = '00';
-                    sEl.innerText = '00';
-                    const header = document.querySelector('.indep-countdown-header');
-                    if (header) header.innerHTML = '🔴 SORTEIO EM ANDAMENTO OU CONCLUÍDO!';
-                    return;
-                }
-
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                dEl.innerText = String(days).padStart(2, '0');
-                hEl.innerText = String(hours).padStart(2, '0');
-                mEl.innerText = String(minutes).padStart(2, '0');
-                sEl.innerText = String(seconds).padStart(2, '0');
-            }
-
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
-        })();
     </script>
 
 </body>
