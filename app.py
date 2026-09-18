@@ -651,16 +651,21 @@ RESULTS_CACHE_TIME = {}
 
 @app.route('/resultados/<loteria_type>')
 def ver_resultado(loteria_type):
-    if loteria_type not in LOTERIAS_CONFIG:
+    try:
+        loteria_enum = LoteriaType(loteria_type)
+    except ValueError:
         return "Loteria não encontrada", 404
-    
+
+    if loteria_enum not in LOTERIAS_CONFIG:
+        return "Loteria não encontrada", 404
+
     slug = updater.LOTERIAS_SLUGS.get(loteria_type)
     if not slug:
         return "Loteria não suportada para resultados", 404
-        
+
     import time
     now = time.time()
-    
+
     # Cache em memória (10 minutos) para aguentar o pico de acessos do Google (Tráfego de Vaidade)
     if loteria_type in RESULTS_CACHE and (now - RESULTS_CACHE_TIME.get(loteria_type, 0)) < 600:
         dados_caixa = RESULTS_CACHE[loteria_type]
@@ -671,15 +676,15 @@ def ver_resultado(loteria_type):
             RESULTS_CACHE_TIME[loteria_type] = now
         else:
             dados_caixa = RESULTS_CACHE.get(loteria_type)
-            
+
     if not dados_caixa:
         return "Não foi possível carregar os resultados da Caixa no momento. Tente novamente.", 503
-        
+
     numeros = updater.extrair_dezenas(dados_caixa, slug)
-    
-    return render_template('resultado.html', 
-                           loteria=LOTERIAS_CONFIG[loteria_type],
-                           dados=dados_caixa, 
+
+    return render_template('resultado.html',
+                           loteria=LOTERIAS_CONFIG[loteria_enum],
+                           dados=dados_caixa,
                            numeros=numeros)
 
 
@@ -2003,8 +2008,8 @@ def sitemap_xml():
     
     # Adicionar as 9 loterias oficiais (Páginas de SEO / Resultados)
     loterias_slugs = [
-        "mega_sena", "lotofacil", "quina", "lotomania", 
-        "timemania", "dupla_sena", "dia_da_sorte", "super_sete", "milionaria"
+        "mega_sena", "lotofacil", "quina", "lotomania",
+        "timemania", "dupla_sena", "dia_de_sorte", "super_sete", "mais_milionaria"
     ]
     for slug in loterias_slugs:
         paginas.append({"loc": f"{base_url}/resultados/{slug}", "changefreq": "hourly", "priority": "0.95"})
@@ -2052,9 +2057,9 @@ O [Cálculo da Sorte](https://calculodasorte.com.br) oferece ferramentas de gera
 - [Lotomania](https://calculodasorte.com.br/resultados/lotomania)
 - [Timemania](https://calculodasorte.com.br/resultados/timemania)
 - [Dupla Sena](https://calculodasorte.com.br/resultados/dupla_sena)
-- [Dia de Sorte](https://calculodasorte.com.br/resultados/dia_da_sorte)
+- [Dia de Sorte](https://calculodasorte.com.br/resultados/dia_de_sorte)
 - [Super Sete](https://calculodasorte.com.br/resultados/super_sete)
-- [+Milionária](https://calculodasorte.com.br/resultados/milionaria)
+- [+Milionária](https://calculodasorte.com.br/resultados/mais_milionaria)
 
 ## Documentação Legal
 - [Termos de Uso](https://calculodasorte.com.br/termos)
