@@ -17,11 +17,11 @@
             </div>
 
             <h1 class="hero-title">
-                Gere Palpites Inteligentes com <span class="title-accent">Estatística Real</span>
+                Gere Análises Inteligentes com <span class="title-accent">Estatística Real</span>
             </h1>
 
             <p class="hero-subtitle">
-                Elimine apostas cegas e jogos aleatórios. Nossos algoritmos analisam o histórico oficial completo das loterias da Caixa para gerar combinações matematicamente equilibradas, fechamentos combinatórios e recomendações estratégicas com o Agente IA.
+                Elimine combinações aleatórias e desbalanceadas. Nossos algoritmos analisam o histórico oficial completo das loterias da Caixa para gerar matrizes matematicamente equilibradas, fechamentos combinatórios e recomendações estratégicas com o Agente IA.
             </p>
 
             <!-- Cards de Oferta: Acesso 24 Horas R$ 5,00 vs VIP Mensal R$ 49,90 -->
@@ -37,14 +37,14 @@
                             R$ 5,00 <span>/ 24 horas</span>
                         </div>
                         <ul class="offer-benefits">
-                            <li>✅ <strong>Preço Único de R$ 5,00</strong> para qualquer loteria</li>
-                            <li>✅ Gera até 20 palpites otimizados para o concurso</li>
+                            <li>✅ <strong>Licença de Acesso 24h por R$ 5,00</strong> para qualquer modalidade</li>
+                            <li>✅ Gera até 20 combinações otimizadas pelo Modelo Canônico</li>
                             <li>✅ Análise estatística e parecer com o Agente IA</li>
                             <li>✅ Sem assinatura ou fidelidade — use quando quiser</li>
                         </ul>
                     </div>
                     <button class="btn-offer btn-offer-green" onclick="abrirModalCompraRapida('avulso', 5.00, 'Acesso 24 Horas (R$ 5,00)')">
-                        🪙 Testar Agora por R$ 5,00
+                        🪙 Ativar Acesso 24h por R$ 5,00
                     </button>
                 </div>
 
@@ -90,7 +90,7 @@
              ============================================================ -->
         <div class="section-header">
             <h2>Escolha a sua Loteria para Analisar</h2>
-            <p>Selecione uma das 9 modalidades oficiais para explorar frequências, gerar fechamentos e testar palpites</p>
+            <p>Selecione uma das 9 modalidades oficiais para explorar frequências, gerar fechamentos e simular combinações</p>
         </div>
 
         <div class="loterias-grid">
@@ -121,7 +121,7 @@
                             <span class="loteria-spec-badge">{{ loteria.config.sorteados }} números</span>
                         </li>
                         <li class="loteria-spec-row">
-                            <span>Aposta Oficial Caixa:</span>
+                            <span>Volante Oficial Caixa:</span>
                             <strong>{{ loteria.config.minimo_aposta }} a {{ loteria.config.maximo_aposta }} dezenas</strong>
                         </li>
                         <li class="loteria-spec-row">
@@ -239,7 +239,7 @@
 
         function abrirModalCompraRapida(tipo, valor, titulo) {
             if (!IS_AUTHENTICATED) {
-                alert('Para vincular o pagamento à sua conta e liberar seus palpites, por favor entre na sua conta ou cadastre-se.');
+                alert('Para vincular o pagamento à sua conta e liberar seu acesso analítico, por favor entre na sua conta ou cadastre-se.');
                 window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
                 return;
             }
