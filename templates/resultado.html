@@ -13,9 +13,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultado da {{ loteria.nome }} de Hoje (Concurso {{ dados.numero }}) — Cálculo da Sorte</title>
-    <meta name="description" content="Confira os números sorteados da {{ loteria.nome }} hoje, concurso {{ dados.numero }}. Pare de depender da sorte e conheça nossa ferramenta estatística.">
-    <meta name="robots" content="index, follow">
+    <meta name="description" content="Confira os números sorteados da {{ loteria.nome }} hoje, concurso {{ dados.numero }}, sorteio de {{ dados.dataApuracao }}. Pare de depender da sorte e conheça nossa ferramenta estatística.">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <link rel="canonical" href="https://calculodasorte.com.br{{ request.path }}">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <!-- Open Graph / Redes Sociais e WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Cálculo da Sorte">
+    <meta property="og:url" content="https://calculodasorte.com.br{{ request.path }}">
+    <meta property="og:title" content="Resultado da {{ loteria.nome }} — Concurso {{ dados.numero }}">
+    <meta property="og:description" content="Números sorteados da {{ loteria.nome }} no concurso {{ dados.numero }}, sorteio de {{ dados.dataApuracao }}. Dados oficiais da Caixa Econômica Federal.">
+    <meta property="og:image" content="https://calculodasorte.com.br/static/og-banner.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Resultado da {{ loteria.nome }} — Concurso {{ dados.numero }}">
+    <meta name="twitter:description" content="Números sorteados da {{ loteria.nome }} no concurso {{ dados.numero }}, sorteio de {{ dados.dataApuracao }}.">
+    <meta name="twitter:image" content="https://calculodasorte.com.br/static/og-banner.png">
+
+    <!-- Dados Estruturados JSON-LD (Schema.org) para Google e Motores de IA (GEO / LLM) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Início", "item": "https://calculodasorte.com.br/"},
+            {"@type": "ListItem", "position": 2, "name": "Resultado da {{ loteria.nome }}", "item": "https://calculodasorte.com.br{{ request.path }}"}
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Qual foi o resultado da {{ loteria.nome }} no concurso {{ dados.numero }}?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O resultado da {{ loteria.nome }}, concurso {{ dados.numero }}, sorteio de {{ dados.dataApuracao }}, foi: {{ numeros|map('string')|join(', ') }}."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Em quais dias a {{ loteria.nome }} é sorteada?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A {{ loteria.nome }} é sorteada nos dias {{ loteria.dias_sorteio|join(', ') }}, com aposta mínima de {{ loteria.minimo_aposta }} dezenas a partir de R$ {{ '%.2f'|format(loteria.custo_minimo)|replace('.', ',') }}."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
     <!-- Tipografia institucional (peso forte, arredondada) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

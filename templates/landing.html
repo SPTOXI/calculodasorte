@@ -93,7 +93,7 @@
             {
               "@type": "Offer",
               "name": "Plano VIP Mensal",
-              "price": "29.90",
+              "price": "49.90",
               "priceCurrency": "BRL",
               "description": "Acesso total e ilimitado a todas as 9 loterias com suporte a IA e fechamentos"
             }
@@ -193,6 +193,8 @@
         .nav-links a:hover{color:var(--primary)}
         .nav-actions{display:flex;gap:12px;align-items:center}
         .btn-secondary{color:var(--primary);text-decoration:none;padding:9px 20px;border-radius:8px;font-weight:600;font-size:0.95rem;border:1px solid rgba(0,70,173,0.3);transition:all 0.2s}
+        .loteria-result-link{display:block;text-align:center;margin-top:10px;color:var(--text-muted);text-decoration:none;font-size:0.82rem;font-weight:600}
+        .loteria-result-link:hover{color:var(--primary);text-decoration:underline}
         .btn-secondary:hover{background:rgba(0,70,173,0.06)}
         .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white;text-decoration:none;padding:10px 24px;border-radius:8px;font-family:var(--font-heading);font-weight:700;font-size:0.95rem;box-shadow:0 4px 14px rgba(0,70,173,0.3);transition:all 0.2s;display:inline-flex;align-items:center;gap:8px}
         .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,70,173,0.42)}
@@ -389,30 +391,38 @@
         </div>
 
         <h1 class="indep-main-title">
-            5 LOTERIAS COM <br class="indep-br-mobile"><span class="indep-title-gold">PRÊMIOS MILIONÁRIOS</span>
+            7 LOTERIAS COM <br class="indep-br-mobile"><span class="indep-title-gold">PRÊMIOS MILIONÁRIOS</span>
         </h1>
 
         <!-- Grade de Prêmios Acumulados -->
         <div class="indep-prize-grid">
             <a href="/cadastro" class="indep-prize-mini-card">
-                <span class="indep-prize-mini-name">Mega-Sena</span>
-                <span class="indep-prize-mini-amount">R$ 102 Milhões</span>
+                <span class="indep-prize-mini-name">+Milionária</span>
+                <span class="indep-prize-mini-amount">R$ 96 Milhões</span>
             </a>
             <a href="/cadastro" class="indep-prize-mini-card">
-                <span class="indep-prize-mini-name">+Milionária</span>
-                <span class="indep-prize-mini-amount">R$ 95 Milhões</span>
+                <span class="indep-prize-mini-name">Mega-Sena</span>
+                <span class="indep-prize-mini-amount">R$ 28 Milhões</span>
             </a>
             <a href="/cadastro" class="indep-prize-mini-card">
                 <span class="indep-prize-mini-name">Timemania</span>
-                <span class="indep-prize-mini-amount">R$ 14,3 Milhões</span>
+                <span class="indep-prize-mini-amount">R$ 14,6 Milhões</span>
             </a>
             <a href="/cadastro" class="indep-prize-mini-card">
                 <span class="indep-prize-mini-name">Super Sete</span>
-                <span class="indep-prize-mini-amount">R$ 8,1 Milhões</span>
+                <span class="indep-prize-mini-amount">R$ 8,3 Milhões</span>
             </a>
             <a href="/cadastro" class="indep-prize-mini-card">
                 <span class="indep-prize-mini-name">Dupla Sena</span>
-                <span class="indep-prize-mini-amount">R$ 4,1 Milhões</span>
+                <span class="indep-prize-mini-amount">R$ 4,4 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Lotomania</span>
+                <span class="indep-prize-mini-amount">R$ 2,6 Milhões</span>
+            </a>
+            <a href="/cadastro" class="indep-prize-mini-card">
+                <span class="indep-prize-mini-name">Lotofácil</span>
+                <span class="indep-prize-mini-amount">R$ 2 Milhões</span>
             </a>
         </div>
 
@@ -478,6 +488,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-mega" style="text-align: center;">Analisar Mega-Sena</a>
+                <a href="/resultados/mega_sena" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Lotofacil -->
@@ -495,6 +506,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-lotofacil" style="text-align: center;">Analisar Lotofácil</a>
+                <a href="/resultados/lotofacil" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Quina -->
@@ -512,6 +524,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-quina" style="text-align: center;">Analisar Quina</a>
+                <a href="/resultados/quina" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Lotomania -->
@@ -529,6 +542,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-lotomania" style="text-align: center;">Analisar Lotomania</a>
+                <a href="/resultados/lotomania" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- +Milionária -->
@@ -546,6 +560,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-milionaria" style="text-align: center;">Analisar +Milionária</a>
+                <a href="/resultados/mais_milionaria" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Dia de Sorte -->
@@ -563,6 +578,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-diadesorte" style="text-align: center;">Analisar Dia de Sorte</a>
+                <a href="/resultados/dia_de_sorte" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Dupla Sena -->
@@ -580,6 +596,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-duplasena" style="text-align: center;">Analisar Dupla Sena</a>
+                <a href="/resultados/dupla_sena" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Timemania -->
@@ -597,6 +614,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-timemania" style="text-align: center;">Analisar Timemania</a>
+                <a href="/resultados/timemania" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Super Sete -->
@@ -614,6 +632,7 @@
                     </ul>
                 </div>
                 <a href="/cadastro" class="btn-secondary btn-supersete" style="text-align: center;">Analisar Super Sete</a>
+                <a href="/resultados/super_sete" class="loteria-result-link">Ver resultado do concurso atual →</a>
             </div>
         </div>
     </section>
