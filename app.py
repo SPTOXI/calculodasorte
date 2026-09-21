@@ -630,11 +630,25 @@ BLOG_POSTS = {
         'description': 'Analisamos todos os sorteios da história para descobrir quais as dezenas mais sorteadas na Lotofácil e como usar isso a seu favor com um gerador inteligente.',
         'template': 'blog/artigo_11.html'
     },
+    'frequencia-estatistica-de-dezenas': {
+        'title': 'Frequência Estatística de Dezenas: Estudo Histórico de Sorteios',
+        'date': '2026-09-13',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Estudo estatístico e análise de dados sobre a distribuição de frequência histórica das dezenas em sorteios oficiais.',
+        'template': 'blog/artigo_11.html'
+    },
     'como-ganhar-na-lotofacil-garantido': {
         'title': 'Como ganhar na Lotofácil garantido: O fim do mito e a estatística real',
         'date': '2026-09-13',
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Existe método 100% garantido? Desmistificamos falsas promessas e ensinamos como simuladores de desdobramento da Lotofácil aumentam suas chances.',
+        'template': 'blog/artigo_12.html'
+    },
+    'probabilidade-matematica-e-estatistica': {
+        'title': 'Probabilidade Matemática e Estatística: O Fim do Mito e a Ciência dos Sorteios',
+        'date': '2026-09-13',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Análise probabilística e combinatória desmistificando mitos e demonstrando como matrizes matemáticas organizam dados.',
         'template': 'blog/artigo_12.html'
     },
     'diferenca-entre-desdobramento-e-fechamento': {
