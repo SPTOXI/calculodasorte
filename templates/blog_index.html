@@ -97,13 +97,29 @@
 <body>
     <div class="container">
         <div class="top-nav">
-            <div class="nav-brand-pill">
+            <a href="/" class="nav-brand-pill" title="Ir para a Página Inicial" style="text-decoration: none;">
                 <img src="/static/logo.png" alt="Logo" style="width: 20px; height: 20px; object-fit: contain;"> Cálculo da <span class="brand-highlight">Sorte</span>
-            </div>
-            <a href="/" class="btn-back">← Voltar à Home</a>
+            </a>
+            <a href="/" class="btn-back" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 700; background: rgba(0,70,173,0.08); padding: 8px 16px; border-radius: 8px; text-decoration: none;">🏠 Ir para a Página Inicial</a>
         </div>
         <h1>Inteligência Matemática Aplicada</h1>
         <p class="subtitle">Artigos técnicos, estudos de caso e análises aprofundadas sobre métodos probabilísticos para loterias da Caixa.</p>
+
+        <!-- Banner de Conversão para a Home -->
+        <div style="background: linear-gradient(135deg, #0A1A3F 0%, #003380 50%, #0046AD 100%); border-radius: 14px; padding: 26px 30px; color: white; margin-bottom: 35px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; box-shadow: 0 10px 25px rgba(0,70,173,0.18); border: 1px solid rgba(255,255,255,0.15);">
+            <div>
+                <span style="background: rgba(243,146,0,0.25); border: 1px solid rgba(243,146,0,0.6); color: #FFC670; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Software Oficial</span>
+                <h3 style="font-family: var(--font-heading); font-size: 1.35rem; margin: 8px 0 6px 0; color: white;">Conheça a Ferramenta Oficial na Página Inicial</h3>
+                <p style="color: rgba(255,255,255,0.88); font-size: 0.95rem; margin: 0; max-width: 520px; line-height: 1.5;">
+                    Simulações em tempo real, fechamentos combinatórios ortogonais e análises estatísticas com Inteligência Artificial para as 9 loterias da Caixa.
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="/" style="background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%); color: #1a1200; font-weight: 800; font-family: var(--font-heading); font-size: 0.95rem; padding: 12px 24px; border-radius: 8px; text-decoration: none; white-space: nowrap; box-shadow: 0 4px 15px rgba(243,146,0,0.35); display: inline-flex; align-items: center; gap: 6px;">
+                    🏠 Acessar Plataforma →
+                </a>
+            </div>
+        </div>
 
         <div class="blog-grid">
             {% for slug, post in posts.items() %}
@@ -113,6 +129,10 @@
                 <p class="blog-desc">{{ post.description }}</p>
             </a>
             {% endfor %}
+        </div>
+
+        <div style="background: rgba(10,26,63,0.04); border: 1px solid rgba(10,26,63,0.1); border-radius: 12px; padding: 16px 20px; margin: 40px auto 10px; text-align: left; font-size: 0.82rem; line-height: 1.6; color: #5B6B82;">
+            <strong style="color: #0046AD;">⚖️ AVISO LEGAL E DE CONFORMIDADE:</strong> O Cálculo da Sorte é uma plataforma independente de software (SaaS) dedicada à análise estatística e simulação combinatória sobre dados públicos oficiais da Caixa Econômica Federal. NÃO somos casa de apostas, NÃO comercializamos bilhetes ou bolões e NÃO prometemos retorno financeiro ou garantia de premiação. Loterias de prognósticos são eventos aleatórios e probabilísticos. Finalidade exclusivamente analítica e educacional.
         </div>
     </div>
 </body>

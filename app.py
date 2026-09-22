@@ -564,7 +564,7 @@ BLOG_POSTS = {
         'title': 'O Poder dos Fechamentos Combinatórios: Estratégia Avançada para Múltiplas Premiações',
         'date': '2026-09-12',
         'author': 'Equipe Cálculo da Sorte',
-        'description': 'Aprenda o princípio das matrizes matemáticas ortogonais e sistemas de redução. Veja como cercar dezenas garante prêmios secundários e reduz o custo das apostas.',
+        'description': 'Aprenda o princípio das matrizes matemáticas ortogonais e sistemas de redução. Veja como cercar dezenas otimiza a cobertura de faixas secundárias e reduz o custo das apostas.',
         'template': 'blog/artigo_2.html'
     },
     'inteligencia-artificial-e-analise-estocastica': {
@@ -638,10 +638,10 @@ BLOG_POSTS = {
         'template': 'blog/artigo_11.html'
     },
     'como-ganhar-na-lotofacil-garantido': {
-        'title': 'Como ganhar na Lotofácil garantido: O fim do mito e a estatística real',
+        'title': 'Existe método 100% garantido na Lotofácil? O fim do mito e a estatística real',
         'date': '2026-09-13',
         'author': 'Equipe Cálculo da Sorte',
-        'description': 'Existe método 100% garantido? Desmistificamos falsas promessas e ensinamos como simuladores de desdobramento da Lotofácil aumentam suas chances.',
+        'description': 'Existe método 100% garantido? Desmistificamos falsas promessas e ensinamos como simuladores de fechamento da Lotofácil aumentam sua eficiência.',
         'template': 'blog/artigo_12.html'
     },
     'probabilidade-matematica-e-estatistica': {
