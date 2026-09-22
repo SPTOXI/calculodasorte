@@ -74,7 +74,68 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <style>:root{--primary:#0046AD;--primary-dark:#003380;--primary-light:#2E7DE1;--gold:#F39200;--gold-dark:#C97400;--navy:#0A1A3F;--text:#101F38;--text-muted:#5B6B82;--bg:#FFFFFF;--bg-alt:#F2F6FC;--card:#FFFFFF;--card-border:#E1E8F2;--font-heading:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}body{background-color:var(--bg-alt);color:var(--text);padding:40px 20px;text-align:center;background:radial-gradient(circle at 50% 0%,rgba(0,70,173,0.06) 0%,var(--bg-alt) 60%)}.container{max-width:800px;margin:0 auto}.top-nav{display:flex;justify-content:center;margin-bottom:40px}.nav-brand-pill{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--navy);padding:6px 14px;background:#fff;border-radius:20px;border:1px solid var(--card-border);box-shadow:0 2px 10px rgba(10,26,63,0.05)}.nav-brand-pill .brand-highlight{color:var(--primary)}.card{background:var(--card);padding:40px;border-radius:16px;border:1px solid var(--card-border);box-shadow:0 10px 30px rgba(10,26,63,0.07);margin-bottom:30px}h1{font-family:var(--font-heading);font-size:2rem;margin-bottom:10px;color:var(--navy)}.concurso-data{font-size:1.1rem;color:var(--text-muted);margin-bottom:30px}.bolinhas-container{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:30px}.bolinha{width:55px;height:55px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:white;background:linear-gradient(135deg,{{loteria.cor}}0%,#0A1A3F 100%);border:2px solid{{loteria.cor}};box-shadow:0 4px 15px rgba(10,26,63,0.25)}.cta-box{background:linear-gradient(135deg,#00234F 0%,#0046AD 45%,#2E7DE1 100%);border:1px solid rgba(255,255,255,0.12);padding:30px;border-radius:16px;text-align:center;box-shadow:0 16px 40px rgba(0,51,128,0.3)}.cta-box h2{font-family:var(--font-heading);font-size:1.6rem;color:#FFE0B2;margin-bottom:15px}.cta-box p{font-size:1.1rem;margin-bottom:25px;color:rgba(255,255,255,0.9)}.cta-btn{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:#1a1200;padding:16px 32px;border-radius:8px;text-decoration:none;font-family:var(--font-heading);font-weight:800;font-size:1.2rem;display:inline-block;transition:transform 0.2s;box-shadow:0 4px 16px rgba(243,146,0,0.4)}.cta-btn:hover{transform:scale(1.05)}.seo-text{text-align:left;margin-top:50px;color:var(--text-muted);font-size:0.95rem;line-height:1.6}.seo-text h3{color:var(--navy);margin-bottom:10px;margin-top:20px}</style>
+    <style>
+        :root{
+            --primary:#0046AD;
+            --primary-dark:#003380;
+            --primary-light:#2E7DE1;
+            --gold:#F39200;
+            --gold-dark:#C97400;
+            --navy:#0A1A3F;
+            --text:#101F38;
+            --text-muted:#5B6B82;
+            --bg:#FFFFFF;
+            --bg-alt:#F2F6FC;
+            --card:#FFFFFF;
+            --card-border:#E1E8F2;
+            --font-heading:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+        body{background-color:var(--bg-alt);color:var(--text);padding:30px 16px 50px;text-align:center;background:radial-gradient(circle at 50% 0%,rgba(0,70,173,0.06) 0%,var(--bg-alt) 60%)}
+        .container{max-width:840px;margin:0 auto}
+        .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap;gap:12px}
+        .nav-brand-pill{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--navy);padding:6px 14px;background:#fff;border-radius:20px;border:1px solid var(--card-border);box-shadow:0 2px 10px rgba(10,26,63,0.05);text-decoration:none}
+        .nav-brand-pill .brand-highlight{color:var(--primary)}
+        .nav-links{display:flex;gap:10px;align-items:center}
+        .nav-link-btn{color:var(--primary);text-decoration:none;font-weight:700;font-size:0.88rem;padding:6px 12px;background:rgba(0,70,173,0.08);border-radius:8px}
+        .nav-link-btn:hover{background:rgba(0,70,173,0.15)}
+
+        /* Seletor de Loterias para SEO Silo e Navegação Rápida */
+        .loterias-nav-bar{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:12px 16px;margin-bottom:25px;box-shadow:0 2px 8px rgba(10,26,63,0.04)}
+        .loterias-nav-label{font-size:0.82rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+        .loterias-nav-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+        .lot-pill{padding:5px 12px;border-radius:16px;font-size:0.82rem;font-weight:700;text-decoration:none;color:var(--text);background:var(--bg-alt);border:1px solid var(--card-border);transition:all 0.2s}
+        .lot-pill:hover{border-color:var(--primary);color:var(--primary)}
+        .lot-pill.active{background:var(--navy);color:#FFFFFF;border-color:var(--navy)}
+
+        .card{background:var(--card);padding:35px 25px;border-radius:16px;border:1px solid var(--card-border);box-shadow:0 10px 30px rgba(10,26,63,0.07);margin-bottom:30px}
+        h1{font-family:var(--font-heading);font-size:2rem;margin-bottom:8px;color:var(--navy)}
+        .concurso-data{font-size:1.05rem;color:var(--text-muted);margin-bottom:25px}
+        .bolinhas-container{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:25px}
+        .bolinha{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:800;color:white;background:linear-gradient(135deg,{{loteria.cor}} 0%,#0A1A3F 100%);border:2px solid {{loteria.cor}};box-shadow:0 4px 15px rgba(10,26,63,0.25)}
+        
+        .cta-box{background:linear-gradient(135deg,#00234F 0%,#0046AD 45%,#0A1A3F 100%);border:1px solid rgba(255,255,255,0.15);padding:32px 24px;border-radius:16px;text-align:center;box-shadow:0 16px 40px rgba(0,51,128,0.25);color:white;margin-bottom:35px}
+        .cta-box h2{font-family:var(--font-heading);font-size:1.55rem;color:#FFE0B2;margin-bottom:12px;line-height:1.3}
+        .cta-box p{font-size:1.02rem;margin-bottom:22px;color:rgba(255,255,255,0.9);line-height:1.55;max-width:650px;margin-left:auto;margin-right:auto}
+        .cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .cta-btn-main{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:#1a1200;padding:14px 26px;border-radius:8px;text-decoration:none;font-family:var(--font-heading);font-weight:800;font-size:1.05rem;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(243,146,0,0.4);transition:all 0.2s}
+        .cta-btn-main:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(243,146,0,0.55)}
+        .cta-btn-sub{background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:14px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1.02rem;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s}
+        .cta-btn-sub:hover{background:rgba(255,255,255,0.25);transform:translateY(-2px)}
+
+        /* Bloco de Estudos Recomendados (SEO / Link Building Interno) */
+        .estudos-recomendados{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:26px 22px;margin-bottom:30px;text-align:left;box-shadow:0 4px 15px rgba(10,26,63,0.05)}
+        .estudos-header{font-family:var(--font-heading);font-size:1.2rem;font-weight:800;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+        .estudos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+        .estudo-card{background:var(--bg-alt);border:1px solid var(--card-border);border-radius:10px;padding:14px 16px;text-decoration:none;color:inherit;transition:all 0.2s;display:block}
+        .estudo-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 15px rgba(0,70,173,0.1)}
+        .estudo-tag{font-size:0.75rem;font-weight:800;color:var(--gold-dark);text-transform:uppercase;margin-bottom:6px;display:block}
+        .estudo-title{font-size:0.95rem;font-weight:700;color:var(--navy);line-height:1.35;margin:0}
+
+        .seo-text{text-align:left;margin-top:20px;color:var(--text-muted);font-size:0.95rem;line-height:1.6}
+        .seo-text h3{color:var(--navy);margin-bottom:10px;margin-top:20px}
+        @media(max-width:768px){.card{padding:25px 16px}h1{font-size:1.7rem}.cta-btn-main,.cta-btn-sub{width:100%;justify-content:center}}
+    </style>
 </head>
 <body>
     <div class="container">
@@ -84,6 +145,26 @@
                     <img src="/static/logo.png" alt="Logo" style="width: 20px; height: 20px; object-fit: contain;"> Cálculo da <span class="brand-highlight">Sorte</span>
                 </div>
             </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link-btn">🏠 Página Inicial</a>
+                <a href="/blog" class="nav-link-btn">📚 Blog e Análises</a>
+            </div>
+        </div>
+
+        <!-- Seletor de Loterias para Rastreamento e Silo SEO -->
+        <div class="loterias-nav-bar">
+            <span class="loterias-nav-label">Navegue pelos resultados oficiais:</span>
+            <div class="loterias-nav-pills">
+                <a href="/resultados/lotofacil" class="lot-pill {% if loteria.nome == 'Lotofácil' %}active{% endif %}">Lotofácil</a>
+                <a href="/resultados/mega_sena" class="lot-pill {% if loteria.nome == 'Mega-Sena' %}active{% endif %}">Mega-Sena</a>
+                <a href="/resultados/quina" class="lot-pill {% if loteria.nome == 'Quina' %}active{% endif %}">Quina</a>
+                <a href="/resultados/lotomania" class="lot-pill {% if loteria.nome == 'Lotomania' %}active{% endif %}">Lotomania</a>
+                <a href="/resultados/timemania" class="lot-pill {% if loteria.nome == 'Timemania' %}active{% endif %}">Timemania</a>
+                <a href="/resultados/dupla_sena" class="lot-pill {% if loteria.nome == 'Dupla Sena' %}active{% endif %}">Dupla Sena</a>
+                <a href="/resultados/dia_de_sorte" class="lot-pill {% if loteria.nome == 'Dia de Sorte' %}active{% endif %}">Dia de Sorte</a>
+                <a href="/resultados/super_sete" class="lot-pill {% if loteria.nome == 'Super Sete' %}active{% endif %}">Super Sete</a>
+                <a href="/resultados/mais_milionaria" class="lot-pill {% if loteria.nome == '+Milionária' %}active{% endif %}">+Milionária</a>
+            </div>
         </div>
         
         <div class="card">
@@ -97,16 +178,87 @@
             </div>
 
             {% if dados.acumulado %}
-                <p style="color: #15803d; font-weight: 700; font-size: 1.2rem; margin-top: 20px;">💰 ACUMULOU!</p>
+                <p style="color: #15803d; font-weight: 700; font-size: 1.2rem; margin-top: 15px;">💰 CONCURSO ACUMULOU!</p>
             {% else %}
-                <p style="color: var(--gold-dark); font-weight: 700; font-size: 1.2rem; margin-top: 20px;">🎊 HOUVE GANHADOR!</p>
+                <p style="color: var(--gold-dark); font-weight: 700; font-size: 1.2rem; margin-top: 15px;">🎊 HOUVE GANHADOR NA FAIXA PRINCIPAL!</p>
             {% endif %}
         </div>
 
         <div class="cta-box">
-            <h2>Quer entender a probabilidade matemática do próximo sorteio?</h2>
-            <p><strong>Escolher números aleatórios ou datas comemorativas contraria a distribuição estatística.</strong><br>A inteligência artificial do Cálculo da Sorte processa o histórico oficial para identificar frequências, eliminar combinações desbalanceadas e estruturar matrizes com base em dados.</p>
-            <a href="/" class="cta-btn">Explorar Análise Estatística com IA</a>
+            <h2>Quer aplicar inteligência matemática no próximo sorteio?</h2>
+            <p>
+                Escolher números aleatórios ou datas comemorativas contraria a distribuição estatística. O <strong>Cálculo da Sorte</strong> processa o histórico oficial das loterias da Caixa para gerar matrizes combinatórias, gráficos de frequência e relatórios com Inteligência Artificial.
+            </p>
+            <div class="cta-actions">
+                <a href="/" class="cta-btn-main">
+                    🏠 Conhecer a Ferramenta na Home
+                </a>
+                <a href="/cadastro?plano=avulso" class="cta-btn-sub">
+                    ⚡ Testar Análise por R$ 5,00
+                </a>
+            </div>
+        </div>
+
+        <!-- Bloco de Estudos Recomendados (Linkagem Interna Contextual) -->
+        <div class="estudos-recomendados">
+            <div class="estudos-header">
+                <span>📚</span> Estudos Estatísticos Recomendados para {{ loteria.nome }}
+            </div>
+            <div class="estudos-grid">
+                {% if loteria.nome == 'Lotofácil' %}
+                <a href="/blog/quais-os-numeros-que-mais-saem-na-lotofacil" class="estudo-card">
+                    <span class="estudo-tag">Análise Histórica</span>
+                    <h4 class="estudo-title">Quais os números que mais saem na Lotofácil? (Dados Atualizados)</h4>
+                </a>
+                <a href="/blog/o-poder-dos-fechamentos-combinatorios" class="estudo-card">
+                    <span class="estudo-tag">Fechamentos</span>
+                    <h4 class="estudo-title">O Poder dos Fechamentos Combinatórios: Como Economizar no Volante</h4>
+                </a>
+                <a href="/blog/como-ganhar-na-lotofacil-garantido" class="estudo-card">
+                    <span class="estudo-tag">Matemática Real</span>
+                    <h4 class="estudo-title">Existe método 100% garantido? O fim do mito e a estatística real</h4>
+                </a>
+                {% elif loteria.nome == 'Quina' %}
+                <a href="/blog/fechamento-quina-estrategia-combinatoria" class="estudo-card">
+                    <span class="estudo-tag">Estratégia Quina</span>
+                    <h4 class="estudo-title">Fechamento da Quina: Estratégias para Otimizar Cobertura e Reduzir Custos</h4>
+                </a>
+                <a href="/blog/diferenca-entre-desdobramento-e-fechamento" class="estudo-card">
+                    <span class="estudo-tag">Análise Combinatória</span>
+                    <h4 class="estudo-title">Diferença entre Desdobramento e Fechamento Matemático</h4>
+                </a>
+                <a href="/blog/a-matematica-oculta-das-loterias" class="estudo-card">
+                    <span class="estudo-tag">Probabilidade</span>
+                    <h4 class="estudo-title">A Matemática Oculta das Loterias: Evite Palpites Aleatórios</h4>
+                </a>
+                {% elif loteria.nome == 'Lotomania' %}
+                <a href="/blog/estatistica-lotomania-aposta-espelho" class="estudo-card">
+                    <span class="estudo-tag">Aposta Espelho</span>
+                    <h4 class="estudo-title">Estatística da Lotomania: Como Funciona a Aposta Espelho</h4>
+                </a>
+                <a href="/blog/a-curva-de-gauss-nas-loterias" class="estudo-card">
+                    <span class="estudo-tag">Curva de Gauss</span>
+                    <h4 class="estudo-title">A Curva de Gauss: Por Que Extremos Nunca Ganham em Loterias</h4>
+                </a>
+                <a href="/blog/filtros-matematicos-como-eliminar-dezenas" class="estudo-card">
+                    <span class="estudo-tag">Filtros Lógicos</span>
+                    <h4 class="estudo-title">Filtros Matemáticos: Como Eliminar Combinações Ineficientes</h4>
+                </a>
+                {% else %}
+                <a href="/blog/a-matematica-oculta-das-loterias" class="estudo-card">
+                    <span class="estudo-tag">Probabilidade</span>
+                    <h4 class="estudo-title">A Matemática Oculta das Loterias: Evite Erros Amadores</h4>
+                </a>
+                <a href="/blog/diferenca-entre-desdobramento-e-fechamento" class="estudo-card">
+                    <span class="estudo-tag">Combinatória</span>
+                    <h4 class="estudo-title">Desdobramentos vs. Fechamentos: Economize nas Suas Apostas</h4>
+                </a>
+                <a href="/blog/o-paradoxo-do-jogador-e-lei-das-medias" class="estudo-card">
+                    <span class="estudo-tag">Teoria Estatística</span>
+                    <h4 class="estudo-title">O Paradoxo do Jogador: A Falácia da Lei das Médias</h4>
+                </a>
+                {% endif %}
+            </div>
         </div>
 
         <div class="seo-text">
@@ -115,9 +267,10 @@
             <h3>Como otimizar suas combinações com estatística?</h3>
             <p>Utilize nossos filtros estatísticos (soma, pares/ímpares, linhas e colunas) e fechamentos ortogonais para estruturar dezenas com equilíbrio matemático e redução de volantes.</p>
         </div>
-    </div>
-        <div style="background: rgba(10,26,63,0.04); border: 1px solid rgba(10,26,63,0.1); border-radius: 12px; padding: 16px 20px; margin: 40px auto 20px; text-align: left; font-size: 0.82rem; line-height: 1.6; color: #5B6B82;">
-            <strong style="color: #0046AD;">⚖️ AVISO LEGAL:</strong> O Cálculo da Sorte é um software independente de análise estatística e ciência de dados. NÃO comercializamos bilhetes, NÃO realizamos apostas e NÃO temos vínculo com a Caixa Econômica Federal. Resultados consultados diretamente das fontes públicas oficiais.
+
+        <div style="background: rgba(10,26,63,0.04); border: 1px solid rgba(10,26,63,0.1); border-radius: 12px; padding: 16px 20px; margin: 30px auto 10px; text-align: left; font-size: 0.82rem; line-height: 1.6; color: #5B6B82;">
+            <strong style="color: #0046AD;">⚖️ AVISO LEGAL E DE CONFORMIDADE:</strong> O Cálculo da Sorte é uma plataforma independente de software (SaaS) dedicada à análise estatística e modelagem matemática sobre dados públicos oficiais da Caixa Econômica Federal. NÃO somos casa de apostas, NÃO comercializamos bilhetes ou bolões e NÃO prometemos retorno financeiro ou garantia de premiação. Loterias de prognósticos são eventos aleatórios e probabilísticos. Finalidade exclusivamente analítica e educacional (+18 anos).
         </div>
+    </div>
 </body>
 </html>

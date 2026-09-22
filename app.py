@@ -657,6 +657,20 @@ BLOG_POSTS = {
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Aprenda de uma vez por todas a diferença técnica entre desdobramento e fechamento para economizar nas suas apostas da Mega-Sena e Quina.',
         'template': 'blog/artigo_13.html'
+    },
+    'estatistica-lotomania-aposta-espelho': {
+        'title': 'Estatística da Lotomania: Como Funciona a Aposta Espelho e a Redução Combinatória',
+        'date': '2026-09-22',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Entenda a teoria probabilística por trás dos 100 números da Lotomania, o funcionamento da aposta espelho e o impacto da curva de Gauss na soma das dezenas.',
+        'template': 'blog/artigo_14.html'
+    },
+    'fechamento-quina-estrategia-combinatoria': {
+        'title': 'Fechamento da Quina: Estratégias Matemáticas para Otimizar Cobertura e Reduzir Custos',
+        'date': '2026-09-22',
+        'author': 'Equipe Cálculo da Sorte',
+        'description': 'Descubra como matrizes ortogonais da Quina permitem cercar 8, 9 ou 10 dezenas com redução de até 85% no custo e proteção condicional para Quadra.',
+        'template': 'blog/artigo_15.html'
     }
 }
 
