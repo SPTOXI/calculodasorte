@@ -33,6 +33,17 @@ class LoteriaConfig:
     custo_minimo: float
     dias_sorteio: List[str]
     faixas_premiacao: List[int]
+    numero_inicial: int = 1  # Lotomania (00-99) e Super Sete (0-9) começam em 0
+    sorteios_por_concurso: int = 1  # Dupla Sena tem 2 sorteios por concurso
+    colunas: int = 0  # Super Sete: 7 colunas independentes, um dígito por coluna
+
+    @property
+    def numero_final(self) -> int:
+        return self.numero_inicial + self.universo - 1
+
+    @property
+    def numeros(self) -> List[int]:
+        return list(range(self.numero_inicial, self.numero_inicial + self.universo))
 
 
 # Configurações das loterias brasileiras
@@ -75,7 +86,8 @@ LOTERIAS_CONFIG = {
         maximo_aposta=50,
         custo_minimo=3.0,
         dias_sorteio=["segunda", "quarta", "sexta"],
-        faixas_premiacao=[0, 15, 16, 17, 18, 19, 20]
+        faixas_premiacao=[0, 15, 16, 17, 18, 19, 20],
+        numero_inicial=0
     ),
     LoteriaType.MAIS_MILIONARIA: LoteriaConfig(
         nome="+Milionária",
@@ -105,7 +117,9 @@ LOTERIAS_CONFIG = {
         maximo_aposta=7,
         custo_minimo=3.0,
         dias_sorteio=["segunda", "quarta", "sexta"],
-        faixas_premiacao=[3, 4, 5, 6, 7]
+        faixas_premiacao=[3, 4, 5, 6, 7],
+        numero_inicial=0,
+        colunas=7
     ),
     LoteriaType.TIMEMANIA: LoteriaConfig(
         nome="Timemania",
@@ -125,7 +139,8 @@ LOTERIAS_CONFIG = {
         maximo_aposta=15,
         custo_minimo=3.0,
         dias_sorteio=["segunda", "quarta", "sexta"],
-        faixas_premiacao=[4, 5, 6]
+        faixas_premiacao=[3, 4, 5, 6],
+        sorteios_por_concurso=2
     )
 }
 
@@ -172,7 +187,13 @@ class ModeloCanonico30:
         
         self.T = len(self.historico)  # Total de concursos observados
         self.N = self.config.universo  # Tamanho do universo
+        self.numeros = self.config.numeros
         self.k = self.config.sorteados  # Números sorteados por concurso
+        # Dupla Sena: quando cada concurso traz os 2 sorteios juntos (12 dezenas), k dobra
+        por_sorteio = self.config.sorteados
+        if (self.config.sorteios_por_concurso > 1 and self.historico
+                and all(len(c) > por_sorteio for c in self.historico)):
+            self.k = por_sorteio * self.config.sorteios_por_concurso
         
         # Frequência teórica por elemento
         self.mu = self.k / self.N
@@ -186,26 +207,26 @@ class ModeloCanonico30:
     
     def _calcular_contagens(self):
         """Calcular contagens históricas para cada número"""
-        self.contagens_total = {i: 0 for i in range(1, self.N + 1)}
-        self.contagens_W1 = {i: 0 for i in range(1, self.N + 1)}
-        self.contagens_W2 = {i: 0 for i in range(1, self.N + 1)}
+        self.contagens_total = {i: 0 for i in self.numeros}
+        self.contagens_W1 = {i: 0 for i in self.numeros}
+        self.contagens_W2 = {i: 0 for i in self.numeros}
         
         # Contagem total
         for concurso in self.historico:
             for numero in concurso:
-                if 1 <= numero <= self.N:
+                if numero in self.contagens_total:
                     self.contagens_total[numero] += 1
         
         # Contagem W1 (últimos 100)
         for concurso in self.historico[-self.W1:]:
             for numero in concurso:
-                if 1 <= numero <= self.N:
+                if numero in self.contagens_total:
                     self.contagens_W1[numero] += 1
         
         # Contagem W2 (últimos 150)
         for concurso in self.historico[-self.W2:]:
             for numero in concurso:
-                if 1 <= numero <= self.N:
+                if numero in self.contagens_total:
                     self.contagens_W2[numero] += 1
     
     def calcular_frequencia(self, numero: int) -> float:
@@ -326,7 +347,7 @@ class ModeloCanonico30:
         
         # Variância histórica
         variancias = []
-        for numero in range(1, self.N + 1):
+        for numero in self.numeros:
             fi = self.calcular_frequencia(numero)
             variancias.append(fi)
         
@@ -334,7 +355,7 @@ class ModeloCanonico30:
         
         # Variância W1
         variancias_w1 = []
-        for numero in range(1, self.N + 1):
+        for numero in self.numeros:
             fi_w1 = self.contagens_W1[numero] / self.W1 if self.W1 > 0 else 0
             variancias_w1.append(fi_w1)
         
@@ -353,7 +374,7 @@ class ModeloCanonico30:
         gamma = self.calcular_gamma()
         
         # Normalizar IMC
-        imcs = [self.calcular_imc(n) for n in range(1, self.N + 1)]
+        imcs = [self.calcular_imc(n) for n in self.numeros]
         media_imc = statistics.mean(imcs) if imcs else 0
         std_imc = statistics.stdev(imcs) if len(imcs) > 1 else 1
         
@@ -413,7 +434,7 @@ class ModeloCanonico30:
     
     def analisar_todos_elementos(self) -> List[ElementoAnalise]:
         """Analisar todos os elementos do universo"""
-        return [self.analisar_elemento(i) for i in range(1, self.N + 1)]
+        return [self.analisar_elemento(i) for i in self.numeros]
     
     def calcular_entropia(self) -> float:
         """
@@ -421,7 +442,7 @@ class ModeloCanonico30:
         Calcular entropia do sistema
         """
         entropia = 0
-        for numero in range(1, self.N + 1):
+        for numero in self.numeros:
             p = self.calcular_frequencia(numero)
             if p > 0:
                 entropia -= p * math.log2(p)
@@ -432,7 +453,7 @@ class ModeloCanonico30:
         Camada 5 - Informacional
         Medida simplificada de complexidade baseada na distribuição
         """
-        frequencias = [self.calcular_frequencia(i) for i in range(1, self.N + 1)]
+        frequencias = [self.calcular_frequencia(i) for i in self.numeros]
         return statistics.stdev(frequencias) if len(frequencias) > 1 else 0
     
     def calcular_compressibilidade(self) -> float:
@@ -525,7 +546,7 @@ class ValidaçãoCamada7:
         score_atual = statistics.mean([a.score_mcp for a in analises_atuais])
         
         resultados_simulados = []
-        universo = list(range(1, self.modelo.N + 1))
+        universo = list(self.modelo.numeros)
         k = self.modelo.k
         
         for _ in range(simulacoes):
@@ -554,7 +575,7 @@ class ValidaçãoCamada7:
         chi_quadrado = 0
         esperado = self.modelo.T * self.modelo.mu
         
-        for numero in range(1, self.modelo.N + 1):
+        for numero in self.modelo.numeros:
             observado = self.modelo.contagens_total[numero]
             chi_quadrado += ((observado - esperado) ** 2) / esperado if esperado > 0 else 0
         
@@ -581,7 +602,7 @@ class ValidaçãoCamada7:
         historico_teste = self.modelo.historico[-janela_teste:]
         
         # Criar modelo apenas com dados de treino
-        modelo_treino = ModeloCanonico30(historico_treino, self.modelo.loteria_type)
+        modelo_treino = ModeloCanonico30(historico_treino, self.modelo.loteria_type, config_override=self.modelo.config)
         
         # Selecionar top 10 números por score MCP
         analises = modelo_treino.analisar_todos_elementos()
@@ -638,6 +659,9 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
     Gerar sugestão de jogo baseada na análise estatística
     Considera múltiplas camadas do modelo canônico
     """
+    if modelo.config.colunas:
+        return gerar_jogo_por_coluna(modelo.historico, modelo.config)
+
     analises = modelo.analisar_todos_elementos()
     
     # Estratégia balanceada:
@@ -673,7 +697,7 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
     # Aleatórios para completar
     import random
     while len(sugeridos) < quantidade_numeros:
-        num = random.randint(1, modelo.N)
+        num = random.choice(modelo.numeros)
         sugeridos.add(num)
     
     return sorted(list(sugeridos))[:quantidade_numeros]
@@ -692,23 +716,21 @@ def gerar_multiplos_jogos(
     """
     import random
 
+    if modelo.config.colunas:
+        return _gerar_multiplos_por_coluna(modelo, quantidade_jogos, numeros_base)
+
     analises = modelo.analisar_todos_elementos()
     
     # Se o usuário definiu um pool de números base, valida e filtra
     if numeros_base and len(numeros_base) >= quantidade_numeros:
-        universo_disponivel = sorted(list({n for n in numeros_base if 1 <= n <= modelo.N}))
+        universo_disponivel = sorted(list({n for n in numeros_base if n in modelo.contagens_total}))
         if len(universo_disponivel) < quantidade_numeros:
-            universo_disponivel = list(range(1, modelo.N + 1))
+            universo_disponivel = list(modelo.numeros)
     else:
-        universo_disponivel = list(range(1, modelo.N + 1))
+        universo_disponivel = list(modelo.numeros)
     
     # Calcular pesos estatísticos para cada número
-    pesos = {}
-    for a in analises:
-        estabilidade = max(0.0, 1.0 - a.ict)
-        harmonia = max(0.0, 1.0 - abs(a.fr - 1.0))
-        peso = (a.score_mcp * 1.5) + (estabilidade * 1.0) + (harmonia * 0.8)
-        pesos[a.numero] = max(0.05, peso)
+    pesos = {a.numero: _peso_canonico(a) for a in analises}
 
     jogos_gerados = []
     jogos_set = set()
@@ -745,6 +767,89 @@ def gerar_multiplos_jogos(
                 jogos_gerados.append(list(jogo_ordenado))
 
     return jogos_gerados
+
+
+def _peso_canonico(a: ElementoAnalise) -> float:
+    estabilidade = max(0.0, 1.0 - a.ict)
+    harmonia = max(0.0, 1.0 - abs(a.fr - 1.0))
+    return max(0.05, (a.score_mcp * 1.5) + (estabilidade * 1.0) + (harmonia * 0.8))
+
+
+def _config_coluna(config: LoteriaConfig, indice: int) -> LoteriaConfig:
+    return LoteriaConfig(
+        nome=f"{config.nome} - Coluna {indice + 1}",
+        universo=config.universo,
+        sorteados=1,
+        minimo_aposta=1,
+        maximo_aposta=1,
+        custo_minimo=0.0,
+        dias_sorteio=[],
+        faixas_premiacao=[],
+        numero_inicial=config.numero_inicial,
+    )
+
+
+def modelos_por_coluna(historico: List, config: LoteriaConfig, loteria_type: LoteriaType = LoteriaType.SUPER_SETE) -> List[ModeloCanonico30]:
+    """Um Modelo Canônico por coluna (Super Sete): cada coluna é um sorteio independente de 1 dígito."""
+    historico_normalizado = ModeloCanonico30(historico, loteria_type, config_override=config).historico
+    validos = [c for c in historico_normalizado if len(c) == config.colunas]
+    return [
+        ModeloCanonico30([[c[i]] for c in validos], loteria_type, config_override=_config_coluna(config, i))
+        for i in range(config.colunas)
+    ]
+
+
+def analise_por_coluna(historico: List, config: LoteriaConfig) -> List[Dict]:
+    resultado = []
+    for i, modelo in enumerate(modelos_por_coluna(historico, config)):
+        analises = sorted(modelo.analisar_todos_elementos(), key=lambda a: a.score_mcp, reverse=True)
+        resultado.append({
+            "coluna": i + 1,
+            "digitos": [
+                {
+                    "numero": a.numero,
+                    "contagem": a.contagem_total,
+                    "frequencia": round(a.frequencia_observed, 6),
+                    "fr": round(a.fr, 4),
+                    "score_mcp": round(a.score_mcp, 4),
+                    "classe": a.classe,
+                }
+                for a in analises
+            ],
+        })
+    return resultado
+
+
+def _escolher_digitos(modelos: List[ModeloCanonico30], permitidos: Optional[set] = None) -> List[int]:
+    import random
+    jogo = []
+    for modelo in modelos:
+        analises = [a for a in modelo.analisar_todos_elementos() if not permitidos or a.numero in permitidos]
+        if not analises:
+            analises = modelo.analisar_todos_elementos()
+        escolhido = random.choices(analises, weights=[_peso_canonico(a) for a in analises], k=1)[0]
+        jogo.append(escolhido.numero)
+    return jogo
+
+
+def gerar_jogo_por_coluna(historico: List, config: LoteriaConfig) -> List[int]:
+    """Jogo do Super Sete: um dígito por coluna, na ordem das colunas (repetição permitida)."""
+    return _escolher_digitos(modelos_por_coluna(historico, config))
+
+
+def _gerar_multiplos_por_coluna(modelo: ModeloCanonico30, quantidade_jogos: int,
+                                numeros_base: Optional[List[int]] = None) -> List[List[int]]:
+    modelos = modelos_por_coluna(modelo.historico, modelo.config)
+    permitidos = {n for n in (numeros_base or []) if n in modelo.contagens_total} or None
+    jogos, vistos = [], set()
+    tentativas = 0
+    while len(jogos) < quantidade_jogos and tentativas < quantidade_jogos * 150:
+        tentativas += 1
+        jogo = _escolher_digitos(modelos, permitidos)
+        if tuple(jogo) not in vistos:
+            vistos.add(tuple(jogo))
+            jogos.append(jogo)
+    return jogos
 
 
 if __name__ == "__main__":

@@ -151,7 +151,7 @@ tr:hover{background:rgba(0,70,173,0.04)}
                 <span class="regra-icone">🎯</span>
                 <div>
                     <span class="regra-label">Números no Volante</span>
-                    <span class="regra-valor">1 a {{ config.universo }}</span>
+                    <span class="regra-valor">{{ '%02d' % config.numero_inicial }} a {{ '%02d' % config.numero_final }}</span>
                 </div>
             </div>
             <div class="regra-divider"></div>
@@ -250,7 +250,7 @@ tr:hover{background:rgba(0,70,173,0.04)}
                 <h4>📋 Como analisar suas próprias apostas para a {{ config.nome }}:</h4>
                 <ul>
                     <li><strong>Área de trabalho pessoal:</strong> Digite ou cole suas combinações abaixo (um jogo por linha, ex: <code>06 11 25 45 48 58</code>).</li>
-                    <li><strong>Regras da {{ config.nome }}:</strong> De <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} dezenas</strong> por linha, com números entre <strong>1 e {{ config.universo }}</strong>.</li>
+                    <li><strong>Regras da {{ config.nome }}:</strong> De <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} dezenas</strong> por linha, com números entre <strong>{{ '%02d' % config.numero_inicial }} e {{ '%02d' % config.numero_final }}</strong>.</li>
                     <li><strong>Análise Personalizada:</strong> Ao clicar em <strong>"Analisar Meus Números"</strong>, o sistema processará o histórico de saídas, distribuição e frequência das suas dezenas selecionadas.</li>
                 </ul>
             </div>
@@ -343,7 +343,7 @@ Exemplo para {{ config.nome }}:
                 <div>
                     <strong style="color: #003380;">🎯 Regras da {{ config.nome }} para geração de apostas:</strong>
                     <div style="color: #C97400; font-size: 0.9rem; margin-top: 2px;">
-                        Esta loteria permite apostas de <strong>{{ config.minimo_aposta }} até {{ config.maximo_aposta }} dezenas</strong> por jogo (números de 1 a {{ config.universo }}).
+                        Esta loteria permite apostas de <strong>{{ config.minimo_aposta }} até {{ config.maximo_aposta }} dezenas</strong> por jogo (números de {{ '%02d' % config.numero_inicial }} a {{ '%02d' % config.numero_final }}).
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
@@ -620,6 +620,9 @@ Exemplo para {{ config.nome }}:
 
         const CONFIG_LOTERIA = {
             universo: {{ config.universo }},
+            numero_inicial: {{ config.numero_inicial }},
+            numero_final: {{ config.numero_final }},
+            por_coluna: {{ 'true' if config.colunas else 'false' }},
             sorteados: {{ config.sorteados }},
             minimo_aposta: {{ config.minimo_aposta }},
             maximo_aposta: {{ config.maximo_aposta }},
@@ -647,14 +650,22 @@ Exemplo para {{ config.nome }}:
         }
 
         // Formata histórico para visualização limpa de apostas (1 jogo por linha: "06 11 25 45 48 58")
+        function numeroValido(n) {
+            return !isNaN(n) && n >= CONFIG_LOTERIA.numero_inicial && n <= CONFIG_LOTERIA.numero_final;
+        }
+
+        // Super Sete mantém a ordem das colunas e permite repetir dígitos; demais loterias: únicos e ordenados
+        function normalizarJogo(nums) {
+            const validos = nums.map(Number).filter(numeroValido);
+            if (CONFIG_LOTERIA.por_coluna) return validos;
+            return Array.from(new Set(validos)).sort((a, b) => a - b);
+        }
+
         function formatarHistoricoParaTexto(historico) {
             if (!historico || !Array.isArray(historico)) return '';
             return historico.map(concurso => {
                 if (!Array.isArray(concurso)) return '';
-                return concurso
-                    .map(Number)
-                    .filter(n => !isNaN(n) && n > 0)
-                    .sort((a, b) => a - b)
+                return normalizarJogo(concurso)
                     .map(n => String(n).padStart(2, '0'))
                     .join(' ');
             }).filter(linha => linha.trim().length > 0).join('\n');
@@ -668,9 +679,14 @@ Exemplo para {{ config.nome }}:
         function carregarExemploNoInput() {
             const exemplos = [];
             for (let i = 0; i < 5; i++) {
+                const sorteio = () => CONFIG_LOTERIA.numero_inicial + Math.floor(Math.random() * CONFIG_LOTERIA.universo);
+                if (CONFIG_LOTERIA.por_coluna) {
+                    exemplos.push(Array.from({ length: CONFIG_LOTERIA.sorteados }, sorteio));
+                    continue;
+                }
                 const s = new Set();
                 while (s.size < CONFIG_LOTERIA.sorteados) {
-                    s.add(Math.floor(Math.random() * CONFIG_LOTERIA.universo) + 1);
+                    s.add(sorteio());
                 }
                 exemplos.push(Array.from(s).sort((a,b)=>a-b));
             }
@@ -879,11 +895,11 @@ Exemplo para {{ config.nome }}:
                 }
 
                 const nums = matches.map(Number);
-                const unicos = Array.from(new Set(nums));
+                const unicos = CONFIG_LOTERIA.por_coluna ? nums : Array.from(new Set(nums));
                 
-                const fora = unicos.filter(n => n < 1 || n > CONFIG_LOTERIA.universo);
+                const fora = unicos.filter(n => !numeroValido(n));
                 if (fora.length > 0) {
-                    numerosForaUniverso.push(`Linha ${idx + 1}: número(s) [${fora.join(', ')}] fora do universo 1 a ${CONFIG_LOTERIA.universo}`);
+                    numerosForaUniverso.push(`Linha ${idx + 1}: número(s) [${fora.join(', ')}] fora do universo ${CONFIG_LOTERIA.numero_inicial} a ${CONFIG_LOTERIA.numero_final}`);
                 }
 
                 if (unicos.length < CONFIG_LOTERIA.minimo_aposta || unicos.length > CONFIG_LOTERIA.maximo_aposta) {
@@ -895,13 +911,13 @@ Exemplo para {{ config.nome }}:
 
             if (numerosForaUniverso.length > 0) {
                 feedbackEl.className = 'input-live-feedback feedback-erro';
-                feedbackEl.innerHTML = `<span>❌ <strong>Atenção:</strong> ${numerosForaUniverso[0]}. Permitido na ${CONFIG_LOTERIA.nome}: 1 a ${CONFIG_LOTERIA.universo}.</span>`;
+                feedbackEl.innerHTML = `<span>❌ <strong>Atenção:</strong> ${numerosForaUniverso[0]}. Permitido na ${CONFIG_LOTERIA.nome}: ${CONFIG_LOTERIA.numero_inicial} a ${CONFIG_LOTERIA.numero_final}.</span>`;
             } else if (linhasComErro.length > 0) {
                 feedbackEl.className = 'input-live-feedback feedback-aviso';
                 feedbackEl.innerHTML = `<span>⚠️ <strong>Aviso:</strong> ${linhasComErro[0]}.</span>`;
             } else {
                 feedbackEl.className = 'input-live-feedback feedback-valido';
-                feedbackEl.innerHTML = `<span>✅ <strong>${totalJogosValidos} jogos detectados!</strong> Todos em conformidade com as regras da ${CONFIG_LOTERIA.nome} (${CONFIG_LOTERIA.minimo_aposta} a ${CONFIG_LOTERIA.maximo_aposta} dezenas de 1 a ${CONFIG_LOTERIA.universo}).</span>`;
+                feedbackEl.innerHTML = `<span>✅ <strong>${totalJogosValidos} jogos detectados!</strong> Todos em conformidade com as regras da ${CONFIG_LOTERIA.nome} (${CONFIG_LOTERIA.minimo_aposta} a ${CONFIG_LOTERIA.maximo_aposta} dezenas de ${CONFIG_LOTERIA.numero_inicial} a ${CONFIG_LOTERIA.numero_final}).</span>`;
             }
         }
 
@@ -914,7 +930,7 @@ Exemplo para {{ config.nome }}:
                     const parsed = JSON.parse(texto);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         return parsed
-                            .map(c => Array.isArray(c) ? c.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo) : [])
+                            .map(c => Array.isArray(c) ? normalizarJogo(c) : [])
                             .filter(c => c.length >= CONFIG_LOTERIA.minimo_aposta);
                     }
                 } catch (e) {}
@@ -928,8 +944,7 @@ Exemplo para {{ config.nome }}:
 
                 const matches = limpa.match(/\d+/g);
                 if (matches && matches.length >= CONFIG_LOTERIA.minimo_aposta) {
-                    const nums = matches.map(Number).filter(n => !isNaN(n) && n > 0 && n <= CONFIG_LOTERIA.universo);
-                    const unicos = Array.from(new Set(nums)).sort((a, b) => a - b);
+                    const unicos = normalizarJogo(matches);
                     if (unicos.length >= CONFIG_LOTERIA.minimo_aposta) {
                         concursos.push(unicos);
                     }
@@ -1009,7 +1024,7 @@ Exemplo para {{ config.nome }}:
             if (!grid) return;
             grid.innerHTML = '';
             
-            for (let i = 1; i <= CONFIG_LOTERIA.universo; i++) {
+            for (let i = CONFIG_LOTERIA.numero_inicial; i <= CONFIG_LOTERIA.numero_final; i++) {
                 const bola = document.createElement('div');
                 bola.className = 'volante-bola' + (numerosBaseSelecionados.has(i) ? ' selected' : '');
                 bola.textContent = i < 10 ? '0' + i : i;
@@ -1054,7 +1069,7 @@ Exemplo para {{ config.nome }}:
             numerosBaseSelecionados.clear();
             matches.forEach(m => {
                 const n = parseInt(m);
-                if (n >= 1 && n <= CONFIG_LOTERIA.universo) {
+                if (numeroValido(n)) {
                     numerosBaseSelecionados.add(n);
                 }
             });
@@ -1083,8 +1098,8 @@ Exemplo para {{ config.nome }}:
                     numerosBaseSelecionados.add(item.numero);
                 });
             } else {
-                for (let i = 1; i <= qtd; i++) {
-                    numerosBaseSelecionados.add(i);
+                for (let i = 0; i < qtd; i++) {
+                    numerosBaseSelecionados.add(CONFIG_LOTERIA.numero_inicial + i);
                 }
             }
             sincronizarVolanteComSet();
@@ -1594,12 +1609,13 @@ Exemplo para {{ config.nome }}:
 
                 // Destacar nas cartelas
                 let cartelasHtml = '';
-                const setSorteados = new Set(data.dezenas_sorteadas || []);
+                const setSorteados = new Set([...(data.dezenas_sorteadas || []), ...(data.dezenas_segundo_sorteio || [])]);
 
                 data.jogos_conferidos.forEach(item => {
                     let bolasJogo = '';
-                    item.jogo.forEach(n => {
-                        const acertou = setSorteados.has(n);
+                    const posicoes = item.acertos_posicoes ? new Set(item.acertos_posicoes) : null;
+                    item.jogo.forEach((n, i) => {
+                        const acertou = posicoes ? posicoes.has(i) : setSorteados.has(n);
                         const nStr = n < 10 ? '0' + n : n;
                         bolasJogo += `<span class="bola-aposta ${acertou ? 'acerto' : ''}">${nStr}</span>`;
                     });

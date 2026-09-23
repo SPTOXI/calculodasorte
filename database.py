@@ -44,7 +44,6 @@ except ImportError:
 
 from contextlib import contextmanager
 
-_LAST_CLOUD_SYNC = 0.0
 
 
 
@@ -69,11 +68,6 @@ def set_setting(key: str, value: str) -> bool:
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             ''', (key, str(value)))
             conn.commit()
-        try:
-            if 'blob_storage' in globals():
-                sync_db_to_cloud()
-        except Exception:
-            pass
         return True
     except Exception as e:
         print(f"[SETTINGS] Erro ao salvar configuração {key}: {e}")
@@ -101,40 +95,6 @@ def obter_ultimo_resultado_db(loteria_type: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"[DB] Erro ao obter ultimo resultado de {loteria_type}: {e}")
     return None
-
-
-def sync_db_from_cloud(force: bool = False) -> bool:
-    """Sincroniza o banco local com a versão persistente na nuvem (Vercel Blob)"""
-    global _LAST_CLOUD_SYNC
-    now = time.time()
-    if not force and (now - _LAST_CLOUD_SYNC < 4.0):
-        return False
-    
-    if not blob_storage.get_blob_token():
-        return False
-
-    success = blob_storage.download_blob('database.db', DB_PATH)
-    if success:
-        _LAST_CLOUD_SYNC = now
-        aplicar_migracoes()
-    return success
-
-
-def sync_db_to_cloud() -> bool:
-    """Envia o banco local atualizado para o Vercel Blob"""
-    global _LAST_CLOUD_SYNC
-    if not blob_storage.get_blob_token():
-        if os.environ.get('VERCEL'):
-            print("[DB] AVISO: BLOB_READ_WRITE_TOKEN não configurado no Vercel. Alterações não serão persistidas entre instâncias.")
-        return False
-    
-    success = blob_storage.upload_blob(DB_PATH, 'database.db')
-    if success:
-        _LAST_CLOUD_SYNC = time.time()
-    else:
-        print("[DB] ERRO: Falha ao sincronizar banco local com Vercel Blob.")
-    return success
-
 
 
 import urllib.parse
@@ -315,12 +275,6 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
 
-    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
-        with get_db_connection() as conn:
-            row = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
-            if row:
-                return dict(row)
 
     return None
 
@@ -338,24 +292,12 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
 
-    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
-        with get_db_connection() as conn:
-            row = conn.execute(
-                'SELECT * FROM users WHERE LOWER(email) = %s', 
-                (email_clean,)
-            ).fetchone()
-            if row:
-                print(f"[DB] Usuário {email_clean} localizado com sucesso após sincronização em nuvem.")
-                return dict(row)
 
     return None
 
 
 def get_all_users() -> List[Dict[str, Any]]:
     """Listar todos os usuários com dados de plano e créditos (sincronizado com a nuvem)"""
-    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
-        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         rows = conn.execute(
             'SELECT id, email, name, role, plan, credits, vip_expires_at, is_blocked, must_change_password, created_at, last_login '
@@ -1076,8 +1018,6 @@ def approve_payment(payment_id: int) -> bool:
 
 def get_all_payments() -> List[Dict[str, Any]]:
     """Listar todos os pagamentos com dados do usuário para o painel admin (sincronizado na nuvem)"""
-    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
-        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         # Cancela pagamentos pendentes criados há mais de 24 horas
         limite_tempo = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')

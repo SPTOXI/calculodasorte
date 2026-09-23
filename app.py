@@ -21,6 +21,7 @@ from core import (
     ValidaçãoCamada7,
     gerar_jogo_sugerido,
     gerar_multiplos_jogos,
+    analise_por_coluna,
     LoteriaType,
     LoteriaConfig,
     LOTERIAS_CONFIG
@@ -56,7 +57,10 @@ PRECO_AVULSO = 5.00
 PRECO_MENSAL = 49.90
 secret_from_env = os.getenv('SECRET_KEY')
 if not secret_from_env:
-    secret_from_env = '6f04de83e1c5a30f789647fcece0a8052dc5ae7ecc5f08f4b75cb9f9dd8734ef'
+    # Chave aleatória por processo: sessões não sobrevivem a reinícios, mas nunca ficam forjáveis.
+    import secrets
+    print("[SEGURANÇA] SECRET_KEY não definida no ambiente! Usando chave temporária aleatória; defina SECRET_KEY em produção.")
+    secret_from_env = secrets.token_hex(32)
 app.config['SECRET_KEY'] = secret_from_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -217,6 +221,13 @@ def erro_global_exception(e):
 def carregar_historico(loteria_type: str) -> list:
     """Carregar histórico de concursos do arquivo JSON"""
     return updater.carregar_historico_local(loteria_type)
+
+
+def carregar_historico_analise(loteria_type: str) -> list:
+    """Histórico para cálculos estatísticos: na Dupla Sena inclui os 2 sorteios de cada concurso."""
+    if loteria_type == 'dupla_sena':
+        return updater.historico_com_segundo_sorteio(loteria_type)
+    return carregar_historico(loteria_type)
 
 
 def salvar_historico(loteria_type: str, historico: list):
@@ -927,7 +938,7 @@ def admin_dashboard():
 
 
 @app.route('/admin/config-ia', methods=['POST'])
-@login_required
+@admin_required
 def salvar_config_ia():
     import json
     dados = request.get_json() or {}
@@ -1099,7 +1110,7 @@ def api_analise(loteria_type: str):
     
     # Se não houver histórico no input, carregar do arquivo
     if not historico_input:
-        historico_input = carregar_historico(loteria_type)
+        historico_input = carregar_historico_analise(loteria_type)
     
     if len(historico_input) < 10:
         return jsonify({
@@ -1121,6 +1132,8 @@ def api_analise(loteria_type: str):
         'jogo_simples': gerar_jogo_sugerido(modelo, config.minimo_aposta),
         'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta)),
     }
+    if config.colunas:
+        resumo['analise_por_coluna'] = analise_por_coluna(historico_input, config)
     
     return jsonify(resumo)
 
@@ -1224,13 +1237,29 @@ def api_conferir_aposta(aposta_id: int):
 
     ultimo_sorteio = historico[-1]
     set_sorteio = set(ultimo_sorteio)
+    segundo_sorteio = []
+    if loteria_type == 'dupla_sena':
+        segundos = updater.carregar_segundo_sorteio_local(loteria_type)
+        if len(segundos) == len(historico):
+            segundo_sorteio = segundos[-1]
 
     conferencia_jogos = []
     premiacoes_resumo = {}
 
     for idx, jogo in enumerate(aposta.get('jogos', []), 1):
-        set_jogo = set(jogo)
-        acertos = sorted(list(set_jogo.intersection(set_sorteio)))
+        acertos_posicoes = None
+        sorteio_premiado = None
+        if loteria_type == 'super_sete':
+            # Super Sete: acerto é o dígito certo na coluna certa
+            acertos_posicoes = [i for i, (n, s) in enumerate(zip(jogo, ultimo_sorteio)) if n == s]
+            acertos = [jogo[i] for i in acertos_posicoes]
+        else:
+            acertos = sorted(set(jogo).intersection(set_sorteio))
+            if segundo_sorteio:
+                acertos_2 = sorted(set(jogo).intersection(segundo_sorteio))
+                sorteio_premiado = 1
+                if len(acertos_2) > len(acertos):
+                    acertos, sorteio_premiado = acertos_2, 2
         qtd_acertos = len(acertos)
         
         rotulo_premio = None
@@ -1254,6 +1283,15 @@ def api_conferir_aposta(aposta_id: int):
             elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
             elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
             elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos)'
+            if rotulo_premio and sorteio_premiado:
+                rotulo_premio += f' - {sorteio_premiado}º sorteio'
+        elif loteria_type == 'lotomania':
+            if qtd_acertos == 20: rotulo_premio = '20 Acertos 🏆'
+            elif 15 <= qtd_acertos <= 19: rotulo_premio = f'{qtd_acertos} Acertos ⭐'
+            elif qtd_acertos == 0: rotulo_premio = '0 Acertos 🎯'
+        elif loteria_type in ('super_sete', 'timemania'):
+            if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
+            elif qtd_acertos >= 3: rotulo_premio = f'{qtd_acertos} Acertos ⭐'
         elif loteria_type == 'dia_de_sorte':
             if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
             elif qtd_acertos == 6: rotulo_premio = '6 Acertos ⭐'
@@ -1271,6 +1309,7 @@ def api_conferir_aposta(aposta_id: int):
             'jogo': jogo,
             'acertos': acertos,
             'qtd_acertos': qtd_acertos,
+            'acertos_posicoes': acertos_posicoes,
             'rotulo_premio': rotulo_premio
         })
 
@@ -1280,6 +1319,7 @@ def api_conferir_aposta(aposta_id: int):
         'concurso_numero': meta.get('ultimo_concurso', len(historico)),
         'data_apuracao': meta.get('data_apuracao', 'Recente'),
         'dezenas_sorteadas': ultimo_sorteio,
+        'dezenas_segundo_sorteio': segundo_sorteio,
         'jogos_conferidos': conferencia_jogos,
         'premiacoes_resumo': premiacoes_resumo
     })
@@ -1371,7 +1411,7 @@ def gerar_jogo(loteria_type: str):
     quantidade = dados.get('quantidade', LOTERIAS_CONFIG[loteria].minimo_aposta)
     
     if not historico_input:
-        historico_input = carregar_historico(loteria_type)
+        historico_input = carregar_historico_analise(loteria_type)
     
     if len(historico_input) < 10:
         return jsonify({'erro': 'Histórico insuficiente para análise'}), 400
@@ -1425,7 +1465,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
 
     historico_input = dados.get('historico', [])
     if not historico_input:
-        historico_input = carregar_historico(loteria_type)
+        historico_input = carregar_historico_analise(loteria_type)
 
     if len(historico_input) < 10:
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
@@ -1753,7 +1793,7 @@ def api_ia_parecer(loteria_type: str):
     dados = request.get_json() or {}
     jogos = dados.get('jogos', [])
 
-    historico = carregar_historico(loteria_type)
+    historico = carregar_historico_analise(loteria_type)
     if not historico or len(historico) < 10:
         return jsonify({'erro': 'Histórico insuficiente para a IA analisar'}), 400
 
@@ -1948,7 +1988,7 @@ def comparar_concursos(loteria_type: str):
     historico_input = dados.get('historico', [])
     
     if not historico_input:
-        historico_input = carregar_historico(loteria_type)
+        historico_input = carregar_historico_analise(loteria_type)
     
     if len(historico_input) < 10:
         return jsonify({'erro': 'Histórico insuficiente'}), 400
@@ -1960,7 +2000,7 @@ def comparar_concursos(loteria_type: str):
     numeros_analisados = []
     
     for numero in concurso_atual:
-        if 1 <= numero <= modelo.N:
+        if numero in modelo.contagens_total:
             analise = next((a for a in analises if a.numero == numero), None)
             if analise:
                 scores_concurso.append(analise.score_mcp)
