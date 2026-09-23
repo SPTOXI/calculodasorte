@@ -677,6 +677,26 @@ BLOG_POSTS = {
 RESULTS_CACHE = {}
 RESULTS_CACHE_TIME = {}
 
+@app.route('/resultados')
+def resultados_index():
+    """Página central com o resultado do concurso atual de todas as 9 loterias da Caixa"""
+    loterias = []
+    for loteria, config in LOTERIAS_CONFIG.items():
+        theme = LOTERIAS_THEME.get(loteria.value, {
+            'cor': '#0046AD',
+            'cor_dark': '#003380',
+            'cor_gradiente': 'linear-gradient(135deg, #0046AD 0%, #003380 100%)',
+            'icone': '🎲',
+            'dias_resumo': ', '.join(config.dias_sorteio)
+        })
+        loterias.append({
+            'id': loteria.value,
+            'nome': config.nome,
+            'theme': theme
+        })
+    return render_template('resultados_index.html', loterias=loterias)
+
+
 @app.route('/resultados/<loteria_type>')
 def ver_resultado(loteria_type):
     try:
@@ -2032,6 +2052,7 @@ def sitemap_xml():
         {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
         {"loc": f"{base_url}/planos", "changefreq": "weekly", "priority": "0.9"},
         {"loc": f"{base_url}/blog", "changefreq": "daily", "priority": "0.9"},
+        {"loc": f"{base_url}/resultados", "changefreq": "hourly", "priority": "0.95"},
         {"loc": f"{base_url}/cadastro", "changefreq": "monthly", "priority": "0.8"},
         {"loc": f"{base_url}/login", "changefreq": "monthly", "priority": "0.7"},
         {"loc": f"{base_url}/termos", "changefreq": "monthly", "priority": "0.5"},
@@ -2083,6 +2104,7 @@ O [Cálculo da Sorte](https://calculodasorte.com.br) oferece ferramentas de gera
 - [Blog de Dicas](https://calculodasorte.com.br/blog)
 
 ## Resultados Oficiais das Loterias
+- [Todos os Resultados](https://calculodasorte.com.br/resultados)
 - [Mega-Sena](https://calculodasorte.com.br/resultados/mega_sena)
 - [Lotofácil](https://calculodasorte.com.br/resultados/lotofacil)
 - [Quina](https://calculodasorte.com.br/resultados/quina)
