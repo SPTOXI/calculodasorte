@@ -82,24 +82,24 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int 
     
     urls_para_tentar = []
     
-    # 1. Guidi API (apenas para modalidades homologadas na API dele)
+    # 1. Guidi API (rápida para modalidades compatíveis)
     if slug in ('megasena', 'lotofacil', 'quina', 'lotomania', 'timemania'):
         url_guidi = f'https://api.guidi.dev.br/loteria/{slug}'
         url_guidi += f'/{concurso}' if concurso else '/ultimo'
         urls_para_tentar.append(('guidi', url_guidi))
         
-    # 2. Caixa Oficial (suporta as 9 modalidades)
+    # 2. Heroku fallback (suporta TODAS as 9 loterias e funciona perfeitamente a partir da Vercel/EUA)
+    url_heroku = f'https://loteriascaixa-api.herokuapp.com/api/{slug}'
+    url_heroku += f'/{concurso}' if concurso else '/latest'
+    urls_para_tentar.append(('heroku', url_heroku))
+
+    # 3. Caixa Oficial (suporta as 9 modalidades - pode sofrer bloqueio em IP de datacenter internacional)
     url_caixa = f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}'
     if concurso:
         url_caixa += f'/{concurso}'
     urls_para_tentar.append(('caixa', url_caixa))
-    
-    # 3. Heroku fallback (suporta as principais)
-    if slug in ('lotofacil', 'quina', 'lotomania', 'timemania'):
-        url_heroku = f'https://loteriascaixa-api.herokuapp.com/api/{slug}/latest'
-        urls_para_tentar.append(('heroku', url_heroku))
         
-    timeout_req = 5
+    timeout_req = 4
         
     for source, url in urls_para_tentar:
         for tentativa in range(1, max_retries + 1):
@@ -111,22 +111,24 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int 
                         return {
                             'numero': dados.get('concurso'),
                             'dataApuracao': dados.get('data'),
-                            'listaDezenas': dados.get('dezenas', []),
+                            'listaDezenas': [f"{int(n):02d}" for n in dados.get('dezenas', [])],
                             'acumulado': dados.get('acumulou', False),
-                            'valorEstimadoProximoConcurso': dados.get('valorEstimadoProximoConcurso', 0.0),
-                            'dataProximoConcurso': dados.get('proximoConcurso')
+                            'valorEstimadoProximoConcurso': float(dados.get('valorEstimadoProximoConcurso') or 0.0),
+                            'dataProximoConcurso': dados.get('dataProximoConcurso') or dados.get('proximoConcurso'),
+                            'listaTrevos': [str(t) for t in dados.get('trevos', [])],
+                            'nomeTimeCoracaoMesSorte': dados.get('timeCoracao') or dados.get('mesSorte')
                         }
                     elif isinstance(dados, dict) and dados.get('numero'):
                         return dados
                 elif response.status_code == 429:
-                    time.sleep(0.3 * tentativa)
+                    time.sleep(0.2 * tentativa)
                 elif response.status_code in (403, 502, 503, 504):
-                    time.sleep(0.3 * tentativa)
+                    time.sleep(0.2 * tentativa)
             except Exception as e:
                 if tentativa == max_retries:
                     print(f"[UPDATER] Erro na URL {url} ({slug} - {concurso}): {e}")
                 else:
-                    time.sleep(0.3 * tentativa)
+                    time.sleep(0.2 * tentativa)
                     
     return None
 
@@ -525,11 +527,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
             print(f"[UPDATER] Backfill de 'Time do Coração' para {deficit} concurso(s) da Timemania...")
             times_backfill = []
             for c in range(concurso_inicial_backfill, concurso_inicial_backfill + deficit):
-                try:
-                    res = session.get(f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}/{c}', verify=False, timeout=6)
-                    d = res.json() if res.status_code == 200 else None
-                except Exception:
-                    d = None
+                d = consultar_caixa(slug, concurso=c, max_retries=1)
                 times_backfill.append(extrair_time_coracao(d) if d else None)
                 time.sleep(0.04)
             salvar_times_local(loteria_type, times_backfill + times_local_atual)
@@ -544,11 +542,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
             print(f"[UPDATER] Backfill de trevos para {deficit} concurso(s) da +Milionária...")
             trevos_backfill = []
             for c in range(concurso_inicial_backfill, concurso_inicial_backfill + deficit):
-                try:
-                    res = session.get(f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}/{c}', verify=False, timeout=6)
-                    d = res.json() if res.status_code == 200 else None
-                except Exception:
-                    d = None
+                d = consultar_caixa(slug, concurso=c, max_retries=1)
                 trevos_backfill.append(extrair_trevos(d) if d else [])
                 time.sleep(0.04)
             salvar_trevos_local(loteria_type, trevos_backfill + trevos_local_atual)
@@ -567,11 +561,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
             if c == ultimo_numero:
                 d = ultimo_dados
             else:
-                try:
-                    res = session.get(f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}/{c}', verify=False, timeout=6)
-                    d = res.json() if res.status_code == 200 else None
-                except Exception:
-                    d = None
+                d = consultar_caixa(slug, concurso=c, max_retries=1)
 
             if d:
                 dezenas = extrair_dezenas(d, slug)
@@ -624,11 +614,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
             if c == ultimo_numero:
                 d = ultimo_dados
             else:
-                try:
-                    res = session.get(f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}/{c}', verify=False, timeout=6)
-                    d = res.json() if res.status_code == 200 else None
-                except Exception:
-                    d = None
+                d = consultar_caixa(slug, concurso=c, max_retries=1)
 
             if d:
                 dezenas = extrair_dezenas(d, slug)
