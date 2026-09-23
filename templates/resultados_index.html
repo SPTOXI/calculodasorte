@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18453066810"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'AW-18453066810');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados das Loterias da Caixa Hoje — Cálculo da Sorte</title>
+    <meta name="description" content="Confira o resultado do concurso atual de todas as 9 loterias da Caixa: Mega-Sena, Lotofácil, Quina, Lotomania, +Milionária, Dupla Sena, Timemania, Dia de Sorte e Super Sete.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://calculodasorte.com.br/resultados">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <!-- Open Graph / Redes Sociais e WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Cálculo da Sorte">
+    <meta property="og:url" content="https://calculodasorte.com.br/resultados">
+    <meta property="og:title" content="Resultados das Loterias da Caixa Hoje — Cálculo da Sorte">
+    <meta property="og:description" content="Confira o resultado do concurso atual de todas as 9 loterias da Caixa.">
+    <meta property="og:image" content="https://calculodasorte.com.br/static/og-banner.png">
+
+    <!-- Dados Estruturados JSON-LD (Schema.org) para Google e Motores de IA (GEO / LLM) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Resultados das Loterias da Caixa",
+      "url": "https://calculodasorte.com.br/resultados",
+      "inLanguage": "pt-BR",
+      "hasPart": [
+        {% for loteria in loterias %}
+        {
+          "@type": "WebPage",
+          "name": {{ loteria.nome|tojson }},
+          "url": "https://calculodasorte.com.br/resultados/{{ loteria.id }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }
+    </script>
+
+    <!-- Tipografia institucional (peso forte, arredondada) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            --primary:#0046AD;
+            --primary-dark:#003380;
+            --primary-light:#2E7DE1;
+            --gold:#F39200;
+            --gold-dark:#C97400;
+            --navy:#0A1A3F;
+            --text:#101F38;
+            --text-muted:#5B6B82;
+            --bg:#FFFFFF;
+            --bg-alt:#F2F6FC;
+            --card:#FFFFFF;
+            --card-border:#E1E8F2;
+            --font-heading:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+        body{background-color:var(--bg);color:var(--text);line-height:1.6;padding:40px 20px}
+        .container{max-width:1000px;margin:0 auto}
+        .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid var(--card-border)}
+        .nav-brand-pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-heading);font-weight:800;color:var(--navy);padding:6px 14px;background:var(--bg-alt);border-radius:20px;border:1px solid var(--card-border);text-decoration:none}
+        .nav-brand-pill .brand-highlight{color:var(--primary)}
+        .btn-back{color:var(--text-muted);text-decoration:none;font-weight:600}
+        .btn-back:hover{color:var(--primary)}
+        h1{font-family:var(--font-heading);font-size:2.2rem;font-weight:800;margin-bottom:10px;color:var(--navy)}
+        .subtitle{color:var(--text-muted);margin-bottom:40px;font-size:1.1rem}
+        .resultados-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+        .resultado-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:all 0.2s;box-shadow:0 2px 10px rgba(10,26,63,0.05)}
+        .resultado-card:hover{transform:translateY(-3px);box-shadow:0 10px 25px rgba(0,70,173,0.14)}
+        .resultado-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;color:#fff}
+        .resultado-nome{font-family:var(--font-heading);font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+        .resultado-dias{font-size:0.85rem;color:var(--text-muted)}
+        .resultado-cta{margin-left:auto;color:var(--primary);font-weight:700;font-size:0.9rem;white-space:nowrap}
+
+        @media(max-width:640px){
+            body{padding:24px 16px}
+            h1{font-size:1.6rem}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="/" class="nav-brand-pill" title="Ir para a Página Inicial">
+                <img src="/static/logo.png" alt="Logo" style="width: 20px; height: 20px; object-fit: contain;"> Cálculo da <span class="brand-highlight">Sorte</span>
+            </a>
+            <a href="/" class="btn-back" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 700; background: rgba(0,70,173,0.08); padding: 8px 16px; border-radius: 8px; text-decoration: none;">🏠 Ir para a Página Inicial</a>
+        </div>
+        <h1>Resultados das Loterias da Caixa</h1>
+        <p class="subtitle">Confira o resultado do concurso atual de cada uma das 9 loterias oficiais da Caixa Econômica Federal, sempre atualizado.</p>
+
+        <div class="resultados-grid">
+            {% for loteria in loterias %}
+            <a href="/resultados/{{ loteria.id }}" class="resultado-card">
+                <div class="resultado-icon" style="background:{{ loteria.theme.cor_gradiente }};">{{ loteria.theme.icone }}</div>
+                <div>
+                    <div class="resultado-nome">{{ loteria.nome }}</div>
+                    <div class="resultado-dias">{{ loteria.theme.dias_resumo }}</div>
+                </div>
+                <span class="resultado-cta">Ver resultado →</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div style="background: rgba(10,26,63,0.04); border: 1px solid rgba(10,26,63,0.1); border-radius: 12px; padding: 16px 20px; margin: 40px auto 10px; text-align: left; font-size: 0.82rem; line-height: 1.6; color: #5B6B82;">
+            <strong style="color: #0046AD;">⚖️ AVISO LEGAL E DE CONFORMIDADE:</strong> O Cálculo da Sorte é uma plataforma independente de software (SaaS) dedicada à análise estatística e simulação combinatória sobre dados públicos oficiais da Caixa Econômica Federal. NÃO somos casa de apostas, NÃO comercializamos bilhetes ou bolões e NÃO prometemos retorno financeiro ou garantia de premiação. Loterias de prognósticos são eventos aleatórios e probabilísticos. Finalidade exclusivamente analítica e educacional.
+        </div>
+    </div>
+</body>
+</html>
