@@ -1,0 +1,30 @@
+name: Atualização Automática das Loterias Caixa
+
+on:
+  schedule:
+    # 20:45 Horário de Brasília (Segunda a Sábado) = 23:45 UTC
+    - cron: '45 23 * * 1-6'
+    # 21:30 Horário de Brasília (Segunda a Sábado) = 00:30 UTC do dia seguinte
+    - cron: '30 0 * * 2-7'
+    # 22:30 Horário de Brasília (Consolidação final) = 01:30 UTC do dia seguinte
+    - cron: '30 1 * * 2-7'
+  workflow_dispatch:
+
+jobs:
+  sincronizar:
+    name: Sincronizar Resultados Oficiais
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Disparar Sincronização na Calculadora da Sorte
+        run: |
+          echo "Disparando sincronização oficial da Caixa..."
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" -X POST "https://www.calculodasorte.com.br/api/cron/atualizar")
+          echo "HTTP Status: $HTTP_STATUS"
+          cat response.json
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Sincronização executada com sucesso!"
+          else
+            echo "Aviso: Servidor retornou HTTP $HTTP_STATUS"
+          fi

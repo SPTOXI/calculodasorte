@@ -24,6 +24,7 @@ Módulo de Banco de Dados SQLite para Gestão de Usuários e Autenticação
 Projeto Calculadora da Sorte
 """
 
+import json
 import os
 import re
 import psycopg2
@@ -68,11 +69,38 @@ def set_setting(key: str, value: str) -> bool:
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             ''', (key, str(value)))
             conn.commit()
-        sync_db_to_cloud()
+        try:
+            if 'blob_storage' in globals():
+                sync_db_to_cloud()
+        except Exception:
+            pass
         return True
     except Exception as e:
         print(f"[SETTINGS] Erro ao salvar configuração {key}: {e}")
         return False
+
+
+def salvar_ultimo_resultado_db(loteria_type: str, dados: Dict[str, Any]) -> bool:
+    """Salva o último resultado completo da loteria no banco de dados persistente (PostgreSQL / Supabase)"""
+    try:
+        payload = json.dumps(dados, ensure_ascii=False)
+        return set_setting(f'resultado_{loteria_type}', payload)
+    except Exception as e:
+        print(f"[DB] Erro ao salvar ultimo resultado de {loteria_type}: {e}")
+        return False
+
+
+def obter_ultimo_resultado_db(loteria_type: str) -> Optional[Dict[str, Any]]:
+    """Obtém o último resultado completo da loteria salvo no banco de dados persistente"""
+    try:
+        val = get_setting(f'resultado_{loteria_type}')
+        if val:
+            dados = json.loads(val)
+            if isinstance(dados, dict) and dados.get('numero'):
+                return dados
+    except Exception as e:
+        print(f"[DB] Erro ao obter ultimo resultado de {loteria_type}: {e}")
+    return None
 
 
 def sync_db_from_cloud(force: bool = False) -> bool:

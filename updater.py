@@ -157,18 +157,30 @@ def salvar_ultimo_resultado_local(loteria_type: str, dados: Dict[str, Any]):
             pass
 
 
-def obter_ultimo_resultado_completo(loteria_type: str) -> Optional[Dict[str, Any]]:
+def invalidar_cache_resultado(loteria_type: Optional[str] = None):
+    """Invalida o cache em memória para uma ou todas as loterias"""
+    global _RESULTADO_COMPLETO_CACHE, _RESULTADO_COMPLETO_TIME
+    if loteria_type:
+        _RESULTADO_COMPLETO_CACHE.pop(loteria_type, None)
+        _RESULTADO_COMPLETO_TIME.pop(loteria_type, None)
+    else:
+        _RESULTADO_COMPLETO_CACHE.clear()
+        _RESULTADO_COMPLETO_TIME.clear()
+
+
+def obter_ultimo_resultado_completo(loteria_type: str, forcar_online: bool = False) -> Optional[Dict[str, Any]]:
     """
     Obtém o resultado mais recente para a loteria com garantia de entrega:
-    1. Cache em memória recente (5 minutos)
+    1. Cache em memória recente (120 segundos)
     2. Consulta online resiliente (Guidi, Caixa, Heroku)
-    3. Fallback para arquivo _ultimo_resultado.json atualizado
-    4. Fallback sintético baseado no histórico/meta
+    3. Fallback para banco persistente PostgreSQL (database.obter_ultimo_resultado_db)
+    4. Fallback para arquivo _ultimo_resultado.json atualizado
+    5. Fallback sintético baseado no histórico/meta
     """
     now = time.time()
     
-    # 1. Cache em memória (5 minutos para alta performance e proteção contra rate-limit)
-    if loteria_type in _RESULTADO_COMPLETO_CACHE and (now - _RESULTADO_COMPLETO_TIME.get(loteria_type, 0)) < 300:
+    # 1. Cache em memória recente (120 segundos para alta performance e proteção contra rate-limit)
+    if not forcar_online and loteria_type in _RESULTADO_COMPLETO_CACHE and (now - _RESULTADO_COMPLETO_TIME.get(loteria_type, 0)) < 120:
         return _RESULTADO_COMPLETO_CACHE[loteria_type]
         
     slug = LOTERIAS_SLUGS.get(loteria_type)
@@ -181,16 +193,31 @@ def obter_ultimo_resultado_completo(loteria_type: str) -> Optional[Dict[str, Any
         _RESULTADO_COMPLETO_CACHE[loteria_type] = dados
         _RESULTADO_COMPLETO_TIME[loteria_type] = now
         salvar_ultimo_resultado_local(loteria_type, dados)
+        try:
+            database.salvar_ultimo_resultado_db(loteria_type, dados)
+        except Exception:
+            pass
         return dados
         
-    # 3. Fallback para cache local em disco (_ultimo_resultado.json)
+    # 3. Fallback para banco de dados persistente PostgreSQL (Supabase)
+    try:
+        dados_db = database.obter_ultimo_resultado_db(loteria_type)
+        if dados_db and dados_db.get('numero'):
+            _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_db
+            _RESULTADO_COMPLETO_TIME[loteria_type] = now
+            salvar_ultimo_resultado_local(loteria_type, dados_db)
+            return dados_db
+    except Exception:
+        pass
+
+    # 4. Fallback para cache local em disco (_ultimo_resultado.json)
     dados_local = carregar_ultimo_resultado_local(loteria_type)
     if dados_local and dados_local.get('numero'):
         _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_local
         _RESULTADO_COMPLETO_TIME[loteria_type] = now
         return dados_local
         
-    # 4. Fallback sintético a partir de histórico e meta
+    # 5. Fallback sintético a partir de histórico e meta
     historico = carregar_historico_local(loteria_type)
     meta = carregar_meta(loteria_type)
     if historico:
@@ -475,6 +502,15 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
     ultimo_numero = ultimo_dados.get('numero')
     data_apuracao = ultimo_dados.get('dataApuracao')
     
+    # Salva e propaga imediatamente o último resultado (disco local, PostgreSQL e cache em memória)
+    salvar_ultimo_resultado_local(loteria_type, ultimo_dados)
+    try:
+        database.salvar_ultimo_resultado_db(loteria_type, ultimo_dados)
+    except Exception as e:
+        print(f"[UPDATER] Aviso ao salvar no banco de dados ({loteria_type}): {e}")
+    _RESULTADO_COMPLETO_CACHE[loteria_type] = ultimo_dados
+    _RESULTADO_COMPLETO_TIME[loteria_type] = time.time()
+    
     # 2. Carregar dados locais existentes
     historico_local = carregar_historico_local(loteria_type)
     ultimo_local = meta.get('ultimo_concurso')
@@ -710,11 +746,18 @@ def calcular_segundos_proximo_checkpoint() -> tuple[float, str]:
     return segundos, '23:00h (Horário de Brasília)'
 
 
+def agora_brasilia() -> datetime:
+    """Retorna datetime atual no fuso oficial de Brasília (UTC-3)"""
+    from datetime import timezone
+    tz_br = timezone(timedelta(hours=-3))
+    return datetime.now(tz_br)
+
+
 def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
     """
     Verifica se a loteria precisa de atualização automática.
-    Bloqueia verificações fora do horário de sorteios (madrugada/dia)
-    e implementa cooldown para evitar bloqueios da API da Caixa.
+    Permite atualização a partir das 20:15h (Horário de Brasília) nos dias de sorteio
+    e implementa cooldown para evitar bloqueios ou sobrecarga na API da Caixa.
     """
     meta = carregar_meta(loteria_type)
     if not meta or not meta.get('ultimo_concurso'):
@@ -724,32 +767,32 @@ def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
     if not atualizado_em_str:
         return True
         
-    # Cooldown de tentativas (seja sucesso ou falha)
+    agora = agora_brasilia()
+    
+    # Cooldown de tentativas (15 minutos)
     ultima_tentativa_str = meta.get('ultima_tentativa')
     if ultima_tentativa_str:
         try:
-            ultima_dt = datetime.strptime(ultima_tentativa_str, '%d/%m/%Y %H:%M:%S')
-            if (datetime.now() - ultima_dt) < timedelta(minutes=30):
+            ultima_dt = datetime.strptime(ultima_tentativa_str, '%d/%m/%Y %H:%M:%S').replace(tzinfo=agora.tzinfo)
+            if (agora - ultima_dt) < timedelta(minutes=15):
                 return False
         except Exception:
             pass
             
     try:
-        atualizado_dt = datetime.strptime(atualizado_em_str, '%d/%m/%Y %H:%M:%S')
-        agora = datetime.now()
+        atualizado_dt = datetime.strptime(atualizado_em_str, '%d/%m/%Y %H:%M:%S').replace(tzinfo=agora.tzinfo)
         diferenca = agora - atualizado_dt
         
         # Se tem mais de 24 horas que não atualiza com sucesso, permite a tentativa
         if diferenca > timedelta(hours=24):
             return True
             
-        # Se foi atualizado com sucesso hoje, não tenta de novo
-        if atualizado_dt.date() == agora.date():
+        # Se já foi atualizado com sucesso hoje após o horário de sorteio (20:15h), não tenta de novo
+        if atualizado_dt.date() == agora.date() and (atualizado_dt.hour > 20 or (atualizado_dt.hour == 20 and atualizado_dt.minute >= 15)):
             return False
             
-        # Se a última atualização foi ontem, SÓ tenta sincronizar se 
-        # já tiver passado das 23:00 de hoje (horário em que a Caixa já atualizou tudo)
-        if agora.hour >= 23 and atualizado_dt.date() < agora.date():
+        # A partir das 20:15h (horário dos primeiros resultados da Caixa)
+        if agora.hour > 20 or (agora.hour == 20 and agora.minute >= 15):
             return True
             
         return False
