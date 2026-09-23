@@ -513,6 +513,7 @@ Exemplo para {{ config.nome }}:
             </div>
 
             <div id="analise-resultado" style="display: none;">
+                <div id="indicadores-classicos-box" style="margin-bottom: 20px;"></div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h4>Concursos Analisados</h4>
@@ -1061,7 +1062,20 @@ Exemplo para {{ config.nome }}:
                 html += '</table></div>';
 
                 if (av.equilibrio) {
-                    html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${av.equilibrio.pares_esperado} pares)</div>`;
+                    html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
+                }
+
+                const ind = av.indicadores;
+                if (ind && ind.itens.length > 0) {
+                    html += `<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 6px;">
+                        <tr style="text-align: left; color: #5B6B82;"><th style="padding: 4px;">Indicador</th><th style="padding: 4px;">Seu jogo</th><th style="padding: 4px;">Faixa típica</th><th style="padding: 4px;">Sorteios com esse valor</th></tr>`;
+                    ind.itens.forEach(i => {
+                        const marca = i.dentro_da_faixa ? '✅' : '↕️ fora da faixa';
+                        html += `<tr><td style="padding: 4px;">${i.nome}</td><td style="padding: 4px;"><strong>${i.valor}</strong> ${marca}</td><td style="padding: 4px;">${i.faixa_tipica[0]} a ${i.faixa_tipica[1]}</td><td style="padding: 4px;">${String(i.sorteios_com_mesmo_valor).replace('.', ',')}%</td></tr>`;
+                    });
+                    html += `</table></div><div style="font-size: 0.8rem; color: #5B6B82; margin-bottom: 12px;">${ind.observacao} (base: ${ind.base_sorteios} sorteios)</div>`;
+                } else if (ind && ind.observacao) {
+                    html += `<div style="font-size: 0.85rem; color: #5B6B82; margin-bottom: 12px;">📏 ${ind.observacao}</div>`;
                 }
 
                 if (av.alertas.length > 0) {
@@ -1443,8 +1457,27 @@ Exemplo para {{ config.nome }}:
             }
         }
 
+        function exibirIndicadoresClassicos(indicadores) {
+            const box = document.getElementById('indicadores-classicos-box');
+            if (!box) return;
+            if (!indicadores || indicadores.length === 0) {
+                box.innerHTML = '';
+                return;
+            }
+            let html = `<div style="background: #FFFFFF; border: 1px solid rgba(10,26,63,0.15); border-radius: 12px; padding: 18px;">
+                <h3 style="margin: 0 0 6px;">📏 Perfil típico dos sorteios</h3>
+                <p style="color: #5B6B82; font-size: 0.88rem; margin: 0 0 10px;">Faixa em que caíram 80% dos sorteios analisados. Use como referência ao montar seus jogos; ela não aumenta a chance de uma combinação específica.</p>
+                <div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <tr style="text-align: left; color: #5B6B82;"><th style="padding: 4px;">Indicador</th><th style="padding: 4px;">Faixa típica</th><th style="padding: 4px;">Média</th><th style="padding: 4px;">Mínimo – máximo</th></tr>`;
+            indicadores.forEach(i => {
+                html += `<tr><td style="padding: 4px;">${i.nome}</td><td style="padding: 4px;"><strong>${i.faixa_tipica[0]} a ${i.faixa_tipica[1]}</strong></td><td style="padding: 4px;">${String(i.media).replace('.', ',')}</td><td style="padding: 4px;">${i.minimo} – ${i.maximo}</td></tr>`;
+            });
+            box.innerHTML = html + '</table></div></div>';
+        }
+
         function exibirAnalise(result) {
             document.getElementById('analise-resultado').style.display = 'block';
+            exibirIndicadoresClassicos(result.indicadores_classicos);
             
             document.getElementById('stat-concursos').textContent = result.total_concursos;
             

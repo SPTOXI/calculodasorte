@@ -163,6 +163,109 @@ def _sugerir_trocas(jogo: List[int], modelo: ModeloCanonico30, ultimos: List[Lis
     return {'trocas': trocas, 'jogo_sugerido': atual if trocas else None}
 
 
+PRIMOS = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97}
+MOLDURA_LOTOFACIL = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+
+NOMES_INDICADORES = {
+    'soma': 'Soma das dezenas',
+    'pares': 'Números pares',
+    'primos': 'Números primos',
+    'moldura': 'Números na moldura do volante',
+    'repetidas_anterior': 'Repetidas do concurso anterior',
+}
+
+
+def _indicadores(jogo: List[int], anterior: Optional[List[int]], lotofacil: bool) -> Dict[str, int]:
+    valores = {
+        'soma': sum(jogo),
+        'pares': sum(1 for n in jogo if n % 2 == 0),
+        'primos': sum(1 for n in jogo if n in PRIMOS),
+    }
+    if lotofacil:
+        valores['moldura'] = sum(1 for n in jogo if n in MOLDURA_LOTOFACIL)
+    if anterior is not None:
+        valores['repetidas_anterior'] = len(set(jogo) & set(anterior))
+    return valores
+
+
+def _sorteios_individuais(modelo: ModeloCanonico30) -> List[List[int]]:
+    """Cada sorteio separado (na Dupla Sena, o concurso guarda os 2 sorteios juntos)."""
+    k = modelo.config.sorteados
+    return [c[i:i + k] for c in modelo.historico for i in range(0, len(c), k) if len(c[i:i + k]) == k]
+
+
+def _distribuicao_historica(modelo: ModeloCanonico30) -> Dict[str, List[int]]:
+    if 'indicadores_historicos' not in modelo._memo:
+        lotofacil = modelo.loteria_type == LoteriaType.LOTOFACIL
+        sorteios = _sorteios_individuais(modelo)
+        dist: Dict[str, List[int]] = {}
+        for i, sorteio in enumerate(sorteios):
+            anterior = sorteios[i - 1] if i > 0 else None
+            for nome, valor in _indicadores(sorteio, anterior, lotofacil).items():
+                dist.setdefault(nome, []).append(valor)
+        modelo._memo['indicadores_historicos'] = {nome: sorted(v) for nome, v in dist.items()}
+    return modelo._memo['indicadores_historicos']
+
+
+def _faixa_tipica(valores_ordenados: List[int]) -> List[int]:
+    n = len(valores_ordenados)
+    return [valores_ordenados[int(n * 0.1)], valores_ordenados[min(n - 1, int(n * 0.9))]]
+
+
+def resumo_indicadores(modelo: ModeloCanonico30) -> List[Dict]:
+    """Faixa típica (80% dos sorteios), média, mínimo e máximo de cada indicador clássico."""
+    if modelo.config.colunas:
+        return []
+    return [
+        {
+            'indicador': nome,
+            'nome': NOMES_INDICADORES[nome],
+            'faixa_tipica': _faixa_tipica(valores),
+            'media': round(sum(valores) / len(valores), 1),
+            'minimo': valores[0],
+            'maximo': valores[-1],
+        }
+        for nome, valores in _distribuicao_historica(modelo).items()
+    ]
+
+
+def indicadores_classicos(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
+    """Compara soma, pares, primos etc. do jogo com a faixa em que caem 80% dos sorteios reais."""
+    config = modelo.config
+    if config.colunas:
+        return {'itens': [], 'observacao': 'Indicadores clássicos não se aplicam ao Super Sete (cada coluna é um sorteio independente).'}
+    if len(jogo) != config.sorteados:
+        return {'itens': [], 'observacao': f'Indicadores clássicos comparam jogos de {config.sorteados} números com os sorteios; este jogo tem {len(jogo)}.'}
+
+    sorteios = _sorteios_individuais(modelo)
+    distribuicao = _distribuicao_historica(modelo)
+    valores = _indicadores(jogo, sorteios[-1] if sorteios else None, modelo.loteria_type == LoteriaType.LOTOFACIL)
+
+    itens = []
+    for nome, valor in valores.items():
+        historico = distribuicao.get(nome)
+        if not historico:
+            continue
+        minimo, maximo = _faixa_tipica(historico)
+        itens.append({
+            'indicador': nome,
+            'nome': NOMES_INDICADORES[nome],
+            'valor': valor,
+            'faixa_tipica': [minimo, maximo],
+            'media': round(sum(historico) / len(historico), 1),
+            'dentro_da_faixa': minimo <= valor <= maximo,
+            'sorteios_com_mesmo_valor': round(100 * historico.count(valor) / len(historico), 1),
+        })
+    return {
+        'itens': itens,
+        'base_sorteios': len(sorteios),
+        'observacao': (
+            'A faixa típica mostra onde caíram 80% dos sorteios. Ficar dentro dela não aumenta a chance '
+            'de uma combinação específica: só significa que existem mais combinações com esse perfil.'
+        ),
+    }
+
+
 def _atrasos(historico: List[List[int]], numeros: List[int]) -> Dict[int, Optional[int]]:
     atrasos = {n: None for n in numeros}
     for distancia, concurso in enumerate(reversed(historico)):
@@ -246,6 +349,7 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'probabilidades': probabilidades(modelo, len(jogo)),
         'perfil_numeros': perfil,
         'equilibrio': equilibrio,
+        'indicadores': indicadores_classicos(jogo, modelo),
         'alertas': _alertas(jogo, modelo, ultimos),
         'sugestao': _sugerir_trocas(jogo, modelo, ultimos),
         'aviso': AVISO_PROBABILIDADE,

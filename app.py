@@ -1144,6 +1144,7 @@ def api_analise(loteria_type: str):
     }
     if config.colunas:
         resumo['analise_por_coluna'] = analise_por_coluna(modelo)
+    resumo['indicadores_classicos'] = avaliacao.resumo_indicadores(modelo)
     
     return jsonify(resumo)
 
