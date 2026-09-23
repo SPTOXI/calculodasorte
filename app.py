@@ -691,43 +691,33 @@ def ver_resultado(loteria_type):
     if not slug:
         return "Loteria não suportada para resultados", 404
 
-    import time
-    now = time.time()
-
-    # Cache em memória (10 minutos) para aguentar o pico de acessos do Google (Tráfego de Vaidade)
-    if loteria_type in RESULTS_CACHE and (now - RESULTS_CACHE_TIME.get(loteria_type, 0)) < 600:
-        dados_caixa = RESULTS_CACHE[loteria_type]
-    else:
-        dados_caixa = updater.consultar_caixa(slug)
-        if dados_caixa:
-            RESULTS_CACHE[loteria_type] = dados_caixa
-            RESULTS_CACHE_TIME[loteria_type] = now
-        else:
-            dados_caixa = RESULTS_CACHE.get(loteria_type)
+    # Busca o resultado mais recente com múltiplos fallbacks (sempre atualizado)
+    dados_caixa = updater.obter_ultimo_resultado_completo(loteria_type)
 
     if not dados_caixa:
-        # Fallback de contingência a partir do histórico/meta local (garante HTTP 200 sempre)
-        historico = updater.carregar_historico_local(loteria_type)
-        meta = updater.carregar_meta(loteria_type)
-        if historico:
-            ultimo_sorteio = historico[-1]
-            dados_caixa = {
-                'numero': meta.get('ultimo_concurso', 1),
-                'dataApuracao': meta.get('data_apuracao', datetime.now().strftime('%d/%m/%Y')),
-                'listaDezenas': [f"{n:02d}" for n in ultimo_sorteio],
-                'acumulado': True,
-                'valorEstimadoProximoConcurso': 3000000.0,
-                'dataProximoConcurso': (datetime.now() + timedelta(days=1)).strftime('%d/%m/%Y')
-            }
-        else:
-            return "Não foi possível carregar os resultados da Caixa no momento. Tente novamente.", 503
+        return "Não foi possível carregar os resultados da Caixa no momento. Tente novamente.", 503
 
     numeros = updater.extrair_dezenas(dados_caixa, slug)
+    trevos = updater.extrair_trevos(dados_caixa) if loteria_type == 'mais_milionaria' else []
+    time_coracao = updater.extrair_time_coracao(dados_caixa) if loteria_type == 'timemania' else None
+    mes_sorte = dados_caixa.get('nomeTimeCoracaoMesSorte') if loteria_type == 'dia_de_sorte' else None
+
+    # Tema visual oficial da modalidade para garantir contraste perfeito das bolinhas
+    tema = LOTERIAS_THEME.get(loteria_type, {})
+    cor_loteria = tema.get('cor', '#0046AD')
+    cor_gradiente = tema.get('cor_gradiente', f'linear-gradient(135deg, {cor_loteria} 0%, #0A1A3F 100%)')
 
     return render_template('resultado.html',
                            loteria=LOTERIAS_CONFIG[loteria_enum],
+                           loteria_type=loteria_type,
+                           tema=tema,
+                           cor_loteria=cor_loteria,
+                           cor_gradiente=cor_gradiente,
                            dados=dados_caixa,
-                           numeros=numeros)
+                           numeros=numeros,
+                           trevos=trevos,
+                           time_coracao=time_coracao,
+                           mes_sorte=mes_sorte)
 
 
 @app.route('/blog')

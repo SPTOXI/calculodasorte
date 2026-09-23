@@ -67,50 +67,144 @@ def _get_session() -> requests.Session:
     return session
 
 
+_RESULTADO_COMPLETO_CACHE = {}
+_RESULTADO_COMPLETO_TIME = {}
+
+
 def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int = 2) -> Optional[Dict[str, Any]]:
     """
-    Consulta o resultado de uma loteria na API com fallback para API pública alternativa
-    (priorizando a API pública no Vercel/nuvem com timeout baixo, pois a Caixa bloqueia IPs de datacenter).
+    Consulta o resultado de uma loteria na API com fallback para múltiplas fontes:
+    1. api.guidi.dev.br (apenas para loterias compatíveis: megasena, lotofacil, quina, lotomania, timemania)
+    2. Caixa Oficial (servicebus2.caixa.gov.br) com headers de navegador e timeout adequado
+    3. loteriascaixa-api.herokuapp.com (para lotofacil, quina, lotomania, timemania)
     """
     session = _get_session()
     
-    # URL Secundária (Fallback Público - api.guidi.dev.br - rápida e estável em cloud/Vercel)
-    url_fallback = f'https://api.guidi.dev.br/loteria/{slug}'
-    if concurso:
-        url_fallback += f'/{concurso}'
-    else:
-        url_fallback += '/ultimo'
+    urls_para_tentar = []
+    
+    # 1. Guidi API (apenas para modalidades homologadas na API dele)
+    if slug in ('megasena', 'lotofacil', 'quina', 'lotomania', 'timemania'):
+        url_guidi = f'https://api.guidi.dev.br/loteria/{slug}'
+        url_guidi += f'/{concurso}' if concurso else '/ultimo'
+        urls_para_tentar.append(('guidi', url_guidi))
         
-    # URL Primária (Caixa Oficial)
+    # 2. Caixa Oficial (suporta as 9 modalidades)
     url_caixa = f'https://servicebus2.caixa.gov.br/portaldeloterias/api/{slug}'
     if concurso:
         url_caixa += f'/{concurso}'
-
-    # Em ambientes cloud (Vercel), priorizar SEMPRE a API Guidi com timeout curto (3s)
-    # para evitar 504 Gateway Timeout / 503 da função serverless
-    is_vercel = bool(os.environ.get('VERCEL'))
-    urls_para_tentar = [url_fallback, url_caixa] if is_vercel else [url_fallback, url_caixa]
-    timeout_req = 3 if is_vercel else 5
-    retries = 1 if is_vercel else max_retries
+    urls_para_tentar.append(('caixa', url_caixa))
+    
+    # 3. Heroku fallback (suporta as principais)
+    if slug in ('lotofacil', 'quina', 'lotomania', 'timemania'):
+        url_heroku = f'https://loteriascaixa-api.herokuapp.com/api/{slug}/latest'
+        urls_para_tentar.append(('heroku', url_heroku))
         
-    for url in urls_para_tentar:
-        for tentativa in range(1, retries + 1):
+    timeout_req = 5
+        
+    for source, url in urls_para_tentar:
+        for tentativa in range(1, max_retries + 1):
             try:
                 response = session.get(url, verify=False, timeout=timeout_req)
                 if response.status_code == 200:
                     dados = response.json()
-                    if isinstance(dados, dict) and dados.get('numero'):
+                    if source == 'heroku' and isinstance(dados, dict) and dados.get('concurso'):
+                        return {
+                            'numero': dados.get('concurso'),
+                            'dataApuracao': dados.get('data'),
+                            'listaDezenas': dados.get('dezenas', []),
+                            'acumulado': dados.get('acumulou', False),
+                            'valorEstimadoProximoConcurso': dados.get('valorEstimadoProximoConcurso', 0.0),
+                            'dataProximoConcurso': dados.get('proximoConcurso')
+                        }
+                    elif isinstance(dados, dict) and dados.get('numero'):
                         return dados
                 elif response.status_code == 429:
-                    time.sleep(0.4 * tentativa)
+                    time.sleep(0.3 * tentativa)
                 elif response.status_code in (403, 502, 503, 504):
-                    time.sleep(0.4 * tentativa)
+                    time.sleep(0.3 * tentativa)
             except Exception as e:
-                if tentativa == retries:
+                if tentativa == max_retries:
                     print(f"[UPDATER] Erro na URL {url} ({slug} - {concurso}): {e}")
                 else:
-                    time.sleep(0.4 * tentativa)
+                    time.sleep(0.3 * tentativa)
                     
+    return None
+
+
+def carregar_ultimo_resultado_local(loteria_type: str) -> Optional[Dict[str, Any]]:
+    """Carrega o último resultado completo salvo em arquivo local"""
+    path = os.path.join(DATA_DIR, f'{loteria_type}_ultimo_resultado.json')
+    if not os.path.exists(path) and os.path.exists(os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_ultimo_resultado.json')):
+        path = os.path.join(ORIGINAL_DATA_DIR, f'{loteria_type}_ultimo_resultado.json')
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
+
+def salvar_ultimo_resultado_local(loteria_type: str, dados: Dict[str, Any]):
+    """Salva o último resultado completo em arquivo local"""
+    for folder in [DATA_DIR, ORIGINAL_DATA_DIR]:
+        try:
+            os.makedirs(folder, exist_ok=True)
+            path = os.path.join(folder, f'{loteria_type}_ultimo_resultado.json')
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(dados, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+
+def obter_ultimo_resultado_completo(loteria_type: str) -> Optional[Dict[str, Any]]:
+    """
+    Obtém o resultado mais recente para a loteria com garantia de entrega:
+    1. Cache em memória recente (5 minutos)
+    2. Consulta online resiliente (Guidi, Caixa, Heroku)
+    3. Fallback para arquivo _ultimo_resultado.json atualizado
+    4. Fallback sintético baseado no histórico/meta
+    """
+    now = time.time()
+    
+    # 1. Cache em memória (5 minutos para alta performance e proteção contra rate-limit)
+    if loteria_type in _RESULTADO_COMPLETO_CACHE and (now - _RESULTADO_COMPLETO_TIME.get(loteria_type, 0)) < 300:
+        return _RESULTADO_COMPLETO_CACHE[loteria_type]
+        
+    slug = LOTERIAS_SLUGS.get(loteria_type)
+    if not slug:
+        return None
+        
+    # 2. Tentar consulta online
+    dados = consultar_caixa(slug)
+    if dados and dados.get('numero'):
+        _RESULTADO_COMPLETO_CACHE[loteria_type] = dados
+        _RESULTADO_COMPLETO_TIME[loteria_type] = now
+        salvar_ultimo_resultado_local(loteria_type, dados)
+        return dados
+        
+    # 3. Fallback para cache local em disco (_ultimo_resultado.json)
+    dados_local = carregar_ultimo_resultado_local(loteria_type)
+    if dados_local and dados_local.get('numero'):
+        _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_local
+        _RESULTADO_COMPLETO_TIME[loteria_type] = now
+        return dados_local
+        
+    # 4. Fallback sintético a partir de histórico e meta
+    historico = carregar_historico_local(loteria_type)
+    meta = carregar_meta(loteria_type)
+    if historico:
+        ultimo_sorteio = historico[-1]
+        dados_sinteticos = {
+            'numero': meta.get('ultimo_concurso', 1),
+            'dataApuracao': meta.get('data_apuracao', datetime.now().strftime('%d/%m/%Y')),
+            'listaDezenas': [f"{n:02d}" for n in ultimo_sorteio],
+            'acumulado': True,
+            'valorEstimadoProximoConcurso': 3000000.0,
+            'dataProximoConcurso': (datetime.now() + timedelta(days=1)).strftime('%d/%m/%Y')
+        }
+        return dados_sinteticos
+        
     return None
 
 
