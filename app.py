@@ -16,6 +16,7 @@ import requests
 import database
 import updater
 import ai_agent
+import avaliacao
 from core import (
     ModeloCanonico30,
     ValidaçãoCamada7,
@@ -58,7 +59,6 @@ PRECO_MENSAL = 49.90
 secret_from_env = os.getenv('SECRET_KEY')
 if not secret_from_env:
     # Chave aleatória por processo: sessões não sobrevivem a reinícios, mas nunca ficam forjáveis.
-    import secrets
     print("[SEGURANÇA] SECRET_KEY não definida no ambiente! Usando chave temporária aleatória; defina SECRET_KEY em produção.")
     secret_from_env = secrets.token_hex(32)
 app.config['SECRET_KEY'] = secret_from_env
@@ -228,6 +228,24 @@ def carregar_historico_analise(loteria_type: str) -> list:
     if loteria_type == 'dupla_sena':
         return updater.historico_com_segundo_sorteio(loteria_type)
     return carregar_historico(loteria_type)
+
+
+_MODELOS_CACHE = {}
+
+
+def modelo_canonico(loteria_type: str):
+    """Modelo Canônico calculado sobre o histórico oficial, reaproveitado até entrar um novo concurso.
+    Retorna None se houver menos de 10 concursos."""
+    historico = carregar_historico_analise(loteria_type)
+    if len(historico) < 10:
+        return None
+    chave = (len(historico), tuple(historico[-1]))
+    em_cache = _MODELOS_CACHE.get(loteria_type)
+    if em_cache and em_cache[0] == chave:
+        return em_cache[1]
+    modelo = ModeloCanonico30(historico, LoteriaType(loteria_type))
+    _MODELOS_CACHE[loteria_type] = (chave, modelo)
+    return modelo
 
 
 def salvar_historico(loteria_type: str, historico: list):
@@ -1105,26 +1123,18 @@ def api_analise(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    dados = request.get_json() or {}
-    historico_input = dados.get('historico', [])
-    
-    # Se não houver histórico no input, carregar do arquivo
-    if not historico_input:
-        historico_input = carregar_historico_analise(loteria_type)
-    
-    if len(historico_input) < 10:
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({
-            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.',
-            'concursos_atuais': len(historico_input)
+            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.'
         }), 400
-    
-    # Criar modelo e realizar análise
-    modelo = ModeloCanonico30(historico_input, loteria)
-    resumo = modelo.obter_resumo_analise()
-    
-    # Realizar validações da Camada 7
-    validacao = ValidaçãoCamada7(modelo)
-    resumo['validacao_camada7'] = validacao.validacao_completa()
+
+    resumo = dict(modelo.obter_resumo_analise())
+
+    # Validações da Camada 7 (Monte Carlo etc.): também calculadas uma vez por concurso
+    if 'validacao' not in modelo._memo:
+        modelo._memo['validacao'] = ValidaçãoCamada7(modelo).validacao_completa()
+    resumo['validacao_camada7'] = modelo._memo['validacao']
     
     # Gerar sugestões de jogos
     config = LOTERIAS_CONFIG[loteria]
@@ -1133,7 +1143,7 @@ def api_analise(loteria_type: str):
         'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta)),
     }
     if config.colunas:
-        resumo['analise_por_coluna'] = analise_por_coluna(historico_input, config)
+        resumo['analise_por_coluna'] = analise_por_coluna(modelo)
     
     return jsonify(resumo)
 
@@ -1407,16 +1417,17 @@ def gerar_jogo(loteria_type: str):
         return jsonify({'erro': 'Loteria inválida'}), 400
     
     dados = request.get_json() or {}
-    historico_input = dados.get('historico', [])
-    quantidade = dados.get('quantidade', LOTERIAS_CONFIG[loteria].minimo_aposta)
-    
-    if not historico_input:
-        historico_input = carregar_historico_analise(loteria_type)
-    
-    if len(historico_input) < 10:
+    config = LOTERIAS_CONFIG[loteria]
+    try:
+        quantidade = int(dados.get('quantidade', config.minimo_aposta))
+    except (TypeError, ValueError):
+        quantidade = config.minimo_aposta
+    quantidade = max(config.minimo_aposta, min(config.maximo_aposta, quantidade))
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para análise'}), 400
-    
-    modelo = ModeloCanonico30(historico_input, loteria)
+
     jogo = gerar_jogo_sugerido(modelo, quantidade)
     
     return jsonify({
@@ -1463,14 +1474,10 @@ def api_gerar_multiplos_jogos(loteria_type: str):
             'erro': f'Para gerar apostas de {dezenas} dezenas no modo personalizado, selecione ao menos {dezenas} números favoritos.'
         }), 400
 
-    historico_input = dados.get('historico', [])
-    if not historico_input:
-        historico_input = carregar_historico_analise(loteria_type)
-
-    if len(historico_input) < 10:
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
 
-    modelo = ModeloCanonico30(historico_input, loteria)
     jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
 
     # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 3.0,
@@ -1495,12 +1502,40 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'dezenas_por_jogo': dezenas,
         'jogos': jogos,
         'trevos': trevos,
+        'parecer': avaliacao.parecer_jogos(jogos, modelo),
         'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
         },
         'user_access': access
+    })
+
+
+@app.route('/api/avaliar-jogos/<loteria_type>', methods=['POST'])
+@login_required
+@rate_limit(max_requests=30, window_seconds=60)
+def api_avaliar_jogos(loteria_type: str):
+    """Avalia os jogos do usuário com base no Modelo Canônico (sem IA)"""
+    try:
+        LoteriaType(loteria_type)
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    jogos = (request.get_json(silent=True) or {}).get('jogos')
+    if not isinstance(jogos, list) or not jogos:
+        return jsonify({'erro': 'Envie ao menos um jogo.'}), 400
+    if len(jogos) > 20:
+        return jsonify({'erro': 'Avalie no máximo 20 jogos por vez.'}), 400
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
+        return jsonify({'erro': 'Histórico insuficiente para avaliação'}), 400
+
+    return jsonify({
+        'sucesso': True,
+        'concursos_analisados': modelo.T,
+        'avaliacoes': [avaliacao.avaliar_jogo(jogo, modelo) for jogo in jogos],
     })
 
 
@@ -1779,34 +1814,6 @@ def api_admin_config_pix():
 # ROTAS DO AGENTE IA CONSULTOR
 # ==========================================
 
-@app.route('/api/ia/parecer/<loteria_type>', methods=['POST'])
-@login_required
-@rate_limit(max_requests=10, window_seconds=60)
-def api_ia_parecer(loteria_type: str):
-    """Gera parecer estatístico didático do Agente IA para a rodada e palpites"""
-    try:
-        loteria = LoteriaType(loteria_type)
-        config = LOTERIAS_CONFIG[loteria]
-    except ValueError:
-        return jsonify({'erro': 'Loteria inválida'}), 400
-
-    dados = request.get_json() or {}
-    jogos = dados.get('jogos', [])
-
-    historico = carregar_historico_analise(loteria_type)
-    if not historico or len(historico) < 10:
-        return jsonify({'erro': 'Histórico insuficiente para a IA analisar'}), 400
-
-    modelo = ModeloCanonico30(historico, loteria)
-    resumo_analise = modelo.obter_resumo_analise()
-
-    parecer = ai_agent.gerar_parecer_ia(config.nome, resumo_analise, jogos)
-    return jsonify({
-        'sucesso': True,
-        'parecer': parecer
-    })
-
-
 @app.route('/api/ia/chat', methods=['POST'])
 @login_required
 @rate_limit(max_requests=15, window_seconds=60)
@@ -1983,17 +1990,12 @@ def comparar_concursos(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    dados = request.get_json()
+    dados = request.get_json() or {}
     concurso_atual = dados.get('concurso', [])
-    historico_input = dados.get('historico', [])
-    
-    if not historico_input:
-        historico_input = carregar_historico_analise(loteria_type)
-    
-    if len(historico_input) < 10:
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente'}), 400
-    
-    modelo = ModeloCanonico30(historico_input, loteria)
     analises = modelo.analisar_todos_elementos()
     
     scores_concurso = []

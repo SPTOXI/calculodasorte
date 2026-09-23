@@ -251,7 +251,7 @@ tr:hover{background:rgba(0,70,173,0.04)}
                 <ul>
                     <li><strong>Área de trabalho pessoal:</strong> Digite ou cole suas combinações abaixo (um jogo por linha, ex: <code>06 11 25 45 48 58</code>).</li>
                     <li><strong>Regras da {{ config.nome }}:</strong> De <strong>{{ config.minimo_aposta }} a {{ config.maximo_aposta }} dezenas</strong> por linha, com números entre <strong>{{ '%02d' % config.numero_inicial }} e {{ '%02d' % config.numero_final }}</strong>.</li>
-                    <li><strong>Análise Personalizada:</strong> Ao clicar em <strong>"Analisar Meus Números"</strong>, o sistema processará o histórico de saídas, distribuição e frequência das suas dezenas selecionadas.</li>
+                    <li><strong>Avaliação dos seus jogos:</strong> Ao clicar em <strong>"Avaliar Meus Jogos"</strong>, cada jogo é comparado com o histórico oficial da Caixa: chance exata de cada faixa de prêmio, perfil de cada número, padrões populares que aumentam a chance de dividir o prêmio e sugestões de troca (até 20 jogos por vez).</li>
                 </ul>
             </div>
 
@@ -276,11 +276,12 @@ Exemplo para {{ config.nome }}:
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-                <button class="btn-action" onclick="executarAnaliseComInput()">🔍 Analisar Meus Números</button>
+                <button class="btn-action" onclick="avaliarMeusJogos()">🔍 Avaliar Meus Jogos</button>
                 <button class="btn-action" onclick="salvarHistoricoPersonalizado()" style="background: #0046AD;">💾 Salvar no Histórico Pessoal</button>
             </div>
             
             <div id="dados-msg" style="margin-top: 15px;"></div>
+            <div id="avaliacao-resultado" style="margin-top: 20px;"></div>
         </div>
 
         <!-- Tab 3: Gerador de Múltiplos Jogos (Com Opção Caixa ou Manual) -->
@@ -428,15 +429,15 @@ Exemplo para {{ config.nome }}:
                 <div id="ai-parecer-card" style="margin-top: 25px; background: linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%); border: 2px solid #2E7DE1; border-radius: 12px; padding: 22px; color: #0A1A3F; box-shadow: 0 4px 16px rgba(0,70,173, 0.15);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.5rem;">🤖</span>
-                            <strong style="font-size: 1.15rem; color: #0046AD;">Parecer do Agente Consultor IA</strong>
+                            <span style="font-size: 1.5rem;">📐</span>
+                            <strong style="font-size: 1.15rem; color: #0046AD;">Parecer do Modelo Canônico</strong>
                         </div>
                         <span id="ai-provedor-tag" style="background: rgba(0,70,173, 0.2); color: #003380; border: 1px solid rgba(0,70,173, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700;">
-                            Inteligência Artificial Ativa
+                            Cálculo local
                         </span>
                     </div>
                     <div id="ai-parecer-texto" style="font-size: 0.95rem; line-height: 1.6; color: #101F38; white-space: pre-line;">
-                        Aguardando geração de jogos para análise da IA...
+                        Aguardando geração de jogos...
                     </div>
                     <div id="ai-recomendacoes-lista" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(10,26,63,0.1); font-size: 0.9rem; color: #5B6B82;">
                     </div>
@@ -729,7 +730,7 @@ Exemplo para {{ config.nome }}:
                     renderizarListaConcursosCaixa(result.historico, meta);
 
                     // Executa a análise estatística em segundo plano para alimentar as abas canônicas
-                    realizarAnalise(result.historico);
+                    realizarAnalise();
                 } else {
                     document.getElementById('caixa-status-texto').textContent = 'Base oficial da Caixa em sincronização diária automática às 23:00h.';
                     document.getElementById('lista-concursos-caixa').innerHTML = 
@@ -971,7 +972,6 @@ Exemplo para {{ config.nome }}:
             const result = await response.json();
             if (result.sucesso) {
                 mostrarMensagem('dados-msg', `✅ ${result.concursos_salvos} aposta(s) salvas no seu histórico! Você pode consultá-las e conferir acertos na aba "Meus Jogos Salvos".`, 'success');
-                realizarAnalise(historico);
                 carregarApostasSalvas();
             } else {
                 mostrarMensagem('dados-msg', result.erro || 'Erro ao salvar histórico', 'error');
@@ -984,15 +984,108 @@ Exemplo para {{ config.nome }}:
             setTimeout(() => el.innerHTML = '', 6000);
         }
 
-        function executarAnaliseComInput() {
-            const input = document.getElementById('historico-input').value;
-            const historico = interpretarNumeros(input);
-            if (historico.length < 10) {
-                mostrarMensagem('dados-msg', 'São necessários ao menos 10 jogos digitados para a análise estatística completa. Para gerar palpites inteligentes e balanceados, utilize a aba "Gerador de Jogos".', 'error');
+        function formatarNumero(n) {
+            return CONFIG_LOTERIA.por_coluna ? String(Number(n)) : String(Number(n)).padStart(2, '0');
+        }
+
+        function formatarUmEm(n) {
+            return n ? '1 em ' + Number(n).toLocaleString('pt-BR') : '—';
+        }
+
+        async function avaliarMeusJogos() {
+            const destino = document.getElementById('avaliacao-resultado');
+            const jogos = interpretarNumeros(document.getElementById('historico-input').value);
+            destino.innerHTML = '';
+            if (jogos.length === 0) {
+                mostrarMensagem('dados-msg', 'Digite ao menos um jogo válido para avaliar.', 'error');
                 return;
             }
-            realizarAnalise(historico);
-            showTab('analise');
+            if (jogos.length > 20) {
+                mostrarMensagem('dados-msg', 'Avalie no máximo 20 jogos por vez.', 'error');
+                return;
+            }
+            mostrarMensagem('dados-msg', 'Avaliando seus jogos com base no histórico oficial...', 'success');
+
+            try {
+                const res = await fetch(`/api/avaliar-jogos/${loteriaType}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ jogos })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.sucesso) {
+                    mostrarMensagem('dados-msg', data.erro || 'Não foi possível avaliar os jogos.', 'error');
+                    return;
+                }
+                document.getElementById('dados-msg').innerHTML = '';
+                renderizarAvaliacoes(data, destino);
+            } catch (e) {
+                mostrarMensagem('dados-msg', 'Falha ao avaliar os jogos: ' + e.message, 'error');
+            }
+        }
+
+        function renderizarAvaliacoes(data, destino) {
+            const aviso = (data.avaliacoes.find(a => a.aviso) || {}).aviso;
+            let html = `<div class="info-box-instrucoes" style="margin-bottom: 16px;"><strong>ℹ️ ${aviso || ''}</strong><br>
+                <span style="font-size: 0.85rem;">Base: ${data.concursos_analisados} concursos oficiais.</span></div>`;
+
+            data.avaliacoes.forEach((av, idx) => {
+                const bolas = (av.jogo || []).map(n => `<span class="bola-aposta">${formatarNumero(n)}</span>`).join('');
+                html += `<div style="background: #FFFFFF; border: 1px solid rgba(10,26,63,0.15); border-radius: 12px; padding: 18px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                        <strong style="color: #0A1A3F;">Jogo #${idx + 1}:</strong><div class="aposta-bolas-wrap">${bolas}</div>
+                    </div>`;
+
+                if (!av.valido) {
+                    const erro = document.createElement('span');
+                    erro.textContent = av.erro;
+                    html += `<div style="color: #dc2626;">❌ ${erro.innerHTML}</div></div>`;
+                    return;
+                }
+
+                const prob = av.probabilidades;
+                const colAlgum = prob.faixas.some(f => f.um_em_algum_sorteio);
+                html += `<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 8px;">
+                    <tr style="text-align: left; color: #5B6B82;"><th style="padding: 4px;">Acertos</th><th style="padding: 4px;">Chance${colAlgum ? ' por sorteio' : ''}</th>${colAlgum ? '<th style="padding: 4px;">Em algum dos sorteios</th>' : ''}</tr>`;
+                prob.faixas.forEach(f => {
+                    html += `<tr><td style="padding: 4px;">${f.acertos}</td><td style="padding: 4px;">${formatarUmEm(f.um_em)}</td>${colAlgum ? `<td style="padding: 4px;">${formatarUmEm(f.um_em_algum_sorteio)}</td>` : ''}</tr>`;
+                });
+                html += `</table></div><div style="font-size: 0.85rem; color: #5B6B82; margin-bottom: 12px;">Custo deste jogo: R$ ${prob.custo_aposta.toFixed(2).replace('.', ',')}${prob.observacao ? ' · ' + prob.observacao : ''}</div>`;
+
+                html += `<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 12px;">
+                    <tr style="text-align: left; color: #5B6B82;">${CONFIG_LOTERIA.por_coluna ? '<th style="padding: 4px;">Coluna</th>' : ''}<th style="padding: 4px;">Número</th><th style="padding: 4px;">Vezes sorteado</th><th style="padding: 4px;">Frequência</th><th style="padding: 4px;">Sem sair há</th><th style="padding: 4px;">Classe</th></tr>`;
+                av.perfil_numeros.forEach(p => {
+                    const atraso = p.concursos_sem_sair === null ? 'não saiu no período' : (p.concursos_sem_sair === 0 ? 'saiu no último' : `${p.concursos_sem_sair} concurso(s)`);
+                    html += `<tr>${CONFIG_LOTERIA.por_coluna ? `<td style="padding: 4px;">${p.coluna}</td>` : ''}<td style="padding: 4px;"><strong>${formatarNumero(p.numero)}</strong></td><td style="padding: 4px;">${p.vezes_sorteado}</td><td style="padding: 4px;">${p.situacao}</td><td style="padding: 4px;">${atraso}</td><td style="padding: 4px;">${p.classe}</td></tr>`;
+                });
+                html += '</table></div>';
+
+                if (av.equilibrio) {
+                    html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${av.equilibrio.pares_esperado} pares)</div>`;
+                }
+
+                if (av.alertas.length > 0) {
+                    html += `<div style="background: rgba(245,158,11,0.1); border-left: 4px solid #f59e0b; padding: 10px 12px; border-radius: 6px; margin-bottom: 10px; font-size: 0.88rem;">
+                        <strong>⚠️ Padrões populares encontrados:</strong><ul style="margin: 6px 0 4px 18px; padding: 0;">`;
+                    av.alertas.forEach(a => { html += `<li>${a.mensagem}</li>`; });
+                    html += `</ul><span style="color: #5B6B82;">${av.alertas[0].motivo}</span></div>`;
+                } else {
+                    html += `<div style="font-size: 0.88rem; color: #15803d; margin-bottom: 10px;">✅ Nenhum padrão popular encontrado (datas, sequências, repetição do último resultado).</div>`;
+                }
+
+                if (av.sugestao && av.sugestao.trocas.length > 0) {
+                    const trocas = av.sugestao.trocas.map(t => t.coluna
+                        ? `coluna ${t.coluna}: ${formatarNumero(t.sai)} → ${formatarNumero(t.entra)}`
+                        : `${formatarNumero(t.sai)} → ${formatarNumero(t.entra)}`).join('; ');
+                    const sugerido = av.sugestao.jogo_sugerido.map(formatarNumero).join(' ');
+                    html += `<div style="font-size: 0.88rem; background: rgba(0,70,173,0.06); padding: 10px 12px; border-radius: 6px;">
+                        💡 <strong>Sugestão de troca:</strong> ${trocas}<br>Jogo sugerido: <strong>${sugerido}</strong>
+                        <span style="color: #5B6B82;">(troca por números com maior peso no Modelo Canônico, sem os padrões acima)</span></div>`;
+                }
+                html += '</div>';
+            });
+
+            destino.innerHTML = html;
         }
 
         // ==========================================
@@ -1199,7 +1292,7 @@ Exemplo para {{ config.nome }}:
             }
             
             if (typeof showLoading === 'function') {
-                showLoading('Gerando combinações com Inteligência Artificial...');
+                showLoading('Gerando combinações com o Modelo Canônico...');
             }
 
             try {
@@ -1227,8 +1320,7 @@ Exemplo para {{ config.nome }}:
                 ultimosJogosGerados = data.jogos;
                 exibirJogosGerados(data);
                 
-                // Disparar parecer do Consultor IA
-                obterParecerIA(data.jogos);
+                exibirParecer(data.parecer);
             } catch (e) {
                 alert('Erro ao conectar com o gerador: ' + e.message);
             } finally {
@@ -1325,15 +1417,7 @@ Exemplo para {{ config.nome }}:
         // ANÁLISE CANÔNICA E TABELA
         // ==========================================
 
-        async function realizarAnalise(historicoCustom = null) {
-            let historico = historicoCustom;
-            if (!historico) {
-                const input = document.getElementById('historico-input').value;
-                historico = interpretarNumeros(input);
-            }
-
-            if (!historico || historico.length === 0) return;
-
+        async function realizarAnalise() {
             document.getElementById('analise-loading').style.display = 'block';
             document.getElementById('analise-resultado').style.display = 'none';
 
@@ -1341,7 +1425,7 @@ Exemplo para {{ config.nome }}:
                 const response = await fetch(`/api/analise/${loteriaType}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({historico})
+                    body: '{}'
                 });
 
                 const result = await response.json();
@@ -1736,48 +1820,30 @@ Exemplo para {{ config.nome }}:
             }
         }
 
-        async function obterParecerIA(jogos) {
+        function exibirParecer(p) {
             const parecerCard = document.getElementById('ai-parecer-card');
             const textoEl = document.getElementById('ai-parecer-texto');
-            const tagEl = document.getElementById('ai-provedor-tag');
             const recsEl = document.getElementById('ai-recomendacoes-lista');
-            
-            if (!parecerCard || !textoEl) return;
-            
+            if (!parecerCard || !textoEl || !p) return;
+
             parecerCard.style.display = 'block';
-            textoEl.innerHTML = '<em>Consultando o Agente IA e calculando parecer técnico...</em>';
-            if (recsEl) recsEl.innerHTML = '';
-            
-            try {
-                const res = await fetch(`/api/ia/parecer/${loteriaType}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        jogos: jogos,
-                        historico: historicoCaixaOficial
-                    })
-                });
-                const data = await res.json();
-                if (data.sucesso && data.parecer) {
-                    const p = data.parecer;
-                    if (tagEl) {
-                        tagEl.textContent = 'Inteligência Artificial Ativa';
-                    }
-                    textoEl.innerHTML = p.parecer_texto ? p.parecer_texto.replace(/\n/g, '<br>') : 'Análise realizada com sucesso.';
-                    
-                    if (recsEl && p.recomendacoes && p.recomendacoes.length > 0) {
-                        let recHtml = '<strong style="color: #0046AD;">💡 Recomendações Estratégicas:</strong><ul style="margin: 8px 0 0 18px; padding: 0;">';
-                        p.recomendacoes.forEach(r => {
-                            recHtml += `<li style="margin-bottom: 4px;">${r}</li>`;
-                        });
-                        recHtml += '</ul>';
-                        recsEl.innerHTML = recHtml;
-                    }
-                } else {
-                    textoEl.textContent = 'Não foi possível obter o parecer da IA no momento: ' + (data.erro || 'Tente novamente.');
+            textoEl.textContent = p.parecer_texto || '';
+            if (recsEl) {
+                recsEl.innerHTML = '';
+                if (p.recomendacoes && p.recomendacoes.length > 0) {
+                    const titulo = document.createElement('strong');
+                    titulo.style.color = '#0046AD';
+                    titulo.textContent = '💡 Recomendações:';
+                    const lista = document.createElement('ul');
+                    lista.style.cssText = 'margin: 8px 0 0 18px; padding: 0;';
+                    p.recomendacoes.forEach(r => {
+                        const li = document.createElement('li');
+                        li.style.marginBottom = '4px';
+                        li.textContent = r;
+                        lista.appendChild(li);
+                    });
+                    recsEl.append(titulo, lista);
                 }
-            } catch (e) {
-                textoEl.textContent = 'Falha ao contatar o Agente IA: ' + e.message;
             }
         }
 

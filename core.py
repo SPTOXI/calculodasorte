@@ -204,6 +204,7 @@ class ModeloCanonico30:
         
         # Pré-calcular contagens
         self._calcular_contagens()
+        self._memo: Dict = {}
     
     def _calcular_contagens(self):
         """Calcular contagens históricas para cada número"""
@@ -344,6 +345,8 @@ class ModeloCanonico30:
         """
         if self.T < 10 or self.W1 < 10:
             return 1.0
+        if 'gamma' in self._memo:
+            return self._memo['gamma']
         
         # Variância histórica
         variancias = []
@@ -362,6 +365,7 @@ class ModeloCanonico30:
         sigma_w1 = statistics.variance(variancias_w1) if len(variancias_w1) > 1 else 1
         
         gamma = (sigma_w1 / sigma_hist) ** 2 if sigma_hist > 0 else 1.0
+        self._memo['gamma'] = gamma
         return gamma
     
     def calcular_score_mcp(self, numero: int) -> float:
@@ -374,9 +378,13 @@ class ModeloCanonico30:
         gamma = self.calcular_gamma()
         
         # Normalizar IMC
-        imcs = [self.calcular_imc(n) for n in self.numeros]
-        media_imc = statistics.mean(imcs) if imcs else 0
-        std_imc = statistics.stdev(imcs) if len(imcs) > 1 else 1
+        if 'imc_stats' not in self._memo:
+            imcs = [self.calcular_imc(n) for n in self.numeros]
+            self._memo['imc_stats'] = (
+                statistics.mean(imcs) if imcs else 0,
+                statistics.stdev(imcs) if len(imcs) > 1 else 1,
+            )
+        media_imc, std_imc = self._memo['imc_stats']
         
         imc_norm = (imc - media_imc) / std_imc if std_imc > 0 else 0
         
@@ -433,8 +441,10 @@ class ModeloCanonico30:
         )
     
     def analisar_todos_elementos(self) -> List[ElementoAnalise]:
-        """Analisar todos os elementos do universo"""
-        return [self.analisar_elemento(i) for i in self.numeros]
+        """Analisar todos os elementos do universo (calculado uma vez por modelo)"""
+        if 'analises' not in self._memo:
+            self._memo['analises'] = [self.analisar_elemento(i) for i in self.numeros]
+        return self._memo['analises']
     
     def calcular_entropia(self) -> float:
         """
@@ -467,6 +477,8 @@ class ModeloCanonico30:
     
     def obter_resumo_analise(self) -> Dict:
         """Obter resumo completo da análise"""
+        if 'resumo' in self._memo:
+            return self._memo['resumo']
         analises = self.analisar_todos_elementos()
         
         # Estatísticas gerais
@@ -485,7 +497,7 @@ class ModeloCanonico30:
         for a in analises:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
-        return {
+        self._memo['resumo'] = {
             "loteria": self.config.nome,
             "total_concursos": self.T,
             "universo": self.N,
@@ -523,6 +535,7 @@ class ModeloCanonico30:
                 for a in sorted(analises, key=lambda x: x.ict)
             ]
         }
+        return self._memo['resumo']
 
 
 class ValidaçãoCamada7:
@@ -660,7 +673,7 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
     Considera múltiplas camadas do modelo canônico
     """
     if modelo.config.colunas:
-        return gerar_jogo_por_coluna(modelo.historico, modelo.config)
+        return gerar_jogo_por_coluna(modelo)
 
     analises = modelo.analisar_todos_elementos()
     
@@ -789,19 +802,21 @@ def _config_coluna(config: LoteriaConfig, indice: int) -> LoteriaConfig:
     )
 
 
-def modelos_por_coluna(historico: List, config: LoteriaConfig, loteria_type: LoteriaType = LoteriaType.SUPER_SETE) -> List[ModeloCanonico30]:
+def modelos_por_coluna(modelo: ModeloCanonico30) -> List[ModeloCanonico30]:
     """Um Modelo Canônico por coluna (Super Sete): cada coluna é um sorteio independente de 1 dígito."""
-    historico_normalizado = ModeloCanonico30(historico, loteria_type, config_override=config).historico
-    validos = [c for c in historico_normalizado if len(c) == config.colunas]
-    return [
-        ModeloCanonico30([[c[i]] for c in validos], loteria_type, config_override=_config_coluna(config, i))
-        for i in range(config.colunas)
-    ]
+    if 'colunas' not in modelo._memo:
+        config = modelo.config
+        validos = [c for c in modelo.historico if len(c) == config.colunas]
+        modelo._memo['colunas'] = [
+            ModeloCanonico30([[c[i]] for c in validos], modelo.loteria_type, config_override=_config_coluna(config, i))
+            for i in range(config.colunas)
+        ]
+    return modelo._memo['colunas']
 
 
-def analise_por_coluna(historico: List, config: LoteriaConfig) -> List[Dict]:
+def analise_por_coluna(modelo_principal: ModeloCanonico30) -> List[Dict]:
     resultado = []
-    for i, modelo in enumerate(modelos_por_coluna(historico, config)):
+    for i, modelo in enumerate(modelos_por_coluna(modelo_principal)):
         analises = sorted(modelo.analisar_todos_elementos(), key=lambda a: a.score_mcp, reverse=True)
         resultado.append({
             "coluna": i + 1,
@@ -832,14 +847,14 @@ def _escolher_digitos(modelos: List[ModeloCanonico30], permitidos: Optional[set]
     return jogo
 
 
-def gerar_jogo_por_coluna(historico: List, config: LoteriaConfig) -> List[int]:
+def gerar_jogo_por_coluna(modelo: ModeloCanonico30) -> List[int]:
     """Jogo do Super Sete: um dígito por coluna, na ordem das colunas (repetição permitida)."""
-    return _escolher_digitos(modelos_por_coluna(historico, config))
+    return _escolher_digitos(modelos_por_coluna(modelo))
 
 
 def _gerar_multiplos_por_coluna(modelo: ModeloCanonico30, quantidade_jogos: int,
                                 numeros_base: Optional[List[int]] = None) -> List[List[int]]:
-    modelos = modelos_por_coluna(modelo.historico, modelo.config)
+    modelos = modelos_por_coluna(modelo)
     permitidos = {n for n in (numeros_base or []) if n in modelo.contagens_total} or None
     jogos, vistos = [], set()
     tentativas = 0
