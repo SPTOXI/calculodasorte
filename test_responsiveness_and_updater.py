@@ -3,6 +3,7 @@ Testes de Responsividade do Admin/Usuário e Robustez da API da Caixa
 Projeto Calculadora da Sorte
 """
 
+import re
 import unittest
 import json
 from app import app
@@ -39,41 +40,43 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         res = self.client.get('/admin')
         self.assertEqual(res.status_code, 200)
         html = res.text
+        html = html + '\n' + re.sub(r'\s+', '', html)
 
         # Verifica contenção de overflow global no body/html
-        self.assertIn('overflow-x: hidden', html)
-        self.assertIn('max-width: 100vw', html)
+        self.assertIn('overflow-x:hidden', html)
+        self.assertIn('max-width:100vw', html)
 
         # Verifica correção do seletor de abas
-        self.assertIn('.tabs-header {', html)
-        self.assertIn('overflow-x: auto', html)
-        self.assertIn('-webkit-overflow-scrolling: touch', html)
+        self.assertIn('.tabs-header{', html)
+        self.assertIn('overflow-x:auto', html)
+        self.assertIn('-webkit-overflow-scrolling:touch', html)
 
         # Verifica classes de apoio responsivo
         self.assertIn('mobile-table-hint', html)
         self.assertIn('user-info', html)
         self.assertIn('user-nav-actions', html)
         self.assertIn('table-responsive', html)
-        self.assertIn('overscroll-behavior-x: contain', html)
+        self.assertIn('overscroll-behavior-x:contain', html)
 
         # Verifica classes especiais para colunas em telas menores
         self.assertIn('col-detalhes', html)
         self.assertIn('col-txid', html)
 
         # Verifica min-width em tabelas para evitar compressão
-        self.assertIn('min-width: 650px', html)
+        self.assertIn('min-width:650px', html)
 
         # Verifica suporte a múltiplos breakpoints mobile e tablet
-        self.assertIn('(max-width: 1024px)', html)
-        self.assertIn('(max-width: 768px)', html)
-        self.assertIn('(max-width: 480px)', html)
-        self.assertIn('(max-width: 360px)', html)
+        self.assertIn('(max-width:1024px)', html)
+        self.assertIn('(max-width:768px)', html)
+        self.assertIn('(max-width:480px)', html)
+        self.assertIn('(max-width:360px)', html)
 
     def test_03_responsividade_area_usuario(self):
         """Verifica a responsividade da área de análise do usuário"""
         res = self.client.get('/analise/mega_sena')
         self.assertEqual(res.status_code, 200)
         html = res.text
+        html = html + '\n' + re.sub(r'\s+', '', html)
 
         # Volante e bolas
         self.assertIn('volante-grid', html)
@@ -81,7 +84,7 @@ class TestResponsividadeEUpdater(unittest.TestCase):
 
         # Tabela de números
         self.assertIn('tabela-numeros', html)
-        self.assertIn('min-width: 500px', html)
+        self.assertIn('min-width:500px', html)
 
         # Drawer e chat flutuante IA
         self.assertIn('ai-chat-floating-btn', html)
@@ -171,13 +174,14 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         res = self.client.get('/analise/mega_sena')
         self.assertEqual(res.status_code, 200)
         html = res.text
+        html = html + '\n' + re.sub(r'\s+', '', html)
 
         # Botão redundante não deve existir no HTML
         self.assertNotIn('Gerar 50 Jogos de Teste', html)
         self.assertNotIn('gerarDadosExemplo()', html)
 
         # Deve manter os botões essenciais da aba Meus Números
-        self.assertIn('Analisar Meus Números', html)
+        self.assertIn('Avaliar Meus Jogos', html)
         self.assertIn('Salvar no Histórico Pessoal', html)
 
     def test_10_admin_ssr_usuarios_e_pagamentos_renderizados_imediatamente(self):
@@ -185,6 +189,7 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         res = self.client.get('/admin')
         self.assertEqual(res.status_code, 200)
         html = res.text
+        html = html + '\n' + re.sub(r'\s+', '', html)
 
         # 1. Usuário admin padrão deve estar renderizado na tabela de usuários
         self.assertIn('silvio.luis.morais@gmail.com', html)
@@ -202,6 +207,7 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         res = self.client.get('/admin')
         self.assertEqual(res.status_code, 200)
         html = res.text
+        html = html + '\n' + re.sub(r'\s+', '', html)
 
         # 1. Barra de métricas em tempo real
         self.assertIn('metrics-grid', html)

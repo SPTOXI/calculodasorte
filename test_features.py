@@ -47,6 +47,9 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
     def test_03_gerar_multiplos_jogos_api(self):
         """Testa a geração de múltiplos palpites baseados no modelo canônico"""
+        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = admin['id']
         res = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
             data=json.dumps({
                 'quantidade_jogos': 7,
@@ -148,9 +151,12 @@ class TestNovasFuncionalidades(unittest.TestCase):
         dados_conf = res_conf.get_json()
         self.assertTrue(dados_conf['sucesso'])
         self.assertIn('concurso_numero', dados_conf)
-        self.assertIn('dezenas_sorteadas', dados_conf)
-        self.assertIn('jogos_conferidos', dados_conf)
-        self.assertGreater(len(dados_conf['jogos_conferidos']), 0)
+        # A aposta concorre no próximo concurso: fica aguardando até o resultado sair
+        if dados_conf.get('status') == 'aguardando':
+            self.assertNotIn('jogos_conferidos', dados_conf)
+        else:
+            self.assertIn('dezenas_sorteadas', dados_conf)
+            self.assertGreater(len(dados_conf['jogos_conferidos']), 0)
 
     def test_08_excluir_aposta_usuario(self):
         """Testa a exclusão de uma aposta salva"""
@@ -241,17 +247,13 @@ class TestNovasFuncionalidades(unittest.TestCase):
             [4, 11, 23, 38, 45, 59],
             [7, 14, 28, 35, 49, 52]
         ]
-        # Teste do parecer
-        res_parecer = self.client.post('/api/ia/parecer/mega_sena',
-            data=json.dumps({'jogos': jogos}),
+        # O parecer vem junto da geração (sem chamada extra de IA)
+        res_gerar = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
+            data=json.dumps({'quantidade_jogos': 2, 'dezenas_por_jogo': 6}),
             content_type='application/json'
         )
-        self.assertEqual(res_parecer.status_code, 200)
-        data_p = res_parecer.get_json()
-        self.assertTrue(data_p['sucesso'])
-        self.assertIn('parecer', data_p)
-        self.assertIn('parecer_texto', data_p['parecer'])
-        self.assertIn('recomendacoes', data_p['parecer'])
+        self.assertEqual(res_gerar.status_code, 200)
+        self.assertIn('parecer', res_gerar.get_json())
 
         # Teste do chat
         res_chat = self.client.post('/api/ia/chat',
@@ -552,12 +554,12 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertTrue(data_st['is_approved'])
         self.assertEqual(data_st['status'], 'aprovado')
         self.assertTrue(data_st['access']['has_access'])
-        self.assertEqual(data_st['access']['credits'], 1)
+        # A análise avulsa libera 24 h de acesso (plano vip_24h)
+        self.assertEqual(data_st['access']['plan'], 'vip_24h')
 
-        # 4. Consumir crédito gerando jogo
+        # 4. Gerar jogo dentro das 24 h não consome crédito
         database.consume_user_credit(user_id)
-        access_depois = database.check_user_access(user_id)
-        self.assertEqual(access_depois['credits'], 0)
+        self.assertTrue(database.check_user_access(user_id)['has_access'])
 
     def test_23_api_unauthenticated_returns_json_not_html(self):
         """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""

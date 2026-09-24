@@ -859,7 +859,7 @@ def api_usuario_exportar_dados():
     import json
     user_id = session['user_id']
     dados_portabilidade = database.export_user_data(user_id)
-    json_bytes = json.dumps(dados_portabilidade, indent=2, ensure_ascii=False).encode('utf-8')
+    json_bytes = json.dumps(dados_portabilidade, indent=2, ensure_ascii=False, default=str).encode('utf-8')
     resp = Response(json_bytes, mimetype='application/json')
     resp.headers["Content-Disposition"] = "attachment; filename=meus_dados_calculo_da_sorte.json"
     return resp
@@ -1585,7 +1585,7 @@ def api_checkout_pix():
         return jsonify({
             'sucesso': True,
             'payment_id': pagamento['id'],
-            'valor': pagamento['valor'],
+            'valor': float(pagamento['valor']),
             'tipo': pagamento['tipo'],
             'pix_copia_cola': pagamento.get('pix_copia_cola'),
             'pix_qr_code_base64': pagamento.get('pix_qr_code_base64'),
