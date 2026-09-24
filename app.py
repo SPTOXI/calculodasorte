@@ -8,6 +8,8 @@ from functools import wraps
 import json
 import os
 import uuid
+import re
+from math import comb
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response, send_from_directory
 from werkzeug.security import check_password_hash
@@ -17,6 +19,8 @@ import database
 import updater
 import ai_agent
 import avaliacao
+import conferencia
+import fechamento
 from core import (
     ModeloCanonico30,
     ValidaçãoCamada7,
@@ -1183,7 +1187,8 @@ def api_salvar_apostas():
         dezenas_por_jogo=dezenas_por_jogo,
         user_id=user_id,
         session_id=session_id,
-        titulo=titulo
+        titulo=titulo,
+        concurso_alvo=conferencia.proximo_concurso(loteria_type)
     )
 
     return jsonify({
@@ -1203,6 +1208,9 @@ def api_listar_apostas(loteria_type: str):
         user_id=user_id,
         session_id=session_id
     )
+    sorteios_cache = {}
+    for aposta in apostas:
+        aposta['conferencia'] = conferencia.resumo_aposta(aposta, sorteios_cache)
     return jsonify({
         'sucesso': True,
         'apostas': apostas,
@@ -1240,98 +1248,29 @@ def api_conferir_aposta(aposta_id: int):
             return jsonify({'erro': 'Acesso não autorizado a esta aposta'}), 403
 
     loteria_type = aposta['loteria_type']
-    historico = carregar_historico(loteria_type)
-    meta = updater.carregar_meta(loteria_type)
-
-    if not historico:
-        return jsonify({'erro': 'Nenhum sorteio oficial disponível para conferência'}), 400
-
-    ultimo_sorteio = historico[-1]
-    set_sorteio = set(ultimo_sorteio)
-    segundo_sorteio = []
-    if loteria_type == 'dupla_sena':
-        segundos = updater.carregar_segundo_sorteio_local(loteria_type)
-        if len(segundos) == len(historico):
-            segundo_sorteio = segundos[-1]
-
-    conferencia_jogos = []
-    premiacoes_resumo = {}
-
-    for idx, jogo in enumerate(aposta.get('jogos', []), 1):
-        acertos_posicoes = None
-        sorteio_premiado = None
-        if loteria_type == 'super_sete':
-            # Super Sete: acerto é o dígito certo na coluna certa
-            acertos_posicoes = [i for i, (n, s) in enumerate(zip(jogo, ultimo_sorteio)) if n == s]
-            acertos = [jogo[i] for i in acertos_posicoes]
-        else:
-            acertos = sorted(set(jogo).intersection(set_sorteio))
-            if segundo_sorteio:
-                acertos_2 = sorted(set(jogo).intersection(segundo_sorteio))
-                sorteio_premiado = 1
-                if len(acertos_2) > len(acertos):
-                    acertos, sorteio_premiado = acertos_2, 2
-        qtd_acertos = len(acertos)
-        
-        rotulo_premio = None
-        if loteria_type == 'mega_sena':
-            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
-            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
-        elif loteria_type == 'quina':
-            if qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) 🏆'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) ⭐'
-            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos) 🎯'
-            elif qtd_acertos == 2: rotulo_premio = 'Duque (2 acertos)'
-        elif loteria_type == 'lotofacil':
-            if qtd_acertos == 15: rotulo_premio = '15 Acertos 🏆'
-            elif qtd_acertos == 14: rotulo_premio = '14 Acertos ⭐'
-            elif qtd_acertos == 13: rotulo_premio = '13 Acertos 🎯'
-            elif qtd_acertos == 12: rotulo_premio = '12 Acertos'
-            elif qtd_acertos == 11: rotulo_premio = '11 Acertos'
-        elif loteria_type == 'dupla_sena':
-            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
-            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
-            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos)'
-            if rotulo_premio and sorteio_premiado:
-                rotulo_premio += f' - {sorteio_premiado}º sorteio'
-        elif loteria_type == 'lotomania':
-            if qtd_acertos == 20: rotulo_premio = '20 Acertos 🏆'
-            elif 15 <= qtd_acertos <= 19: rotulo_premio = f'{qtd_acertos} Acertos ⭐'
-            elif qtd_acertos == 0: rotulo_premio = '0 Acertos 🎯'
-        elif loteria_type in ('super_sete', 'timemania'):
-            if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
-            elif qtd_acertos >= 3: rotulo_premio = f'{qtd_acertos} Acertos ⭐'
-        elif loteria_type == 'dia_de_sorte':
-            if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
-            elif qtd_acertos == 6: rotulo_premio = '6 Acertos ⭐'
-            elif qtd_acertos == 5: rotulo_premio = '5 Acertos 🎯'
-            elif qtd_acertos == 4: rotulo_premio = '4 Acertos'
-        else:
-            if qtd_acertos >= 4:
-                rotulo_premio = f'{qtd_acertos} acertos 🎯'
-
-        if rotulo_premio:
-            premiacoes_resumo[rotulo_premio] = premiacoes_resumo.get(rotulo_premio, 0) + 1
-
-        conferencia_jogos.append({
-            'numero': idx,
-            'jogo': jogo,
-            'acertos': acertos,
-            'qtd_acertos': qtd_acertos,
-            'acertos_posicoes': acertos_posicoes,
-            'rotulo_premio': rotulo_premio
+    sorteio = conferencia.sorteio_do_concurso(loteria_type, aposta.get('concurso_alvo'))
+    if sorteio['status'] == 'aguardando':
+        return jsonify({
+            'sucesso': True,
+            'status': 'aguardando',
+            'concurso_numero': sorteio['concurso'],
+            'mensagem': f"Esta aposta concorre no concurso {sorteio['concurso']}, que ainda não foi sorteado. A conferência é automática assim que o resultado sair."
         })
+    if sorteio['status'] != 'conferido':
+        return jsonify({'erro': 'Resultado desse concurso não está disponível para conferência'}), 400
+
+    jogos_conferidos, premiacoes_resumo = conferencia.conferir_jogos(
+        loteria_type, aposta.get('jogos', []), sorteio['dezenas'], sorteio['segundo_sorteio'])
 
     return jsonify({
         'sucesso': True,
+        'status': 'conferido',
         'aposta_titulo': aposta.get('titulo'),
-        'concurso_numero': meta.get('ultimo_concurso', len(historico)),
-        'data_apuracao': meta.get('data_apuracao', 'Recente'),
-        'dezenas_sorteadas': ultimo_sorteio,
-        'dezenas_segundo_sorteio': segundo_sorteio,
-        'jogos_conferidos': conferencia_jogos,
+        'concurso_numero': sorteio['concurso'],
+        'data_apuracao': sorteio.get('data_apuracao') or '',
+        'dezenas_sorteadas': sorteio['dezenas'],
+        'dezenas_segundo_sorteio': sorteio['segundo_sorteio'],
+        'jogos_conferidos': jogos_conferidos,
         'premiacoes_resumo': premiacoes_resumo
     })
 
@@ -1363,7 +1302,8 @@ def api_salvar_historico(loteria_type: str):
         dezenas_por_jogo=dezenas_por_jogo,
         user_id=user_id,
         session_id=session_id,
-        titulo=f"Jogos Digitados ({len(historico)} aposta(s))"
+        titulo=f"Jogos Digitados ({len(historico)} aposta(s))",
+        concurso_alvo=conferencia.proximo_concurso(loteria_type)
     )
     
     return jsonify({
@@ -1441,7 +1381,18 @@ def gerar_jogo(loteria_type: str):
     })
 
 
+MSG_ACESSO_EXPIRADO = 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.'
+
+
+def _acesso_bloqueado(user_id):
+    """Resposta 403 se o usuário não tiver plano ou créditos; None se puder gerar."""
+    if not database.check_user_access(user_id).get('has_access'):
+        return jsonify({'sucesso': False, 'erro': MSG_ACESSO_EXPIRADO, 'precisa_plano': True}), 403
+    return None
+
+
 @app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
+@login_required
 def api_gerar_multiplos_jogos(loteria_type: str):
     """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0 com verificação de plano/créditos"""
     try:
@@ -1450,17 +1401,10 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
 
-    # Verificação de Acesso / Créditos do Usuário
-    user_id = session.get('user_id')
-    access = {'is_vip': True, 'credits': 999}
-    if user_id:
-        access = database.check_user_access(user_id)
-        if not access.get('has_access'):
-            return jsonify({
-                'sucesso': False,
-                'erro': 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.',
-                'precisa_plano': True
-            }), 403
+    user_id = session['user_id']
+    bloqueio = _acesso_bloqueado(user_id)
+    if bloqueio:
+        return bloqueio
 
     dados = request.get_json() or {}
     quantidade_jogos = int(dados.get('quantidade_jogos', 5))
@@ -1500,10 +1444,8 @@ def api_gerar_multiplos_jogos(loteria_type: str):
             modelo_trevo = ModeloCanonico30(trevos_historico, loteria, config_override=TREVO_CONFIG)
             trevos = [gerar_jogo_sugerido(modelo_trevo, 2) for _ in range(len(jogos))]
 
-    # Consumir crédito de usuário se for avulso/free
-    if user_id:
-        database.consume_user_credit(user_id)
-        access = database.check_user_access(user_id)
+    database.consume_user_credit(user_id)
+    access = database.check_user_access(user_id)
 
     return jsonify({
         'sucesso': True,
@@ -1521,6 +1463,62 @@ def api_gerar_multiplos_jogos(loteria_type: str):
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
         },
         'user_access': access
+    })
+
+
+@app.route('/api/fechamento/<loteria_type>', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, window_seconds=60)
+def api_fechamento(loteria_type: str):
+    """Gera um fechamento (desdobramento) com garantia a partir do grupo de números do usuário"""
+    try:
+        config = LOTERIAS_CONFIG[LoteriaType(loteria_type)]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    user_id = session['user_id']
+    bloqueio = _acesso_bloqueado(user_id)
+    if bloqueio:
+        return bloqueio
+
+    dados = request.get_json(silent=True) or {}
+    grupo = dados.get('grupo')
+    try:
+        tamanho_jogo = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
+        condicao = int(dados.get('condicao', config.sorteados))
+        garantia = int(dados.get('garantia', 0))
+    except (TypeError, ValueError):
+        return jsonify({'erro': 'Parâmetros inválidos.'}), 400
+
+    erro = fechamento.validar_pedido(loteria_type, config, grupo, tamanho_jogo, condicao, garantia)
+    if erro:
+        return jsonify({'erro': erro}), 400
+
+    try:
+        jogos = fechamento.gerar_fechamento(grupo, tamanho_jogo, condicao, garantia)
+    except fechamento.FechamentoInviavel as e:
+        return jsonify({'erro': str(e)}), 422
+
+    database.consume_user_credit(user_id)
+    chance = fechamento.chance_condicao(config, len(grupo), condicao)
+    custo_jogo = comb(tamanho_jogo, config.minimo_aposta) * config.custo_minimo
+    premio = re.sub(r'\s*[🏆⭐🎯]', '', conferencia.rotulo_premio(loteria_type, garantia) or f'{garantia} acertos')
+
+    return jsonify({
+        'sucesso': True,
+        'loteria': config.nome,
+        'jogos': jogos,
+        'quantidade_jogos': len(jogos),
+        'dezenas_por_jogo': tamanho_jogo,
+        'garantia_texto': (
+            (f'Se os {condicao} números sorteados' if condicao == config.sorteados else f'Se {condicao} dos {config.sorteados} números sorteados')
+            + f' estiverem entre os seus {len(grupo)}, '
+            f'pelo menos um jogo fará {premio}.'
+            + (' A garantia vale para cada um dos 2 sorteios.' if config.sorteios_por_concurso > 1 else '')
+        ),
+        'chance_condicao_um_em': round(1 / chance) if chance > 0 else None,
+        'custo_total': round(len(jogos) * custo_jogo, 2),
+        'user_access': database.check_user_access(user_id),
     })
 
 

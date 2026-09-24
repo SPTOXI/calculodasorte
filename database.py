@@ -27,6 +27,7 @@ Projeto Calculadora da Sorte
 import json
 import os
 import re
+import secrets
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import ThreadedConnectionPool
@@ -193,6 +194,7 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         """)
+        conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS concurso_alvo INTEGER")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS payments (
@@ -244,10 +246,14 @@ def init_db():
 
 
 
-def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123456'):
+def seed_admin(email: str = 'silvio.luis.morais@gmail.com'):
     """Garante a existência do usuário administrador padrão"""
     user = get_user_by_email(email)
     if not user:
+        # Nunca usar senha fixa: quem logasse primeiro com ela assumiria a conta de admin
+        password = os.environ.get('ADMIN_INITIAL_PASSWORD') or secrets.token_urlsafe(12)
+        if not os.environ.get('ADMIN_INITIAL_PASSWORD'):
+            print(f"[DB] Senha inicial do administrador gerada (troque no primeiro login): {password}")
         create_user(
             email=email,
             password=password,
@@ -490,7 +496,8 @@ def salvar_aposta(
     dezenas_por_jogo: int,
     user_id: Optional[int] = None,
     session_id: Optional[str] = None,
-    titulo: Optional[str] = None
+    titulo: Optional[str] = None,
+    concurso_alvo: Optional[int] = None
 ) -> int:
     """Salva um lote de jogos no banco de dados SQLite"""
     import json
@@ -508,9 +515,9 @@ def salvar_aposta(
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO user_bets 
-            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-        ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json))
+            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json, concurso_alvo)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+        ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json, concurso_alvo))
         last_id = cursor.fetchone()['id']
         conn.commit()
     sync_db_to_cloud()
@@ -525,6 +532,8 @@ def listar_apostas(
 ) -> List[Dict[str, Any]]:
     """Lista apostas do usuário logado ou da sessão atual"""
     import json
+    if not user_id and not session_id:
+        return []
     with get_db_connection() as conn:
         query = "SELECT * FROM user_bets WHERE "
         params = []
@@ -532,11 +541,9 @@ def listar_apostas(
         if user_id:
             query += "(user_id = %s OR session_id = %s) "
             params.extend([user_id, session_id or ''])
-        elif session_id:
+        else:
             query += "session_id = %s "
             params.append(session_id)
-        else:
-            query += "1=1 "
 
         if loteria_type:
             query += "AND loteria_type = %s "

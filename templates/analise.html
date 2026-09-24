@@ -188,6 +188,11 @@ tr:hover{background:rgba(0,70,173,0.04)}
             </div>
         </div>
 
+        <div id="banner-premios" style="display: none; background: linear-gradient(135deg, #209869, #0d462f); color: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <span id="banner-premios-texto" style="font-weight: 700;"></span>
+            <button class="btn-action" onclick="showTab('salvos')" style="background: #fff; color: #0d462f;">Ver meus jogos premiados</button>
+        </div>
+
         <!-- Abas -->
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('caixa')">🏛️ Resultados da Caixa</button>
@@ -337,6 +342,27 @@ Exemplo para {{ config.nome }}:
                     <span id="contador-volante" style="font-weight: 700; color: #C97400;">0 dezenas selecionadas no seu grupo</span>
                     <span style="color: #5B6B82;">(Mínimo necessário para gerar: <span id="volante-min-necessario">{{ config.minimo_aposta }}</span> dezenas)</span>
                 </div>
+
+                {% if loteria.value in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania'] %}
+                <div style="margin-top: 16px; background: linear-gradient(135deg, rgba(243,146,0,0.10), rgba(0,70,173,0.08)); border: 2px solid rgba(243,146,0,0.45); border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <strong style="font-size: 1.05rem; color: #0A1A3F;">🔒 Fechamento com Garantia</strong>
+                        <span style="background: #C97400; color: #fff; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">PROFISSIONAL</span>
+                    </div>
+                    <p style="font-size: 0.88rem; color: #5B6B82; margin: 6px 0 12px;">
+                        Transforme o seu grupo de números no menor conjunto de jogos com <strong>prêmio garantido</strong>: se os números sorteados caírem no seu grupo, pelo menos um jogo acerta a faixa escolhida. A garantia é conferida matematicamente antes de entregar os jogos.
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: #0A1A3F;">Se cair no meu grupo:<br>
+                            <select id="fech-condicao" onchange="atualizarOpcoesGarantia()" style="margin-top: 4px; padding: 8px 10px; border: 2px solid #5B6B82; border-radius: 8px;"></select>
+                        </label>
+                        <label style="font-size: 0.85rem; font-weight: 700; color: #0A1A3F;">Garantir pelo menos:<br>
+                            <select id="fech-garantia" style="margin-top: 4px; padding: 8px 10px; border: 2px solid #5B6B82; border-radius: 8px;"></select>
+                        </label>
+                        <button class="btn-action" onclick="gerarFechamento()" style="background: linear-gradient(135deg, #F39200, #C97400);">🔒 Gerar Fechamento</button>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Banner com limites oficiais da loteria -->
@@ -636,6 +662,7 @@ Exemplo para {{ config.nome }}:
             numero_inicial: {{ config.numero_inicial }},
             numero_final: {{ config.numero_final }},
             por_coluna: {{ 'true' if config.colunas else 'false' }},
+            menor_faixa: {{ config.faixas_premiacao | select('gt', 0) | min }},
             sorteados: {{ config.sorteados }},
             minimo_aposta: {{ config.minimo_aposta }},
             maximo_aposta: {{ config.maximo_aposta }},
@@ -1268,6 +1295,7 @@ Exemplo para {{ config.nome }}:
         }
 
         function atualizarChipsDezenas() {
+            atualizarOpcoesGarantia();
             const val = parseInt(document.getElementById('dezenas-jogo').value);
             const chips = document.querySelectorAll('.chip-dezenas');
             chips.forEach(c => {
@@ -1343,6 +1371,7 @@ Exemplo para {{ config.nome }}:
                 }
 
                 ultimosJogosGerados = data.jogos;
+                ultimoFechamento = null;
                 exibirJogosGerados(data);
                 
                 exibirParecer(data.parecer);
@@ -1361,7 +1390,8 @@ Exemplo para {{ config.nome }}:
             container.style.display = 'block';
             lista.innerHTML = '';
 
-            const rotuloModo = data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Gerador Otimizado Oficial Caixa]';
+            const rotuloModo = data.modo === 'fechamento' ? ' [Fechamento com Garantia]'
+                : (data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Gerador Otimizado Oficial Caixa]');
 
             document.getElementById('jogos-titulo-resultado').textContent = 
                 `${data.quantidade_jogos} Palpites Gerados (${data.dezenas_por_jogo} dezenas cada)${rotuloModo}`;
@@ -1557,6 +1587,7 @@ Exemplo para {{ config.nome }}:
                 if (data.sucesso) {
                     apostasSalvasCache = data.apostas || [];
                     atualizarBadgeApostasSalvas(apostasSalvasCache.length);
+                    atualizarBannerPremios(apostasSalvasCache);
                     renderizarApostasSalvas(apostasSalvasCache);
                 } else {
                     container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Erro ao carregar apostas: ${data.erro || 'Desconhecido'}</div>`;
@@ -1564,6 +1595,20 @@ Exemplo para {{ config.nome }}:
             } catch (e) {
                 container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Falha ao conectar com o servidor: ${e.message}</div>`;
             }
+        }
+
+        function atualizarBannerPremios(apostas) {
+            const banner = document.getElementById('banner-premios');
+            if (!banner) return;
+            const premiadas = apostas.filter(a => a.conferencia && a.conferencia.jogos_premiados > 0);
+            if (premiadas.length === 0) {
+                banner.style.display = 'none';
+                return;
+            }
+            const jogos = premiadas.reduce((t, a) => t + a.conferencia.jogos_premiados, 0);
+            document.getElementById('banner-premios-texto').textContent =
+                `🎉 Parabéns! Você tem ${jogos} jogo(s) premiado(s) na ${CONFIG_LOTERIA.nome}. Confira e resgate na lotérica.`;
+            banner.style.display = 'flex';
         }
 
         function atualizarBadgeApostasSalvas(total) {
@@ -1599,6 +1644,16 @@ Exemplo para {{ config.nome }}:
                 const tagClass = aposta.modalidade === 'automatico' ? 'tag-auto' : (aposta.modalidade === 'fechamento' ? 'tag-fechamento' : 'tag-manual');
                 const tagTexto = aposta.modalidade === 'automatico' ? 'Automático Caixa' : (aposta.modalidade === 'fechamento' ? 'Fechamento Manual' : 'Digitado');
                 const dataFormatada = aposta.created_at ? new Date(aposta.created_at).toLocaleString('pt-BR') : '';
+                const conf = aposta.conferencia || {};
+                let statusHtml = '';
+                if (conf.status === 'aguardando') {
+                    statusHtml = `<div style="background: rgba(0,70,173,0.08); border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; margin: 8px 0;">⏳ Concorre no <strong>concurso ${conf.concurso}</strong>. A conferência é automática assim que o resultado sair.</div>`;
+                } else if (conf.status === 'conferido' && conf.jogos_premiados > 0) {
+                    const premios = Object.entries(conf.premiacoes || {}).map(([k, v]) => `${escaparHtml(k)}: ${v}`).join(' · ');
+                    statusHtml = `<div style="background: linear-gradient(135deg, #209869, #0d462f); color: #fff; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; margin: 8px 0;">🏆 <strong>${conf.jogos_premiados} jogo(s) premiado(s) no concurso ${conf.concurso}!</strong> ${premios}</div>`;
+                } else if (conf.status === 'conferido') {
+                    statusHtml = `<div style="background: rgba(10,26,63,0.05); border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; margin: 8px 0; color: #5B6B82;">✔ Conferido no concurso ${conf.concurso}: sem prêmio desta vez (melhor jogo: ${conf.melhor_acerto} acertos).</div>`;
+                }
 
                 let jogosHtml = '<div class="aposta-jogos-list">';
                 (aposta.jogos || []).forEach((jogo, idx) => {
@@ -1624,12 +1679,13 @@ Exemplo para {{ config.nome }}:
                         <div class="aposta-header">
                             <div class="aposta-titulo-area">
                                 <span class="aposta-tag ${tagClass}">${tagTexto}</span>
-                                <span class="aposta-titulo">${aposta.titulo || 'Aposta ' + CONFIG_LOTERIA.nome}</span>
+                                <span class="aposta-titulo">${escaparHtml(aposta.titulo || 'Aposta ' + CONFIG_LOTERIA.nome)}</span>
                             </div>
                             <div class="aposta-data">
                                 📅 Salvo em: <strong>${dataFormatada}</strong>
                             </div>
                         </div>
+                        ${statusHtml}
 
                         ${jogosHtml}
 
@@ -1667,9 +1723,11 @@ Exemplo para {{ config.nome }}:
 
             const modo = modoGeracaoAtual === 'manual_pool' ? 'fechamento' : 'automatico';
             const dezenasPorJogo = ultimosJogosGerados[0].length;
-            const titulo = modo === 'fechamento'
-                ? `Fechamento (${numerosBaseSelecionados.size} dezenas base) - ${ultimosJogosGerados.length} jogo(s)`
-                : `Geração Automática Canônica - ${ultimosJogosGerados.length} jogo(s)`;
+            const titulo = ultimoFechamento
+                ? `Fechamento com garantia (${ultimoFechamento.grupo} dezenas, ${ultimoFechamento.garantia} acertos) - ${ultimosJogosGerados.length} jogo(s)`
+                : (modo === 'fechamento'
+                    ? `Fechamento (${numerosBaseSelecionados.size} dezenas base) - ${ultimosJogosGerados.length} jogo(s)`
+                    : `Geração Automática Canônica - ${ultimosJogosGerados.length} jogo(s)`);
 
             try {
                 const res = await fetch('/api/apostas/salvar', {
@@ -1715,11 +1773,15 @@ Exemplo para {{ config.nome }}:
                 const data = await res.json();
 
                 if (!data.sucesso) {
-                    subtitulo.innerHTML = `<span style="color: #dc2626;">Erro na conferência: ${data.erro}</span>`;
+                    subtitulo.innerHTML = `<span style="color: #dc2626;">Erro na conferência: ${escaparHtml(data.erro)}</span>`;
+                    return;
+                }
+                if (data.status === 'aguardando') {
+                    subtitulo.textContent = '⏳ ' + data.mensagem;
                     return;
                 }
 
-                subtitulo.innerHTML = `Conferido contra o <strong>Concurso Oficial #${data.concurso_numero}</strong> da Caixa Econômica Federal (Apuração: ${data.data_apuracao})`;
+                subtitulo.innerHTML = `Conferido contra o <strong>Concurso Oficial #${data.concurso_numero}</strong> da Caixa Econômica Federal${data.data_apuracao ? ' (Apuração: ' + data.data_apuracao + ')' : ''}`;
 
                 // Renderizar dezenas da Caixa
                 let dezenasHtml = '';
@@ -1872,6 +1934,93 @@ Exemplo para {{ config.nome }}:
             }
         }
 
+        let ultimoFechamento = null;
+
+        function escaparHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto == null ? '' : String(texto);
+            return div.innerHTML;
+        }
+
+        function montarOpcoesFechamento() {
+            const cond = document.getElementById('fech-condicao');
+            if (!cond) return;
+            cond.innerHTML = '';
+            for (let c = CONFIG_LOTERIA.sorteados; c >= CONFIG_LOTERIA.menor_faixa; c--) {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c === CONFIG_LOTERIA.sorteados ? `os ${c} números sorteados` : `${c} dos ${CONFIG_LOTERIA.sorteados} sorteados`;
+                cond.appendChild(opt);
+            }
+            atualizarOpcoesGarantia();
+        }
+
+        function atualizarOpcoesGarantia() {
+            const cond = document.getElementById('fech-condicao');
+            const gar = document.getElementById('fech-garantia');
+            if (!cond || !gar) return;
+            const condicao = parseInt(cond.value);
+            const dezenas = parseInt(document.getElementById('dezenas-jogo').value) || CONFIG_LOTERIA.minimo_aposta;
+            const maximo = Math.min(condicao, dezenas);
+            const anterior = parseInt(gar.value);
+            gar.innerHTML = '';
+            for (let g = maximo; g >= CONFIG_LOTERIA.menor_faixa; g--) {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = `${g} acertos`;
+                gar.appendChild(opt);
+            }
+            const padrao = Math.max(CONFIG_LOTERIA.menor_faixa, Math.min(maximo, CONFIG_LOTERIA.sorteados - 2));
+            gar.value = (anterior >= CONFIG_LOTERIA.menor_faixa && anterior <= maximo) ? anterior : padrao;
+        }
+
+        async function gerarFechamento() {
+            const grupo = Array.from(numerosBaseSelecionados).sort((a, b) => a - b);
+            const dezenas = parseInt(document.getElementById('dezenas-jogo').value) || CONFIG_LOTERIA.minimo_aposta;
+            if (grupo.length <= dezenas) {
+                alert(`Selecione no volante mais de ${dezenas} números para montar o fechamento.`);
+                return;
+            }
+            const condicao = parseInt(document.getElementById('fech-condicao').value);
+            const garantia = parseInt(document.getElementById('fech-garantia').value);
+
+            if (typeof showLoading === 'function') showLoading('Calculando o fechamento com garantia...');
+            try {
+                const res = await fetch(`/api/fechamento/${loteriaType}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ grupo, dezenas_por_jogo: dezenas, condicao, garantia })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    if (data.precisa_plano) mostrarModalPaywall();
+                    else alert(data.erro || 'Não foi possível montar o fechamento.');
+                    return;
+                }
+
+                ultimosJogosGerados = data.jogos;
+                ultimoFechamento = { grupo: grupo.length, garantia };
+                exibirJogosGerados({ ...data, modo: 'fechamento', filtro_inteligente: false, jogos_aprovados: [] });
+                document.getElementById('jogos-metricas-resumo').textContent =
+                    `🔒 ${data.quantidade_jogos} jogos · custo total R$ ${data.custo_total.toFixed(2).replace('.', ',')}`;
+
+                const custo = data.custo_total.toFixed(2).replace('.', ',');
+                exibirParecer({
+                    parecer_texto: `Garantia: ${data.garantia_texto}\n`
+                        + `Jogos necessários: ${data.quantidade_jogos} (custo total na lotérica: R$ ${custo}).\n`
+                        + (data.chance_condicao_um_em ? `Chance de a condição acontecer em um concurso: 1 em ${Number(data.chance_condicao_um_em).toLocaleString('pt-BR')}.` : ''),
+                    recomendacoes: [
+                        'A garantia vale somente se a condição acontecer: os números sorteados precisam cair dentro do seu grupo.',
+                        'Salve o fechamento no seu histórico: a conferência com o resultado da Caixa é automática.',
+                    ]
+                });
+            } catch (e) {
+                alert('Falha ao gerar o fechamento: ' + e.message);
+            } finally {
+                if (typeof hideLoading === 'function') hideLoading();
+            }
+        }
+
         function exibirParecer(p) {
             const parecerCard = document.getElementById('ai-parecer-card');
             const textoEl = document.getElementById('ai-parecer-texto');
@@ -1962,6 +2111,7 @@ Exemplo para {{ config.nome }}:
         // ==========================================
 
         window.addEventListener('DOMContentLoaded', () => {
+            montarOpcoesFechamento();
             montarChipsDezenas();
             carregarHistoricoSalvo();
             carregarApostasSalvas();
