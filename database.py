@@ -638,6 +638,18 @@ def excluir_aposta(aposta_id: int, user_id: Optional[int] = None, session_id: Op
 # CONTROLE DE ACESSO, CRÉDITOS E MONETIZAÇÃO
 # ==========================================
 
+def _como_datetime(valor) -> Optional[datetime]:
+    """vip_expires_at vem do Postgres como datetime (TIMESTAMP), mas registros antigos podem ser texto."""
+    if isinstance(valor, datetime):
+        return valor
+    if valor:
+        try:
+            return datetime.strptime(str(valor), '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return None
+    return None
+
+
 def check_user_access(user_id: int) -> Dict[str, Any]:
     """
     Verifica o status de acesso do usuário:
@@ -673,20 +685,17 @@ def check_user_access(user_id: int) -> Dict[str, Any]:
                 'plan': current_plan,
                 'name': user.get('name', 'Apostador VIP')
             }
-        try:
-            exp_date = datetime.strptime(vip_expires_at, '%Y-%m-%d %H:%M:%S')
-            if datetime.now() <= exp_date:
-                return {
-                    'has_access': True, 
-                    'reason': 'vip', 
-                    'credits': user.get('credits', 0), 
-                    'is_vip': True, 
-                    'plan': current_plan, 
-                    'expires_at': vip_expires_at,
-                    'name': user.get('name', 'Apostador VIP')
-                }
-        except Exception:
-            pass
+        exp_date = _como_datetime(vip_expires_at)
+        if exp_date and datetime.now() <= exp_date:
+            return {
+                'has_access': True, 
+                'reason': 'vip', 
+                'credits': user.get('credits', 0), 
+                'is_vip': True, 
+                'plan': current_plan, 
+                'expires_at': exp_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'name': user.get('name', 'Apostador VIP')
+            }
 
     # Verificar créditos avulsos
     credits = user.get('credits', 0)
@@ -743,13 +752,9 @@ def activate_vip_plan(user_id: int, days: int = 30, plan_name: str = 'vip_mensal
         plan_name = 'vip_mensal'
         
     base_date = now
-    if current_exp:
-        try:
-            parsed = datetime.strptime(current_exp, '%Y-%m-%d %H:%M:%S')
-            if parsed > now:
-                base_date = parsed
-        except Exception:
-            base_date = now
+    parsed = _como_datetime(current_exp)
+    if parsed and parsed > now:
+        base_date = parsed
             
     new_exp = (base_date + timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
     with get_db_connection() as conn:

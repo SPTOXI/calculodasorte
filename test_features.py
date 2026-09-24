@@ -9,9 +9,16 @@ Testes Automatizados para as Novas Funcionalidades:
 
 import unittest
 import json
+from unittest.mock import patch, MagicMock
 from app import app
 import updater
 import database
+
+def _resposta_infinitepay(dados, status=200):
+    resp = MagicMock(status_code=status)
+    resp.json.return_value = dados
+    return resp
+
 
 class TestNovasFuncionalidades(unittest.TestCase):
 
@@ -47,6 +54,9 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
     def test_03_gerar_multiplos_jogos_api(self):
         """Testa a geração de múltiplos palpites baseados no modelo canônico"""
+        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = admin['id']
         res = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
             data=json.dumps({
                 'quantidade_jogos': 7,
@@ -148,9 +158,12 @@ class TestNovasFuncionalidades(unittest.TestCase):
         dados_conf = res_conf.get_json()
         self.assertTrue(dados_conf['sucesso'])
         self.assertIn('concurso_numero', dados_conf)
-        self.assertIn('dezenas_sorteadas', dados_conf)
-        self.assertIn('jogos_conferidos', dados_conf)
-        self.assertGreater(len(dados_conf['jogos_conferidos']), 0)
+        # A aposta concorre no próximo concurso: fica aguardando até o resultado sair
+        if dados_conf.get('status') == 'aguardando':
+            self.assertNotIn('jogos_conferidos', dados_conf)
+        else:
+            self.assertIn('dezenas_sorteadas', dados_conf)
+            self.assertGreater(len(dados_conf['jogos_conferidos']), 0)
 
     def test_08_excluir_aposta_usuario(self):
         """Testa a exclusão de uma aposta salva"""
@@ -214,12 +227,16 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertIn('pix_copia_cola', dados_pix)
         payment_id = dados_pix['payment_id']
 
-        # Confirmar pagamento
+        # O aviso do usuário não libera acesso: o PIX precisa ser conferido
         res_conf = self.client.post(f'/api/checkout/confirmar/{payment_id}')
         self.assertEqual(res_conf.status_code, 200)
-        dados_conf = res_conf.get_json()
-        self.assertTrue(dados_conf['sucesso'])
-        self.assertEqual(dados_conf['novo_status'], 'aprovado')
+        self.assertFalse(res_conf.get_json()['sucesso'])
+        self.assertFalse(database.check_user_access(user_id)['is_vip'])
+
+        # O administrador confere o extrato e aprova
+        self.assertTrue(database.approve_payment(payment_id))
+        res_conf = self.client.post(f'/api/checkout/confirmar/{payment_id}')
+        self.assertEqual(res_conf.get_json()['novo_status'], 'aprovado')
 
         # Checar se usuário agora tem VIP ativo
         access = database.check_user_access(user_id)
@@ -241,17 +258,13 @@ class TestNovasFuncionalidades(unittest.TestCase):
             [4, 11, 23, 38, 45, 59],
             [7, 14, 28, 35, 49, 52]
         ]
-        # Teste do parecer
-        res_parecer = self.client.post('/api/ia/parecer/mega_sena',
-            data=json.dumps({'jogos': jogos}),
+        # O parecer vem junto da geração (sem chamada extra de IA)
+        res_gerar = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
+            data=json.dumps({'quantidade_jogos': 2, 'dezenas_por_jogo': 6}),
             content_type='application/json'
         )
-        self.assertEqual(res_parecer.status_code, 200)
-        data_p = res_parecer.get_json()
-        self.assertTrue(data_p['sucesso'])
-        self.assertIn('parecer', data_p)
-        self.assertIn('parecer_texto', data_p['parecer'])
-        self.assertIn('recomendacoes', data_p['parecer'])
+        self.assertEqual(res_gerar.status_code, 200)
+        self.assertIn('parecer', res_gerar.get_json())
 
         # Teste do chat
         res_chat = self.client.post('/api/ia/chat',
@@ -307,30 +320,42 @@ class TestNovasFuncionalidades(unittest.TestCase):
             sess['user_id'] = user_id
 
         # 1. Gerar link de checkout InfinitePay
-        res_link = self.client.post('/api/checkout/infinitepay',
-            data=json.dumps({'tipo': 'vip_mensal'}),
-            content_type='application/json'
-        )
+        link = 'https://checkout.infinitepay.io/silvio_morais_/abc123'
+        with patch('app.requests.post', return_value=_resposta_infinitepay({'url': link})):
+            res_link = self.client.post('/api/checkout/infinitepay',
+                data=json.dumps({'tipo': 'vip_mensal'}),
+                content_type='application/json'
+            )
         self.assertEqual(res_link.status_code, 200)
         data_link = res_link.get_json()
         self.assertTrue(data_link['sucesso'])
-        self.assertIn('checkout_url', data_link)
         self.assertIn('checkout.infinitepay.io/silvio_morais_', data_link['checkout_url'])
         payment_id = data_link['payment_id']
+        webhook = json.dumps({
+            'order_nsu': str(payment_id),
+            'transaction_nsu': 'inf_tx_99998888',
+            'capture_method': 'pix',
+            'slug': 'calc-sorte-vip'
+        })
 
-        # 2. Simular disparo do Webhook da InfinitePay
-        res_webhook = self.client.post('/api/webhook/infinitepay',
-            data=json.dumps({
-                'order_nsu': str(payment_id),
-                'transaction_nsu': 'inf_tx_99998888',
-                'capture_method': 'pix',
-                'slug': 'calc-sorte-vip'
-            }),
-            content_type='application/json'
-        )
+        # 2. Webhook forjado (a InfinitePay não confirma o pagamento) é rejeitado
+        with patch('app.requests.post', return_value=_resposta_infinitepay({'success': True, 'paid': False})):
+            res_forjado = self.client.post('/api/webhook/infinitepay', data=webhook, content_type='application/json')
+        self.assertEqual(res_forjado.status_code, 400)
+        self.assertFalse(database.check_user_access(user_id)['is_vip'])
+
+        # Pago com valor menor que o cobrado também é rejeitado
+        with patch('app.requests.post', return_value=_resposta_infinitepay({'success': True, 'paid': True, 'amount': 100})):
+            res_menor = self.client.post('/api/webhook/infinitepay', data=webhook, content_type='application/json')
+        self.assertEqual(res_menor.status_code, 400)
+
+        # Webhook legítimo: a InfinitePay confirma o pagamento
+        with patch('app.requests.post', return_value=_resposta_infinitepay({'success': True, 'paid': True, 'amount': 4990})) as consulta:
+            res_webhook = self.client.post('/api/webhook/infinitepay', data=webhook, content_type='application/json')
+        self.assertEqual(consulta.call_args.args[0], 'https://api.checkout.infinitepay.io/payment_check')
+        self.assertEqual(consulta.call_args.kwargs['json']['order_nsu'], str(payment_id))
         self.assertEqual(res_webhook.status_code, 200)
-        data_wh = res_webhook.get_json()
-        self.assertTrue(data_wh['sucesso'])
+        self.assertTrue(res_webhook.get_json()['sucesso'])
 
         # 3. Verificar se o usuário agora tem plano VIP ativado
         access = database.check_user_access(user_id)
@@ -545,19 +570,33 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertEqual(pagamento['valor'], 5.00)
         self.assertEqual(pagamento['status'], 'pendente')
 
-        # 3. Retorno do checkout com parâmetro checkout=sucesso aciona auto-aprovação
-        res_status = self.client.get(f'/api/checkout/status/{p_id}?checkout=sucesso')
+        # 3. Só o parâmetro checkout=sucesso na URL não libera acesso
+        res_forjado = self.client.get(f'/api/checkout/status/{p_id}?checkout=sucesso')
+        self.assertFalse(res_forjado.get_json()['is_approved'])
+        self.assertFalse(database.check_user_access(user_id)['has_access'])
+
+        # Outro usuário não consulta nem aprova este pagamento
+        outro = database.create_user(f"outro_{uuid.uuid4().hex[:6]}@teste.com", '123456', 'Outro', credits=0)
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = outro['id']
+        self.assertEqual(self.client.get(f'/api/checkout/status/{p_id}').status_code, 404)
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = user_id
+
+        # Retorno do checkout confirmado pela InfinitePay libera o acesso
+        with patch('app.requests.post', return_value=_resposta_infinitepay({'success': True, 'paid': True, 'amount': 500})):
+            res_status = self.client.get(f'/api/checkout/status/{p_id}?checkout=sucesso&transaction_nsu=tx1&slug=abc')
         self.assertEqual(res_status.status_code, 200)
         data_st = res_status.get_json()
         self.assertTrue(data_st['is_approved'])
         self.assertEqual(data_st['status'], 'aprovado')
         self.assertTrue(data_st['access']['has_access'])
-        self.assertEqual(data_st['access']['credits'], 1)
+        # A análise avulsa libera 24 h de acesso (plano vip_24h)
+        self.assertEqual(data_st['access']['plan'], 'vip_24h')
 
-        # 4. Consumir crédito gerando jogo
+        # 4. Gerar jogo dentro das 24 h não consome crédito
         database.consume_user_credit(user_id)
-        access_depois = database.check_user_access(user_id)
-        self.assertEqual(access_depois['credits'], 0)
+        self.assertTrue(database.check_user_access(user_id)['has_access'])
 
     def test_23_api_unauthenticated_returns_json_not_html(self):
         """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""
