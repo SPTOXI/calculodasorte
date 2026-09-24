@@ -774,10 +774,19 @@ def sincronizar_todas(n_historico: int = 50) -> Dict[str, Any]:
                 erros.append(f"{loteria_type}: {res.get('erro')}")
         except Exception as e:
             erros.append(f"{loteria_type}: {str(e)}")
-            
+
+    # Import tardio: notificacoes depende de conferencia, que importa este módulo
+    try:
+        import notificacoes
+        avisos = notificacoes.notificar_premios()
+    except Exception as e:
+        avisos = {'erro': str(e)}
+        print(f"[UPDATER] Falha ao enviar avisos de prêmio: {e}")
+
     return {
         'sucesso': len(erros) == 0,
         'total_novos': total_novos,
+        'avisos_email': avisos,
         'detalhes': resultados,
         'erros': erros,
         'timestamp': datetime.now().strftime('%d/%m/%Y %H:%M:%S')

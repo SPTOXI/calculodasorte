@@ -842,6 +842,16 @@ def minha_conta_alterar_senha():
         return redirect(url_for('minha_conta', erro=f'Erro ao atualizar senha: {str(e)}'))
 
 
+@app.route('/minha-conta/avisos', methods=['POST'])
+@login_required
+def minha_conta_avisos():
+    """Liga ou desliga o aviso por e-mail de apostas premiadas"""
+    ativo = request.form.get('avisos_email') == '1'
+    database.set_avisos_email(session['user_id'], ativo)
+    msg = 'Avisos de prêmio por e-mail ativados.' if ativo else 'Avisos de prêmio por e-mail desativados.'
+    return redirect(url_for('minha_conta', sucesso=msg))
+
+
 @app.route('/api/usuario/exportar-dados', methods=['GET'])
 @login_required
 def api_usuario_exportar_dados():

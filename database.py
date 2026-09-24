@@ -195,6 +195,8 @@ def init_db():
             )
         """)
         conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS concurso_alvo INTEGER")
+        conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS notificado_em TIMESTAMP")
+        conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avisos_email INTEGER NOT NULL DEFAULT 1")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS payments (
@@ -562,6 +564,41 @@ def listar_apostas(
                 d['jogos'] = []
             resultado.append(d)
         return resultado
+
+
+def apostas_para_notificar(loteria_type: str, desde_concurso: int, ate_concurso: int) -> List[Dict[str, Any]]:
+    """Apostas de usuários cadastrados, já sorteadas e ainda não processadas pelo aviso por e-mail."""
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT b.*, u.email, u.name, u.avisos_email
+            FROM user_bets b JOIN users u ON u.id = b.user_id
+            WHERE b.loteria_type = %s AND b.concurso_alvo BETWEEN %s AND %s
+              AND b.notificado_em IS NULL AND u.is_blocked = 0
+            ORDER BY b.user_id, b.id
+        ''', (loteria_type, desde_concurso, ate_concurso)).fetchall()
+    resultado = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d['jogos'] = json.loads(d['jogos_json'])
+        except Exception:
+            d['jogos'] = []
+        resultado.append(d)
+    return resultado
+
+
+def marcar_apostas_notificadas(aposta_ids: List[int]):
+    if not aposta_ids:
+        return
+    with get_db_connection() as conn:
+        conn.execute('UPDATE user_bets SET notificado_em = CURRENT_TIMESTAMP WHERE id = ANY(%s)', (list(aposta_ids),))
+        conn.commit()
+
+
+def set_avisos_email(user_id: int, ativo: bool):
+    with get_db_connection() as conn:
+        conn.execute('UPDATE users SET avisos_email = %s WHERE id = %s', (1 if ativo else 0, user_id))
+        conn.commit()
 
 
 def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:

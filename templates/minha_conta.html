@@ -142,6 +142,23 @@
                 </form>
             </div>
 
+            <!-- Card: Avisos de prêmio -->
+            <div class="card">
+                <div class="card-title">
+                    <span>🔔</span> Avisos de Prêmio por E-mail
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 14px;">
+                    Quando sair o resultado, conferimos automaticamente as apostas que você salvou e avisamos por e-mail ({{ current_user.email }}) se algum jogo for premiado.
+                </p>
+                <form action="/minha-conta/avisos" method="POST">
+                    <input type="hidden" name="avisos_email" value="{{ '0' if current_user.avisos_email else '1' }}">
+                    <div style="margin-bottom: 10px; font-weight: 700; color: {{ '#15803d' if current_user.avisos_email else '#5B6B82' }};">
+                        {{ '✅ Avisos ativados' if current_user.avisos_email else '⏸️ Avisos desativados' }}
+                    </div>
+                    <button type="submit" class="btn-submit">{{ 'Desativar avisos' if current_user.avisos_email else 'Ativar avisos' }}</button>
+                </form>
+            </div>
+
             <!-- Card 4: Direitos do Titular LGPD -->
             <div class="card">
                 <div class="card-title">
