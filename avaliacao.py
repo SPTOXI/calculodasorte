@@ -266,6 +266,13 @@ def indicadores_classicos(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
     }
 
 
+def jogo_aprovado(jogo: List[int], modelo: ModeloCanonico30) -> bool:
+    """Filtro Inteligente: sem padrões populares e com todos os indicadores dentro da faixa típica."""
+    if _alertas(jogo, modelo, _ultimos_sorteios(modelo)):
+        return False
+    return all(i['dentro_da_faixa'] for i in indicadores_classicos(jogo, modelo)['itens'])
+
+
 def _atrasos(historico: List[List[int]], numeros: List[int]) -> Dict[int, Optional[int]]:
     atrasos = {n: None for n in numeros}
     for distancia, concurso in enumerate(reversed(historico)):
@@ -362,8 +369,7 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
     if not jogos:
         return {'parecer_texto': 'Nenhum jogo gerado.', 'recomendacoes': [], 'provedor': 'Modelo Canônico 3.0'}
 
-    ultimos = _ultimos_sorteios(modelo)
-    com_alerta = sum(1 for j in jogos if _alertas(j, modelo, ultimos))
+    aprovados = sum(1 for j in jogos if jogo_aprovado(j, modelo))
     prob = probabilidades(modelo, len(jogos[0]))
     faixa_max, faixa_min = prob['faixas'][0], prob['faixas'][-1]
 
@@ -381,10 +387,10 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')
         + f"; de {faixa_min['acertos']} acertos: 1 em {faixa_min['um_em']:,}.".replace(',', '.')
     )
-    if com_alerta:
-        linhas.append(f"{com_alerta} jogo(s) têm padrões populares entre apostadores; use \"Avaliar meus jogos\" para ver sugestões de troca.")
+    if aprovados == len(jogos):
+        linhas.append("Todos os jogos passaram no Filtro Inteligente: seguem o perfil típico dos sorteios e não têm padrões populares entre apostadores.")
     else:
-        linhas.append("Nenhum jogo tem padrões populares (datas, sequências, repetição do último resultado).")
+        linhas.append(f"{aprovados} de {len(jogos)} jogo(s) passaram no Filtro Inteligente (perfil típico dos sorteios, sem padrões populares).")
 
     return {
         'parecer_texto': "\n".join(linhas),

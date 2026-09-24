@@ -385,6 +385,17 @@ Exemplo para {{ config.nome }}:
                         </div>
                     </div>
 
+                    <div style="flex-basis: 100%; background: linear-gradient(135deg, rgba(0,70,173,0.08), rgba(32,152,105,0.08)); border: 1px solid rgba(0,70,173,0.25); border-radius: 10px; padding: 12px 14px;">
+                        <label style="display: flex; gap: 10px; align-items: flex-start; cursor: pointer;">
+                            <input type="checkbox" id="filtro-inteligente" checked style="margin-top: 4px; width: 18px; height: 18px;">
+                            <span>
+                                <strong style="color: #0046AD;">🎯 Filtro Inteligente</strong>
+                                <span style="background: #209869; color: #fff; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; margin-left: 6px;">RECOMENDADO</span><br>
+                                <span style="font-size: 0.85rem; color: #5B6B82;">Entrega só jogos no perfil típico dos sorteios reais (soma, pares, primos{{ ', moldura' if loteria.value == 'lotofacil' else '' }}, repetidas do último concurso) e sem padrões que milhares de apostadores repetem, como datas e sequências. Assim, se você acertar, a chance de dividir o prêmio é menor.</span>
+                            </span>
+                        </label>
+                    </div>
+
                     <div style="min-width: 200px; align-self: center; margin-top: 10px;">
                         <button class="btn-action" onclick="gerarMultiplosJogos()" style="width: 100%; justify-content: center; padding: 14px 20px;">
                             🎲 Gerar Palpites
@@ -1316,7 +1327,7 @@ Exemplo para {{ config.nome }}:
                     body: JSON.stringify({
                         quantidade_jogos: qtdJogos,
                         dezenas_por_jogo: dezenasPorJogo,
-                        historico: historicoCaixaOficial,
+                        filtro_inteligente: document.getElementById('filtro-inteligente').checked,
                         numeros_base: numerosBasePayload.length > 0 ? numerosBasePayload : undefined
                     })
                 });
@@ -1358,9 +1369,16 @@ Exemplo para {{ config.nome }}:
             document.getElementById('jogos-metricas-resumo').textContent = 
                 'Combinações com distribuição estatística balanceada e fechamento combinatório.';
 
+            if (data.filtro_inteligente) {
+                const aprovados = (data.jogos_aprovados || []).filter(Boolean).length;
+                document.getElementById('jogos-metricas-resumo').textContent =
+                    `🎯 Filtro Inteligente: ${aprovados} de ${data.jogos.length} jogos no perfil típico e sem padrões populares.`;
+            }
+
             data.jogos.forEach((jogo, idx) => {
                 const card = document.createElement('div');
                 card.className = 'jogo-card';
+                const aprovado = data.jogos_aprovados && data.jogos_aprovados[idx];
 
                 let bolasHtml = '<div class="bolas-grid">';
                 jogo.forEach(num => {
@@ -1381,6 +1399,7 @@ Exemplo para {{ config.nome }}:
                         <span>${jogo.length} dezenas${trevoJogo.length > 0 ? ' + ' + trevoJogo.length + ' trevos' : ''}</span>
                     </div>
                     ${bolasHtml}
+                    ${aprovado ? '<div style="margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: #15803d;">✓ Perfil típico · sem padrões populares</div>' : ''}
                 `;
                 lista.appendChild(card);
             });

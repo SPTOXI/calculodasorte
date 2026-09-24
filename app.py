@@ -1479,7 +1479,16 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
 
-    jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
+    filtro_inteligente = dados.get('filtro_inteligente', True) is not False
+    if filtro_inteligente:
+        # Gera candidatos extras e prioriza os que passam no filtro; completa com os demais se faltar
+        candidatos = gerar_multiplos_jogos(modelo, min(quantidade_jogos * 6, 300), dezenas, numeros_base=numeros_base or None)
+        aprovados = [j for j in candidatos if avaliacao.jogo_aprovado(j, modelo)]
+        restantes = [j for j in candidatos if j not in aprovados]
+        jogos = (aprovados + restantes)[:quantidade_jogos]
+    else:
+        jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base or None)
+    jogos_aprovados = [avaliacao.jogo_aprovado(j, modelo) for j in jogos]
 
     # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 3.0,
     # aplicado separadamente sobre o histórico de trevos. Um par por jogo, podendo repetir entre
@@ -1504,6 +1513,8 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'jogos': jogos,
         'trevos': trevos,
         'parecer': avaliacao.parecer_jogos(jogos, modelo),
+        'filtro_inteligente': filtro_inteligente,
+        'jogos_aprovados': jogos_aprovados,
         'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
