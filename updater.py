@@ -7,13 +7,11 @@ import os
 import json
 import time
 import threading
-import urllib3
 import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import database
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 ORIGINAL_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if os.environ.get('VERCEL'):
@@ -104,14 +102,19 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int 
     for source, url in urls_para_tentar:
         for tentativa in range(1, max_retries + 1):
             try:
-                response = session.get(url, verify=False, timeout=timeout_req)
+                response = session.get(url, timeout=timeout_req)
                 if response.status_code == 200:
                     dados = response.json()
                     if source == 'heroku' and isinstance(dados, dict) and dados.get('concurso'):
+                        dezenas_heroku = [f"{int(n):02d}" for n in dados.get('dezenas', [])]
+                        segundo_sorteio = None
+                        if slug == 'duplasena' and len(dezenas_heroku) == 12:
+                            dezenas_heroku, segundo_sorteio = dezenas_heroku[:6], dezenas_heroku[6:]
                         return {
                             'numero': dados.get('concurso'),
                             'dataApuracao': dados.get('data'),
-                            'listaDezenas': [f"{int(n):02d}" for n in dados.get('dezenas', [])],
+                            'listaDezenas': dezenas_heroku,
+                            'listaDezenasSegundoSorteio': segundo_sorteio,
                             'acumulado': dados.get('acumulou', False),
                             'valorEstimadoProximoConcurso': float(dados.get('valorEstimadoProximoConcurso') or 0.0),
                             'dataProximoConcurso': dados.get('dataProximoConcurso') or dados.get('proximoConcurso'),
@@ -381,6 +384,61 @@ def salvar_trevos_local(loteria_type: str, trevos: List[List[int]]):
     _TREVOS_CACHE_TIME[loteria_type] = time.time()
 
 
+_SEGUNDO_SORTEIO_CACHE = {}
+_SEGUNDO_SORTEIO_CACHE_TIME = {}
+
+
+def carregar_segundo_sorteio_local(loteria_type: str) -> List[List[int]]:
+    """Carrega as dezenas do 2º sorteio de cada concurso (exclusivo da Dupla Sena),
+    alinhadas por posição com o histórico do 1º sorteio."""
+    now = time.time()
+    if loteria_type in _SEGUNDO_SORTEIO_CACHE and (now - _SEGUNDO_SORTEIO_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
+        return _SEGUNDO_SORTEIO_CACHE[loteria_type]
+
+    nome = f'{loteria_type}_segundo_sorteio.json'
+    path = os.path.join(DATA_DIR, nome)
+    if not os.path.exists(path) and os.path.exists(os.path.join(ORIGINAL_DATA_DIR, nome)):
+        path = os.path.join(ORIGINAL_DATA_DIR, nome)
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                dados = json.load(f)
+                if isinstance(dados, list):
+                    _SEGUNDO_SORTEIO_CACHE[loteria_type] = dados
+                    _SEGUNDO_SORTEIO_CACHE_TIME[loteria_type] = now
+                    return dados
+        except Exception as e:
+            print(f"[UPDATER] Erro ao carregar 2º sorteio {loteria_type}: {e}")
+    return []
+
+
+def salvar_segundo_sorteio_local(loteria_type: str, sorteios: List[List[int]]):
+    path = os.path.join(DATA_DIR, f'{loteria_type}_segundo_sorteio.json')
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(sorteios, f, indent=2, ensure_ascii=False)
+    _SEGUNDO_SORTEIO_CACHE[loteria_type] = sorteios
+    _SEGUNDO_SORTEIO_CACHE_TIME[loteria_type] = time.time()
+
+
+def extrair_segundo_sorteio(dados_caixa: Dict[str, Any]) -> List[int]:
+    """Extrai as dezenas do 2º sorteio da Dupla Sena."""
+    try:
+        return sorted(int(n) for n in (dados_caixa.get('listaDezenasSegundoSorteio') or []))
+    except Exception:
+        return []
+
+
+def historico_com_segundo_sorteio(loteria_type: str) -> List[List[int]]:
+    """Dupla Sena: une 1º e 2º sorteio de cada concurso (12 dezenas por concurso).
+    Só une quando todos os concursos têm o 2º sorteio, para não misturar concursos
+    com 6 e com 12 dezenas no mesmo cálculo."""
+    historico = carregar_historico_local(loteria_type)
+    segundos = carregar_segundo_sorteio_local(loteria_type)
+    if not historico or len(segundos) != len(historico) or not all(len(s) == 6 for s in segundos):
+        return historico
+    return [primeiro + segundo for primeiro, segundo in zip(historico, segundos)]
+
+
 def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:
     """Extrai e formata a lista de dezenas sorteadas"""
     lista = dados_caixa.get('listaDezenas') or dados_caixa.get('dezenasSorteadasOrdemSorteio') or []
@@ -547,6 +605,20 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                 time.sleep(0.04)
             salvar_trevos_local(loteria_type, trevos_backfill + trevos_local_atual)
 
+    # Backfill específico da Dupla Sena: preenche o 2º sorteio dos concursos já salvos.
+    if loteria_type == 'dupla_sena' and ultimo_local and len(historico_local) >= 20:
+        segundos_local_atual = carregar_segundo_sorteio_local(loteria_type)
+        deficit = len(historico_local) - len(segundos_local_atual)
+        if deficit > 0:
+            concurso_inicial_backfill = ultimo_local - len(historico_local) + 1
+            print(f"[UPDATER] Backfill do 2º sorteio para {deficit} concurso(s) da Dupla Sena...")
+            segundos_backfill = []
+            for c in range(concurso_inicial_backfill, concurso_inicial_backfill + deficit):
+                d = consultar_caixa(slug, concurso=c, max_retries=1)
+                segundos_backfill.append(extrair_segundo_sorteio(d) if d else [])
+                time.sleep(0.04)
+            salvar_segundo_sorteio_local(loteria_type, segundos_backfill + segundos_local_atual)
+
     novos_concursos = []
     
     # Caso 1: Sem histórico ou histórico muito curto (< 20 sorteios), baixa lote de n_historico
@@ -557,6 +629,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         historico_acumulado = []
         times_acumulado = [] if loteria_type == 'timemania' else None
         trevos_acumulado = [] if loteria_type == 'mais_milionaria' else None
+        segundos_acumulado = [] if loteria_type == 'dupla_sena' else None
         for c in range(inicio, ultimo_numero + 1):
             if c == ultimo_numero:
                 d = ultimo_dados
@@ -571,6 +644,8 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                         times_acumulado.append(extrair_time_coracao(d))
                     if trevos_acumulado is not None:
                         trevos_acumulado.append(extrair_trevos(d))
+                    if segundos_acumulado is not None:
+                        segundos_acumulado.append(extrair_segundo_sorteio(d))
             # Pequena pausa para estabilidade
             time.sleep(0.04)
 
@@ -580,6 +655,8 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                 salvar_times_local(loteria_type, times_acumulado)
             if trevos_acumulado is not None:
                 salvar_trevos_local(loteria_type, trevos_acumulado)
+            if segundos_acumulado is not None:
+                salvar_segundo_sorteio_local(loteria_type, segundos_acumulado)
             salvar_meta(loteria_type, {
                 'ultimo_concurso': ultimo_numero,
                 'data_apuracao': data_apuracao,
@@ -610,6 +687,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         
         novos_times = [] if loteria_type == 'timemania' else None
         novos_trevos = [] if loteria_type == 'mais_milionaria' else None
+        novos_segundos = [] if loteria_type == 'dupla_sena' else None
         for c in range(ultimo_local + 1, ultimo_numero + 1):
             if c == ultimo_numero:
                 d = ultimo_dados
@@ -624,6 +702,8 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                         novos_times.append(extrair_time_coracao(d))
                     if novos_trevos is not None:
                         novos_trevos.append(extrair_trevos(d))
+                    if novos_segundos is not None:
+                        novos_segundos.append(extrair_segundo_sorteio(d))
             time.sleep(0.04)
 
         historico_local.extend(novos_concursos)
@@ -636,6 +716,10 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
             trevos_local = carregar_trevos_local(loteria_type)
             trevos_local.extend(novos_trevos)
             salvar_trevos_local(loteria_type, trevos_local)
+        if novos_segundos is not None:
+            segundos_local = carregar_segundo_sorteio_local(loteria_type)
+            segundos_local.extend(novos_segundos)
+            salvar_segundo_sorteio_local(loteria_type, segundos_local)
         salvar_meta(loteria_type, {
             'ultimo_concurso': ultimo_numero,
             'data_apuracao': data_apuracao,
@@ -690,10 +774,19 @@ def sincronizar_todas(n_historico: int = 50) -> Dict[str, Any]:
                 erros.append(f"{loteria_type}: {res.get('erro')}")
         except Exception as e:
             erros.append(f"{loteria_type}: {str(e)}")
-            
+
+    # Import tardio: notificacoes depende de conferencia, que importa este módulo
+    try:
+        import notificacoes
+        avisos = notificacoes.notificar_premios()
+    except Exception as e:
+        avisos = {'erro': str(e)}
+        print(f"[UPDATER] Falha ao enviar avisos de prêmio: {e}")
+
     return {
         'sucesso': len(erros) == 0,
         'total_novos': total_novos,
+        'avisos_email': avisos,
         'detalhes': resultados,
         'erros': erros,
         'timestamp': datetime.now().strftime('%d/%m/%Y %H:%M:%S')

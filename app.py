@@ -8,6 +8,8 @@ from functools import wraps
 import json
 import os
 import uuid
+import re
+from math import comb
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response, send_from_directory
 from werkzeug.security import check_password_hash
@@ -16,11 +18,15 @@ import requests
 import database
 import updater
 import ai_agent
+import avaliacao
+import conferencia
+import fechamento
 from core import (
     ModeloCanonico30,
     ValidaçãoCamada7,
     gerar_jogo_sugerido,
     gerar_multiplos_jogos,
+    analise_por_coluna,
     LoteriaType,
     LoteriaConfig,
     LOTERIAS_CONFIG
@@ -56,7 +62,9 @@ PRECO_AVULSO = 5.00
 PRECO_MENSAL = 49.90
 secret_from_env = os.getenv('SECRET_KEY')
 if not secret_from_env:
-    secret_from_env = '6f04de83e1c5a30f789647fcece0a8052dc5ae7ecc5f08f4b75cb9f9dd8734ef'
+    # Chave aleatória por processo: sessões não sobrevivem a reinícios, mas nunca ficam forjáveis.
+    print("[SEGURANÇA] SECRET_KEY não definida no ambiente! Usando chave temporária aleatória; defina SECRET_KEY em produção.")
+    secret_from_env = secrets.token_hex(32)
 app.config['SECRET_KEY'] = secret_from_env
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -217,6 +225,31 @@ def erro_global_exception(e):
 def carregar_historico(loteria_type: str) -> list:
     """Carregar histórico de concursos do arquivo JSON"""
     return updater.carregar_historico_local(loteria_type)
+
+
+def carregar_historico_analise(loteria_type: str) -> list:
+    """Histórico para cálculos estatísticos: na Dupla Sena inclui os 2 sorteios de cada concurso."""
+    if loteria_type == 'dupla_sena':
+        return updater.historico_com_segundo_sorteio(loteria_type)
+    return carregar_historico(loteria_type)
+
+
+_MODELOS_CACHE = {}
+
+
+def modelo_canonico(loteria_type: str):
+    """Modelo Canônico calculado sobre o histórico oficial, reaproveitado até entrar um novo concurso.
+    Retorna None se houver menos de 10 concursos."""
+    historico = carregar_historico_analise(loteria_type)
+    if len(historico) < 10:
+        return None
+    chave = (len(historico), tuple(historico[-1]))
+    em_cache = _MODELOS_CACHE.get(loteria_type)
+    if em_cache and em_cache[0] == chave:
+        return em_cache[1]
+    modelo = ModeloCanonico30(historico, LoteriaType(loteria_type))
+    _MODELOS_CACHE[loteria_type] = (chave, modelo)
+    return modelo
 
 
 def salvar_historico(loteria_type: str, historico: list):
@@ -809,6 +842,16 @@ def minha_conta_alterar_senha():
         return redirect(url_for('minha_conta', erro=f'Erro ao atualizar senha: {str(e)}'))
 
 
+@app.route('/minha-conta/avisos', methods=['POST'])
+@login_required
+def minha_conta_avisos():
+    """Liga ou desliga o aviso por e-mail de apostas premiadas"""
+    ativo = request.form.get('avisos_email') == '1'
+    database.set_avisos_email(session['user_id'], ativo)
+    msg = 'Avisos de prêmio por e-mail ativados.' if ativo else 'Avisos de prêmio por e-mail desativados.'
+    return redirect(url_for('minha_conta', sucesso=msg))
+
+
 @app.route('/api/usuario/exportar-dados', methods=['GET'])
 @login_required
 def api_usuario_exportar_dados():
@@ -927,7 +970,7 @@ def admin_dashboard():
 
 
 @app.route('/admin/config-ia', methods=['POST'])
-@login_required
+@admin_required
 def salvar_config_ia():
     import json
     dados = request.get_json() or {}
@@ -1094,26 +1137,18 @@ def api_analise(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    dados = request.get_json() or {}
-    historico_input = dados.get('historico', [])
-    
-    # Se não houver histórico no input, carregar do arquivo
-    if not historico_input:
-        historico_input = carregar_historico(loteria_type)
-    
-    if len(historico_input) < 10:
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({
-            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.',
-            'concursos_atuais': len(historico_input)
+            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.'
         }), 400
-    
-    # Criar modelo e realizar análise
-    modelo = ModeloCanonico30(historico_input, loteria)
-    resumo = modelo.obter_resumo_analise()
-    
-    # Realizar validações da Camada 7
-    validacao = ValidaçãoCamada7(modelo)
-    resumo['validacao_camada7'] = validacao.validacao_completa()
+
+    resumo = dict(modelo.obter_resumo_analise())
+
+    # Validações da Camada 7 (Monte Carlo etc.): também calculadas uma vez por concurso
+    if 'validacao' not in modelo._memo:
+        modelo._memo['validacao'] = ValidaçãoCamada7(modelo).validacao_completa()
+    resumo['validacao_camada7'] = modelo._memo['validacao']
     
     # Gerar sugestões de jogos
     config = LOTERIAS_CONFIG[loteria]
@@ -1121,6 +1156,9 @@ def api_analise(loteria_type: str):
         'jogo_simples': gerar_jogo_sugerido(modelo, config.minimo_aposta),
         'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta)),
     }
+    if config.colunas:
+        resumo['analise_por_coluna'] = analise_por_coluna(modelo)
+    resumo['indicadores_classicos'] = avaliacao.resumo_indicadores(modelo)
     
     return jsonify(resumo)
 
@@ -1159,7 +1197,8 @@ def api_salvar_apostas():
         dezenas_por_jogo=dezenas_por_jogo,
         user_id=user_id,
         session_id=session_id,
-        titulo=titulo
+        titulo=titulo,
+        concurso_alvo=conferencia.proximo_concurso(loteria_type)
     )
 
     return jsonify({
@@ -1179,6 +1218,9 @@ def api_listar_apostas(loteria_type: str):
         user_id=user_id,
         session_id=session_id
     )
+    sorteios_cache = {}
+    for aposta in apostas:
+        aposta['conferencia'] = conferencia.resumo_aposta(aposta, sorteios_cache)
     return jsonify({
         'sucesso': True,
         'apostas': apostas,
@@ -1216,71 +1258,29 @@ def api_conferir_aposta(aposta_id: int):
             return jsonify({'erro': 'Acesso não autorizado a esta aposta'}), 403
 
     loteria_type = aposta['loteria_type']
-    historico = carregar_historico(loteria_type)
-    meta = updater.carregar_meta(loteria_type)
-
-    if not historico:
-        return jsonify({'erro': 'Nenhum sorteio oficial disponível para conferência'}), 400
-
-    ultimo_sorteio = historico[-1]
-    set_sorteio = set(ultimo_sorteio)
-
-    conferencia_jogos = []
-    premiacoes_resumo = {}
-
-    for idx, jogo in enumerate(aposta.get('jogos', []), 1):
-        set_jogo = set(jogo)
-        acertos = sorted(list(set_jogo.intersection(set_sorteio)))
-        qtd_acertos = len(acertos)
-        
-        rotulo_premio = None
-        if loteria_type == 'mega_sena':
-            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
-            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
-        elif loteria_type == 'quina':
-            if qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) 🏆'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) ⭐'
-            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos) 🎯'
-            elif qtd_acertos == 2: rotulo_premio = 'Duque (2 acertos)'
-        elif loteria_type == 'lotofacil':
-            if qtd_acertos == 15: rotulo_premio = '15 Acertos 🏆'
-            elif qtd_acertos == 14: rotulo_premio = '14 Acertos ⭐'
-            elif qtd_acertos == 13: rotulo_premio = '13 Acertos 🎯'
-            elif qtd_acertos == 12: rotulo_premio = '12 Acertos'
-            elif qtd_acertos == 11: rotulo_premio = '11 Acertos'
-        elif loteria_type == 'dupla_sena':
-            if qtd_acertos == 6: rotulo_premio = 'Sena (6 acertos) 🏆'
-            elif qtd_acertos == 5: rotulo_premio = 'Quina (5 acertos) ⭐'
-            elif qtd_acertos == 4: rotulo_premio = 'Quadra (4 acertos) 🎯'
-            elif qtd_acertos == 3: rotulo_premio = 'Terno (3 acertos)'
-        elif loteria_type == 'dia_de_sorte':
-            if qtd_acertos == 7: rotulo_premio = '7 Acertos 🏆'
-            elif qtd_acertos == 6: rotulo_premio = '6 Acertos ⭐'
-            elif qtd_acertos == 5: rotulo_premio = '5 Acertos 🎯'
-            elif qtd_acertos == 4: rotulo_premio = '4 Acertos'
-        else:
-            if qtd_acertos >= 4:
-                rotulo_premio = f'{qtd_acertos} acertos 🎯'
-
-        if rotulo_premio:
-            premiacoes_resumo[rotulo_premio] = premiacoes_resumo.get(rotulo_premio, 0) + 1
-
-        conferencia_jogos.append({
-            'numero': idx,
-            'jogo': jogo,
-            'acertos': acertos,
-            'qtd_acertos': qtd_acertos,
-            'rotulo_premio': rotulo_premio
+    sorteio = conferencia.sorteio_do_concurso(loteria_type, aposta.get('concurso_alvo'))
+    if sorteio['status'] == 'aguardando':
+        return jsonify({
+            'sucesso': True,
+            'status': 'aguardando',
+            'concurso_numero': sorteio['concurso'],
+            'mensagem': f"Esta aposta concorre no concurso {sorteio['concurso']}, que ainda não foi sorteado. A conferência é automática assim que o resultado sair."
         })
+    if sorteio['status'] != 'conferido':
+        return jsonify({'erro': 'Resultado desse concurso não está disponível para conferência'}), 400
+
+    jogos_conferidos, premiacoes_resumo = conferencia.conferir_jogos(
+        loteria_type, aposta.get('jogos', []), sorteio['dezenas'], sorteio['segundo_sorteio'])
 
     return jsonify({
         'sucesso': True,
+        'status': 'conferido',
         'aposta_titulo': aposta.get('titulo'),
-        'concurso_numero': meta.get('ultimo_concurso', len(historico)),
-        'data_apuracao': meta.get('data_apuracao', 'Recente'),
-        'dezenas_sorteadas': ultimo_sorteio,
-        'jogos_conferidos': conferencia_jogos,
+        'concurso_numero': sorteio['concurso'],
+        'data_apuracao': sorteio.get('data_apuracao') or '',
+        'dezenas_sorteadas': sorteio['dezenas'],
+        'dezenas_segundo_sorteio': sorteio['segundo_sorteio'],
+        'jogos_conferidos': jogos_conferidos,
         'premiacoes_resumo': premiacoes_resumo
     })
 
@@ -1312,7 +1312,8 @@ def api_salvar_historico(loteria_type: str):
         dezenas_por_jogo=dezenas_por_jogo,
         user_id=user_id,
         session_id=session_id,
-        titulo=f"Jogos Digitados ({len(historico)} aposta(s))"
+        titulo=f"Jogos Digitados ({len(historico)} aposta(s))",
+        concurso_alvo=conferencia.proximo_concurso(loteria_type)
     )
     
     return jsonify({
@@ -1367,16 +1368,17 @@ def gerar_jogo(loteria_type: str):
         return jsonify({'erro': 'Loteria inválida'}), 400
     
     dados = request.get_json() or {}
-    historico_input = dados.get('historico', [])
-    quantidade = dados.get('quantidade', LOTERIAS_CONFIG[loteria].minimo_aposta)
-    
-    if not historico_input:
-        historico_input = carregar_historico(loteria_type)
-    
-    if len(historico_input) < 10:
+    config = LOTERIAS_CONFIG[loteria]
+    try:
+        quantidade = int(dados.get('quantidade', config.minimo_aposta))
+    except (TypeError, ValueError):
+        quantidade = config.minimo_aposta
+    quantidade = max(config.minimo_aposta, min(config.maximo_aposta, quantidade))
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para análise'}), 400
-    
-    modelo = ModeloCanonico30(historico_input, loteria)
+
     jogo = gerar_jogo_sugerido(modelo, quantidade)
     
     return jsonify({
@@ -1389,7 +1391,18 @@ def gerar_jogo(loteria_type: str):
     })
 
 
+MSG_ACESSO_EXPIRADO = 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.'
+
+
+def _acesso_bloqueado(user_id):
+    """Resposta 403 se o usuário não tiver plano ou créditos; None se puder gerar."""
+    if not database.check_user_access(user_id).get('has_access'):
+        return jsonify({'sucesso': False, 'erro': MSG_ACESSO_EXPIRADO, 'precisa_plano': True}), 403
+    return None
+
+
 @app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
+@login_required
 def api_gerar_multiplos_jogos(loteria_type: str):
     """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0 com verificação de plano/créditos"""
     try:
@@ -1398,17 +1411,10 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
 
-    # Verificação de Acesso / Créditos do Usuário
-    user_id = session.get('user_id')
-    access = {'is_vip': True, 'credits': 999}
-    if user_id:
-        access = database.check_user_access(user_id)
-        if not access.get('has_access'):
-            return jsonify({
-                'sucesso': False,
-                'erro': 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.',
-                'precisa_plano': True
-            }), 403
+    user_id = session['user_id']
+    bloqueio = _acesso_bloqueado(user_id)
+    if bloqueio:
+        return bloqueio
 
     dados = request.get_json() or {}
     quantidade_jogos = int(dados.get('quantidade_jogos', 5))
@@ -1423,15 +1429,20 @@ def api_gerar_multiplos_jogos(loteria_type: str):
             'erro': f'Para gerar apostas de {dezenas} dezenas no modo personalizado, selecione ao menos {dezenas} números favoritos.'
         }), 400
 
-    historico_input = dados.get('historico', [])
-    if not historico_input:
-        historico_input = carregar_historico(loteria_type)
-
-    if len(historico_input) < 10:
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
 
-    modelo = ModeloCanonico30(historico_input, loteria)
-    jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base if numeros_base else None)
+    filtro_inteligente = dados.get('filtro_inteligente', True) is not False
+    if filtro_inteligente:
+        # Gera candidatos extras e prioriza os que passam no filtro; completa com os demais se faltar
+        candidatos = gerar_multiplos_jogos(modelo, min(quantidade_jogos * 6, 300), dezenas, numeros_base=numeros_base or None)
+        aprovados = [j for j in candidatos if avaliacao.jogo_aprovado(j, modelo)]
+        restantes = [j for j in candidatos if j not in aprovados]
+        jogos = (aprovados + restantes)[:quantidade_jogos]
+    else:
+        jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base or None)
+    jogos_aprovados = [avaliacao.jogo_aprovado(j, modelo) for j in jogos]
 
     # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 3.0,
     # aplicado separadamente sobre o histórico de trevos. Um par por jogo, podendo repetir entre
@@ -1443,10 +1454,8 @@ def api_gerar_multiplos_jogos(loteria_type: str):
             modelo_trevo = ModeloCanonico30(trevos_historico, loteria, config_override=TREVO_CONFIG)
             trevos = [gerar_jogo_sugerido(modelo_trevo, 2) for _ in range(len(jogos))]
 
-    # Consumir crédito de usuário se for avulso/free
-    if user_id:
-        database.consume_user_credit(user_id)
-        access = database.check_user_access(user_id)
+    database.consume_user_credit(user_id)
+    access = database.check_user_access(user_id)
 
     return jsonify({
         'sucesso': True,
@@ -1455,12 +1464,98 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'dezenas_por_jogo': dezenas,
         'jogos': jogos,
         'trevos': trevos,
+        'parecer': avaliacao.parecer_jogos(jogos, modelo),
+        'filtro_inteligente': filtro_inteligente,
+        'jogos_aprovados': jogos_aprovados,
         'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
         },
         'user_access': access
+    })
+
+
+@app.route('/api/fechamento/<loteria_type>', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, window_seconds=60)
+def api_fechamento(loteria_type: str):
+    """Gera um fechamento (desdobramento) com garantia a partir do grupo de números do usuário"""
+    try:
+        config = LOTERIAS_CONFIG[LoteriaType(loteria_type)]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    user_id = session['user_id']
+    bloqueio = _acesso_bloqueado(user_id)
+    if bloqueio:
+        return bloqueio
+
+    dados = request.get_json(silent=True) or {}
+    grupo = dados.get('grupo')
+    try:
+        tamanho_jogo = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
+        condicao = int(dados.get('condicao', config.sorteados))
+        garantia = int(dados.get('garantia', 0))
+    except (TypeError, ValueError):
+        return jsonify({'erro': 'Parâmetros inválidos.'}), 400
+
+    erro = fechamento.validar_pedido(loteria_type, config, grupo, tamanho_jogo, condicao, garantia)
+    if erro:
+        return jsonify({'erro': erro}), 400
+
+    try:
+        jogos = fechamento.gerar_fechamento(grupo, tamanho_jogo, condicao, garantia)
+    except fechamento.FechamentoInviavel as e:
+        return jsonify({'erro': str(e)}), 422
+
+    database.consume_user_credit(user_id)
+    chance = fechamento.chance_condicao(config, len(grupo), condicao)
+    custo_jogo = comb(tamanho_jogo, config.minimo_aposta) * config.custo_minimo
+    premio = re.sub(r'\s*[🏆⭐🎯]', '', conferencia.rotulo_premio(loteria_type, garantia) or f'{garantia} acertos')
+
+    return jsonify({
+        'sucesso': True,
+        'loteria': config.nome,
+        'jogos': jogos,
+        'quantidade_jogos': len(jogos),
+        'dezenas_por_jogo': tamanho_jogo,
+        'garantia_texto': (
+            (f'Se os {condicao} números sorteados' if condicao == config.sorteados else f'Se {condicao} dos {config.sorteados} números sorteados')
+            + f' estiverem entre os seus {len(grupo)}, '
+            f'pelo menos um jogo fará {premio}.'
+            + (' A garantia vale para cada um dos 2 sorteios.' if config.sorteios_por_concurso > 1 else '')
+        ),
+        'chance_condicao_um_em': round(1 / chance) if chance > 0 else None,
+        'custo_total': round(len(jogos) * custo_jogo, 2),
+        'user_access': database.check_user_access(user_id),
+    })
+
+
+@app.route('/api/avaliar-jogos/<loteria_type>', methods=['POST'])
+@login_required
+@rate_limit(max_requests=30, window_seconds=60)
+def api_avaliar_jogos(loteria_type: str):
+    """Avalia os jogos do usuário com base no Modelo Canônico (sem IA)"""
+    try:
+        LoteriaType(loteria_type)
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    jogos = (request.get_json(silent=True) or {}).get('jogos')
+    if not isinstance(jogos, list) or not jogos:
+        return jsonify({'erro': 'Envie ao menos um jogo.'}), 400
+    if len(jogos) > 20:
+        return jsonify({'erro': 'Avalie no máximo 20 jogos por vez.'}), 400
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
+        return jsonify({'erro': 'Histórico insuficiente para avaliação'}), 400
+
+    return jsonify({
+        'sucesso': True,
+        'concursos_analisados': modelo.T,
+        'avaliacoes': [avaliacao.avaliar_jogo(jogo, modelo) for jogo in jogos],
     })
 
 
@@ -1739,34 +1834,6 @@ def api_admin_config_pix():
 # ROTAS DO AGENTE IA CONSULTOR
 # ==========================================
 
-@app.route('/api/ia/parecer/<loteria_type>', methods=['POST'])
-@login_required
-@rate_limit(max_requests=10, window_seconds=60)
-def api_ia_parecer(loteria_type: str):
-    """Gera parecer estatístico didático do Agente IA para a rodada e palpites"""
-    try:
-        loteria = LoteriaType(loteria_type)
-        config = LOTERIAS_CONFIG[loteria]
-    except ValueError:
-        return jsonify({'erro': 'Loteria inválida'}), 400
-
-    dados = request.get_json() or {}
-    jogos = dados.get('jogos', [])
-
-    historico = carregar_historico(loteria_type)
-    if not historico or len(historico) < 10:
-        return jsonify({'erro': 'Histórico insuficiente para a IA analisar'}), 400
-
-    modelo = ModeloCanonico30(historico, loteria)
-    resumo_analise = modelo.obter_resumo_analise()
-
-    parecer = ai_agent.gerar_parecer_ia(config.nome, resumo_analise, jogos)
-    return jsonify({
-        'sucesso': True,
-        'parecer': parecer
-    })
-
-
 @app.route('/api/ia/chat', methods=['POST'])
 @login_required
 @rate_limit(max_requests=15, window_seconds=60)
@@ -1943,24 +2010,19 @@ def comparar_concursos(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    dados = request.get_json()
+    dados = request.get_json() or {}
     concurso_atual = dados.get('concurso', [])
-    historico_input = dados.get('historico', [])
-    
-    if not historico_input:
-        historico_input = carregar_historico(loteria_type)
-    
-    if len(historico_input) < 10:
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente'}), 400
-    
-    modelo = ModeloCanonico30(historico_input, loteria)
     analises = modelo.analisar_todos_elementos()
     
     scores_concurso = []
     numeros_analisados = []
     
     for numero in concurso_atual:
-        if 1 <= numero <= modelo.N:
+        if numero in modelo.contagens_total:
             analise = next((a for a in analises if a.numero == numero), None)
             if analise:
                 scores_concurso.append(analise.score_mcp)

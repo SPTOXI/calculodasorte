@@ -27,6 +27,7 @@ Projeto Calculadora da Sorte
 import json
 import os
 import re
+import secrets
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import ThreadedConnectionPool
@@ -44,7 +45,6 @@ except ImportError:
 
 from contextlib import contextmanager
 
-_LAST_CLOUD_SYNC = 0.0
 
 
 
@@ -69,11 +69,6 @@ def set_setting(key: str, value: str) -> bool:
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             ''', (key, str(value)))
             conn.commit()
-        try:
-            if 'blob_storage' in globals():
-                sync_db_to_cloud()
-        except Exception:
-            pass
         return True
     except Exception as e:
         print(f"[SETTINGS] Erro ao salvar configuração {key}: {e}")
@@ -101,40 +96,6 @@ def obter_ultimo_resultado_db(loteria_type: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"[DB] Erro ao obter ultimo resultado de {loteria_type}: {e}")
     return None
-
-
-def sync_db_from_cloud(force: bool = False) -> bool:
-    """Sincroniza o banco local com a versão persistente na nuvem (Vercel Blob)"""
-    global _LAST_CLOUD_SYNC
-    now = time.time()
-    if not force and (now - _LAST_CLOUD_SYNC < 4.0):
-        return False
-    
-    if not blob_storage.get_blob_token():
-        return False
-
-    success = blob_storage.download_blob('database.db', DB_PATH)
-    if success:
-        _LAST_CLOUD_SYNC = now
-        aplicar_migracoes()
-    return success
-
-
-def sync_db_to_cloud() -> bool:
-    """Envia o banco local atualizado para o Vercel Blob"""
-    global _LAST_CLOUD_SYNC
-    if not blob_storage.get_blob_token():
-        if os.environ.get('VERCEL'):
-            print("[DB] AVISO: BLOB_READ_WRITE_TOKEN não configurado no Vercel. Alterações não serão persistidas entre instâncias.")
-        return False
-    
-    success = blob_storage.upload_blob(DB_PATH, 'database.db')
-    if success:
-        _LAST_CLOUD_SYNC = time.time()
-    else:
-        print("[DB] ERRO: Falha ao sincronizar banco local com Vercel Blob.")
-    return success
-
 
 
 import urllib.parse
@@ -233,6 +194,9 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
             )
         """)
+        conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS concurso_alvo INTEGER")
+        conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS notificado_em TIMESTAMP")
+        conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avisos_email INTEGER NOT NULL DEFAULT 1")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS payments (
@@ -284,10 +248,14 @@ def init_db():
 
 
 
-def seed_admin(email: str = 'silvio.luis.morais@gmail.com', password: str = '123456'):
+def seed_admin(email: str = 'silvio.luis.morais@gmail.com'):
     """Garante a existência do usuário administrador padrão"""
     user = get_user_by_email(email)
     if not user:
+        # Nunca usar senha fixa: quem logasse primeiro com ela assumiria a conta de admin
+        password = os.environ.get('ADMIN_INITIAL_PASSWORD') or secrets.token_urlsafe(12)
+        if not os.environ.get('ADMIN_INITIAL_PASSWORD'):
+            print(f"[DB] Senha inicial do administrador gerada (troque no primeiro login): {password}")
         create_user(
             email=email,
             password=password,
@@ -315,12 +283,6 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
 
-    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
-        with get_db_connection() as conn:
-            row = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
-            if row:
-                return dict(row)
 
     return None
 
@@ -338,24 +300,12 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
 
-    # Se não encontrou localmente no container serverless, busca versão mais recente na nuvem
-    if (os.environ.get('VERCEL') or blob_storage.get_blob_token()) and sync_db_from_cloud(force=True):
-        with get_db_connection() as conn:
-            row = conn.execute(
-                'SELECT * FROM users WHERE LOWER(email) = %s', 
-                (email_clean,)
-            ).fetchone()
-            if row:
-                print(f"[DB] Usuário {email_clean} localizado com sucesso após sincronização em nuvem.")
-                return dict(row)
 
     return None
 
 
 def get_all_users() -> List[Dict[str, Any]]:
     """Listar todos os usuários com dados de plano e créditos (sincronizado com a nuvem)"""
-    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
-        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         rows = conn.execute(
             'SELECT id, email, name, role, plan, credits, vip_expires_at, is_blocked, must_change_password, created_at, last_login '
@@ -548,7 +498,8 @@ def salvar_aposta(
     dezenas_por_jogo: int,
     user_id: Optional[int] = None,
     session_id: Optional[str] = None,
-    titulo: Optional[str] = None
+    titulo: Optional[str] = None,
+    concurso_alvo: Optional[int] = None
 ) -> int:
     """Salva um lote de jogos no banco de dados SQLite"""
     import json
@@ -566,9 +517,9 @@ def salvar_aposta(
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO user_bets 
-            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-        ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json))
+            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json, concurso_alvo)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+        ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json, concurso_alvo))
         last_id = cursor.fetchone()['id']
         conn.commit()
     sync_db_to_cloud()
@@ -583,6 +534,8 @@ def listar_apostas(
 ) -> List[Dict[str, Any]]:
     """Lista apostas do usuário logado ou da sessão atual"""
     import json
+    if not user_id and not session_id:
+        return []
     with get_db_connection() as conn:
         query = "SELECT * FROM user_bets WHERE "
         params = []
@@ -590,11 +543,9 @@ def listar_apostas(
         if user_id:
             query += "(user_id = %s OR session_id = %s) "
             params.extend([user_id, session_id or ''])
-        elif session_id:
+        else:
             query += "session_id = %s "
             params.append(session_id)
-        else:
-            query += "1=1 "
 
         if loteria_type:
             query += "AND loteria_type = %s "
@@ -613,6 +564,41 @@ def listar_apostas(
                 d['jogos'] = []
             resultado.append(d)
         return resultado
+
+
+def apostas_para_notificar(loteria_type: str, desde_concurso: int, ate_concurso: int) -> List[Dict[str, Any]]:
+    """Apostas de usuários cadastrados, já sorteadas e ainda não processadas pelo aviso por e-mail."""
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT b.*, u.email, u.name, u.avisos_email
+            FROM user_bets b JOIN users u ON u.id = b.user_id
+            WHERE b.loteria_type = %s AND b.concurso_alvo BETWEEN %s AND %s
+              AND b.notificado_em IS NULL AND u.is_blocked = 0
+            ORDER BY b.user_id, b.id
+        ''', (loteria_type, desde_concurso, ate_concurso)).fetchall()
+    resultado = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d['jogos'] = json.loads(d['jogos_json'])
+        except Exception:
+            d['jogos'] = []
+        resultado.append(d)
+    return resultado
+
+
+def marcar_apostas_notificadas(aposta_ids: List[int]):
+    if not aposta_ids:
+        return
+    with get_db_connection() as conn:
+        conn.execute('UPDATE user_bets SET notificado_em = CURRENT_TIMESTAMP WHERE id = ANY(%s)', (list(aposta_ids),))
+        conn.commit()
+
+
+def set_avisos_email(user_id: int, ativo: bool):
+    with get_db_connection() as conn:
+        conn.execute('UPDATE users SET avisos_email = %s WHERE id = %s', (1 if ativo else 0, user_id))
+        conn.commit()
 
 
 def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:
@@ -1076,8 +1062,6 @@ def approve_payment(payment_id: int) -> bool:
 
 def get_all_payments() -> List[Dict[str, Any]]:
     """Listar todos os pagamentos com dados do usuário para o painel admin (sincronizado na nuvem)"""
-    if os.environ.get('VERCEL') or blob_storage.get_blob_token():
-        sync_db_from_cloud(force=True)
     with get_db_connection() as conn:
         # Cancela pagamentos pendentes criados há mais de 24 horas
         limite_tempo = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
