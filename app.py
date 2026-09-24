@@ -1599,21 +1599,23 @@ def api_checkout_pix():
 @app.route('/api/checkout/confirmar/<int:payment_id>', methods=['POST'])
 @login_required
 def api_confirmar_pix(payment_id: int):
-    """Aprova pagamento PIX e libera acesso VIP ou créditos de análise"""
-    try:
-        sucesso = database.approve_payment(payment_id)
-        if sucesso:
-            access = database.check_user_access(session['user_id'])
-            return jsonify({
-                'sucesso': True,
-                'mensagem': 'Pagamento aprovado com sucesso! Acesso liberado.',
-                'novo_status': 'aprovado',
-                'access': access
-            })
-        return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado ou já processado'}), 400
-    except Exception as e:
-        print(f"[CHECKOUT CONFIRMAR] Erro: {e}")
-        return jsonify({'sucesso': False, 'erro': str(e)}), 500
+    """O PIX copia-e-cola não tem confirmação automática: o aviso do usuário só registra
+    o pedido, e o acesso é liberado quando o administrador confere o extrato e aprova."""
+    pagamento = database.get_payment_by_id(payment_id)
+    if not pagamento or pagamento['user_id'] != session['user_id']:
+        return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado'}), 404
+    if pagamento.get('status') == 'aprovado':
+        return jsonify({
+            'sucesso': True,
+            'mensagem': 'Pagamento aprovado! Acesso liberado.',
+            'novo_status': 'aprovado',
+            'access': database.check_user_access(session['user_id'])
+        })
+    return jsonify({
+        'sucesso': False,
+        'novo_status': pagamento.get('status'),
+        'erro': 'Recebemos seu aviso. O acesso é liberado assim que o PIX for confirmado no extrato.'
+    })
 
 
 # ==========================================
@@ -1621,6 +1623,27 @@ def api_confirmar_pix(payment_id: int):
 # ==========================================
 
 INFINITEPAY_HANDLE = os.environ.get('INFINITEPAY_HANDLE', 'silvio_morais_')
+
+
+def infinitepay_pagamento_confirmado(pagamento: dict, transaction_nsu, slug) -> bool:
+    """Confirma na própria InfinitePay que o pedido foi pago no valor cobrado.
+    Dados vindos do navegador ou do webhook não bastam: qualquer um pode forjá-los."""
+    if not pagamento or not transaction_nsu or not slug:
+        return False
+    try:
+        resp = requests.post("https://api.checkout.infinitepay.io/payment_check", json={
+            "handle": INFINITEPAY_HANDLE,
+            "order_nsu": str(pagamento['id']),
+            "transaction_nsu": str(transaction_nsu),
+            "slug": str(slug),
+        }, timeout=12)
+        dados = resp.json() if resp.status_code == 200 else {}
+    except Exception as e:
+        print(f"[INFINITEPAY] Falha ao consultar pagamento #{pagamento['id']}: {e}")
+        return False
+    valor_centavos = int(round(float(pagamento['valor']) * 100))
+    pago = dados.get('paid_amount') or dados.get('amount') or 0
+    return bool(dados.get('success') and dados.get('paid') and int(pago) >= valor_centavos)
 
 
 @app.route('/api/checkout/infinitepay', methods=['POST'])
@@ -1712,6 +1735,11 @@ def api_webhook_infinitepay():
     except ValueError:
         return jsonify({'erro': 'order_nsu inválido'}), 400
 
+    pagamento = database.get_payment_by_id(payment_id)
+    if not infinitepay_pagamento_confirmado(pagamento, dados.get('transaction_nsu'), dados.get('invoice_slug') or dados.get('slug')):
+        print(f"[INFINITEPAY WEBHOOK] Pagamento #{payment_id} não confirmado pela InfinitePay; ignorado.")
+        return jsonify({'sucesso': False, 'erro': 'Pagamento não confirmado'}), 400
+
     sucesso = database.approve_payment(payment_id)
     if sucesso:
         print(f"[INFINITEPAY WEBHOOK] Pagamento #{payment_id} aprovado com sucesso! Acesso liberado.")
@@ -1729,9 +1757,12 @@ def api_checkout_status(payment_id: int):
         if not pagamento:
             return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado'}), 404
 
-        # Se pertence ao usuário logado e ainda pendente, aprovar se checkout confirmado
-        auto_approve = request.args.get('auto_approve') == 'true' or request.args.get('checkout') == 'sucesso'
-        if auto_approve and pagamento['user_id'] == session.get('user_id') and pagamento.get('status') != 'aprovado':
+        if pagamento['user_id'] != session.get('user_id'):
+            return jsonify({'sucesso': False, 'erro': 'Pagamento não encontrado'}), 404
+
+        # Retorno do checkout: só aprova se a InfinitePay confirmar o pagamento
+        if pagamento.get('status') != 'aprovado' and infinitepay_pagamento_confirmado(
+                pagamento, request.args.get('transaction_nsu'), request.args.get('slug')):
             database.approve_payment(payment_id)
             pagamento = database.get_payment_by_id(payment_id)
 

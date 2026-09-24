@@ -393,11 +393,13 @@
                 const pId = urlParams.get('payment_id');
                 if (pId) {
                     // Consulta o backend com auto-aprovação para confirmar ativação
-                    fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
+                    fetch(`/api/checkout/status/${pId}?${urlParams.toString()}`)
                         .then(r => parseJsonResponse(r, '/planos'))
                         .then(data => {
                             if (!data) return;
-                            alert('🎉 Parabéns! Seu pagamento na InfinitePay foi processado com sucesso! Seu acesso está liberado.');
+                            alert(data.is_approved
+                                ? '🎉 Parabéns! Pagamento confirmado pela InfinitePay. Seu acesso está liberado.'
+                                : '⏳ Estamos aguardando a confirmação da InfinitePay. Seu acesso é liberado automaticamente assim que o pagamento for confirmado.');
                             window.location.href = '/dashboard';
                         })
                         .catch(() => {

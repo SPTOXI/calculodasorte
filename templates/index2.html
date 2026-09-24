@@ -450,18 +450,18 @@
             if (urlParams.get('checkout') === 'sucesso') {
                 const pId = urlParams.get('payment_id');
                 if (pId) {
-                    fetch(`/api/checkout/status/${pId}?checkout=sucesso`)
+                    fetch(`/api/checkout/status/${pId}?${urlParams.toString()}`)
                         .then(r => parseJsonResponse(r, '/dashboard'))
                         .then(data => {
                             if (!data) return;
-                            alert('🎉 Parabéns! Seu pagamento foi confirmado com sucesso e seu acesso está 100% liberado!');
+                            alert(data && data.is_approved ? '🎉 Parabéns! Pagamento confirmado e acesso liberado!' : '⏳ Aguardando a confirmação da InfinitePay. Seu acesso é liberado automaticamente assim que o pagamento for confirmado.');
                             window.location.href = '/dashboard';
                         })
                         .catch(() => {
                             window.location.href = '/dashboard';
                         });
                 } else {
-                    alert('🎉 Pagamento concluído com sucesso!');
+                    alert('⏳ Aguardando a confirmação do pagamento.');
                     window.location.href = '/dashboard';
                 }
             }
