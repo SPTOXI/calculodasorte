@@ -18,13 +18,18 @@ jobs:
 
     steps:
       - name: Disparar Sincronização na Calculadora da Sorte
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           echo "Disparando sincronização oficial da Caixa..."
-          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" -X POST "https://www.calculodasorte.com.br/api/cron/atualizar")
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://www.calculodasorte.com.br/api/cron/atualizar")
           echo "HTTP Status: $HTTP_STATUS"
           cat response.json
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
             echo "Sincronização executada com sucesso!"
           else
-            echo "Aviso: Servidor retornou HTTP $HTTP_STATUS"
+            echo "Erro: servidor retornou HTTP $HTTP_STATUS (401 = CRON_SECRET ausente ou diferente do Vercel)"
+            exit 1
           fi
