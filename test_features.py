@@ -633,6 +633,19 @@ class TestNovasFuncionalidades(unittest.TestCase):
         database.approve_payment(database.create_payment(user_id=m['id'], tipo='avulso', valor=5.00)['id'])
         self.assertEqual(database.check_user_access(m['id'])['plan'], 'vip_mensal')
 
+    def test_22c_cron_exige_segredo(self):
+        """Com CRON_SECRET definida, /api/cron/atualizar só aceita o Bearer correto"""
+        import os
+        with patch.dict(os.environ, {'CRON_SECRET': 'segredo-teste'}), \
+                patch('app.updater.sincronizar_todas', return_value={'sucesso': True}) as sync:
+            self.assertEqual(self.client.post('/api/cron/atualizar').status_code, 401)
+            res = self.client.post('/api/cron/atualizar', headers={'Authorization': 'Bearer errado'})
+            self.assertEqual(res.status_code, 401)
+            sync.assert_not_called()
+            res = self.client.post('/api/cron/atualizar', headers={'Authorization': 'Bearer segredo-teste'})
+            self.assertEqual(res.status_code, 200)
+            sync.assert_called_once()
+
     def test_23_api_unauthenticated_returns_json_not_html(self):
         """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""
         # 1. /api/checkout/pix sem autenticação

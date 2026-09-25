@@ -2026,7 +2026,16 @@ def download_jogos(loteria_type: str, formato: str):
 
 @app.route('/api/cron/atualizar', methods=['GET', 'POST'])
 def cron_atualizar():
-    """Endpoint chamado pelo Vercel Cron Job pontualmente às 23:00h do Horário de Brasília (02:00 UTC)"""
+    """Endpoint chamado pelo Vercel Cron Job pontualmente às 23:00h do Horário de Brasília (02:00 UTC)
+    e pelo GitHub Action. Com CRON_SECRET definido, exige o cabeçalho Authorization: Bearer <CRON_SECRET>
+    (o Vercel Cron envia esse cabeçalho sozinho quando a variável existe no projeto)."""
+    segredo = os.environ.get('CRON_SECRET')
+    if segredo:
+        recebido = request.headers.get('Authorization', '')
+        if not secrets.compare_digest(recebido.encode(), f'Bearer {segredo}'.encode()):
+            return jsonify({'sucesso': False, 'erro': 'Não autorizado'}), 401
+    else:
+        print("[CRON] CRON_SECRET não definida: endpoint de sincronização sem proteção.")
     agora_str = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     print(f"[CRON] Executando sincronização diária oficial da Caixa às 23:00h BRT ({agora_str})...")
     res = updater.sincronizar_todas(n_historico=50)
