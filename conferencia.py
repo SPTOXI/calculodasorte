@@ -59,6 +59,16 @@ def proximo_concurso(loteria_type: str) -> Optional[int]:
     return ultimo + 1 if ultimo else None
 
 
+MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho',
+         'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+ROTULO_COMPLEMENTO = {'timemania': '⚽ Time do Coração', 'dia_de_sorte': '📅 Mês da Sorte'}
+
+
+def normalizar_complemento(valor) -> str:
+    """Compara 'VOLTA REDONDA    /RJ' com 'Volta Redonda/RJ' e 'março' com 'Março'."""
+    return ' '.join(str(valor or '').split()).replace(' /', '/').casefold()
+
+
 _CONCURSOS_CACHE: Dict[Tuple[str, int], Dict] = {}
 
 
@@ -102,13 +112,16 @@ def sorteio_do_concurso(loteria_type: str, concurso: Optional[int]) -> Dict:
         'dezenas': updater.extrair_dezenas(dados, slug),
         'segundo_sorteio': updater.extrair_segundo_sorteio(dados) if loteria_type == 'dupla_sena' else [],
         'trevos': updater.extrair_trevos(dados) if loteria_type == 'mais_milionaria' else [],
+        'complemento': dados.get('nomeTimeCoracaoMesSorte') if loteria_type in ROTULO_COMPLEMENTO else None,
     }
 
 
 def conferir_jogos(loteria_type: str, jogos: List[List[int]], sorteio: List[int],
                    segundo_sorteio: Optional[List[int]] = None,
                    trevos_sorteio: Optional[List[int]] = None,
-                   trevos_jogos: Optional[List[List[int]]] = None) -> Tuple[List[Dict], Dict[str, int]]:
+                   trevos_jogos: Optional[List[List[int]]] = None,
+                   complemento_sorteio: Optional[str] = None,
+                   complementos_jogos: Optional[List[Optional[str]]] = None) -> Tuple[List[Dict], Dict[str, int]]:
     resultado = []
     premiacoes: Dict[str, int] = {}
     set_sorteio = set(sorteio)
@@ -134,6 +147,15 @@ def conferir_jogos(loteria_type: str, jogos: List[List[int]], sorteio: List[int]
                 trevos_acertados = len(set(trevos_jogos[idx - 1] or []) & set(trevos_sorteio))
             rotulos = [rotulo_premio(loteria_type, len(acertos), trevos_acertados=trevos_acertados)]
 
+        # Timemania e Dia de Sorte: acertar o Time do Coração / Mês da Sorte também é prêmio
+        acertou_complemento = None
+        if loteria_type in ROTULO_COMPLEMENTO and complemento_sorteio and complementos_jogos and idx <= len(complementos_jogos):
+            escolhido = complementos_jogos[idx - 1]
+            if escolhido:
+                acertou_complemento = normalizar_complemento(escolhido) == normalizar_complemento(complemento_sorteio)
+                if acertou_complemento:
+                    rotulos.append(ROTULO_COMPLEMENTO[loteria_type])
+
         rotulos = [r for r in rotulos if r]
         for r in rotulos:
             premiacoes[r] = premiacoes.get(r, 0) + 1
@@ -145,6 +167,7 @@ def conferir_jogos(loteria_type: str, jogos: List[List[int]], sorteio: List[int]
             'qtd_acertos': len(acertos),
             'acertos_posicoes': acertos_posicoes,
             'trevos_acertados': trevos_acertados,
+            'acertou_complemento': acertou_complemento,
             'rotulo_premio': ' + '.join(rotulos) or None,
         })
     return resultado, premiacoes
@@ -166,7 +189,8 @@ def resumo_aposta(aposta: Dict, sorteios_cache: Optional[Dict] = None) -> Dict:
         return {'status': sorteio['status'], 'concurso': sorteio['concurso']}
 
     jogos, premiacoes = conferir_jogos(loteria_type, aposta.get('jogos', []), sorteio['dezenas'], sorteio['segundo_sorteio'],
-                                       sorteio.get('trevos'), aposta.get('trevos'))
+                                       sorteio.get('trevos'), aposta.get('trevos'),
+                                       sorteio.get('complemento'), aposta.get('complementos'))
     return {
         'status': 'conferido',
         'concurso': sorteio['concurso'],

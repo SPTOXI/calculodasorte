@@ -39,6 +39,27 @@ class TestConferenciaPorLoteria(unittest.TestCase):
         self.assertIn('confira os trevos', res[0]['rotulo_premio'])
         self.assertIsNone(res[1]['rotulo_premio'])
 
+    def test_time_do_coracao_e_mes_da_sorte(self):
+        # Timemania: nome da Caixa vem com espaços extras; comparação ignora espaços e maiúsculas
+        res, premios = conferencia.conferir_jogos('timemania', [[1] * 10, [2] * 10], [50, 51, 52, 53, 54, 55, 56],
+                                                  complemento_sorteio='VOLTA REDONDA    /RJ',
+                                                  complementos_jogos=['Volta Redonda/RJ', 'FLAMENGO/RJ'])
+        self.assertEqual(res[0]['rotulo_premio'], '⚽ Time do Coração')
+        self.assertIsNone(res[1]['rotulo_premio'])
+        self.assertEqual(premios, {'⚽ Time do Coração': 1})
+        # Dia de Sorte: mês + dezenas somam dois prêmios
+        res, premios = conferencia.conferir_jogos('dia_de_sorte', [[1, 2, 3, 4, 20, 21, 22]], [1, 2, 3, 4, 5, 6, 7],
+                                                  complemento_sorteio='Setembro', complementos_jogos=['setembro'])
+        self.assertEqual(res[0]['rotulo_premio'], '4 Acertos + 📅 Mês da Sorte')
+        self.assertEqual(sum(premios.values()), 2)
+
+    def test_mais_milionaria_com_mais_trevos(self):
+        # 6 trevos marcados: sempre acerta os 2 sorteados
+        res, _ = conferencia.conferir_jogos('mais_milionaria', [[1, 2, 7, 8, 9, 10, 11, 12]], [1, 2, 3, 4, 5, 6],
+                                            None, [3, 5], [[1, 2, 3, 4, 5, 6]])
+        self.assertEqual(res[0]['trevos_acertados'], 2)
+        self.assertEqual(res[0]['rotulo_premio'], '2 + 2 trevo(s) 🎯')
+
     def test_super_sete_por_coluna(self):
         res, _ = conferencia.conferir_jogos('super_sete', [[1, 2, 3, 9, 9, 9, 9]], [1, 2, 3, 4, 5, 6, 7])
         self.assertEqual(res[0]['acertos_posicoes'], [0, 1, 2])

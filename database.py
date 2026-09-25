@@ -197,6 +197,7 @@ def init_db():
         conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS concurso_alvo INTEGER")
         conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS notificado_em TIMESTAMP")
         conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS trevos_json TEXT")
+        conn.execute("ALTER TABLE user_bets ADD COLUMN IF NOT EXISTS complementos_json TEXT")
         conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avisos_email INTEGER NOT NULL DEFAULT 1")
 
         conn.execute("""
@@ -492,12 +493,16 @@ def get_latest_sync_logs(limit: int = 20) -> List[Dict[str, Any]]:
 # GESTÃO DE HISTÓRICO DE APOSTAS DO USUÁRIO
 # ==========================================
 
-def _trevos_da_aposta(d: Dict[str, Any]) -> Optional[List[List[int]]]:
-    """Trevos escolhidos em cada jogo da +Milionária (None quando a aposta não os registrou)."""
+def _json_opcional(d: Dict[str, Any], coluna: str):
     try:
-        return json.loads(d['trevos_json']) if d.get('trevos_json') else None
+        return json.loads(d[coluna]) if d.get(coluna) else None
     except Exception:
         return None
+
+
+def _trevos_da_aposta(d: Dict[str, Any]) -> Optional[List[List[int]]]:
+    """Trevos escolhidos em cada jogo da +Milionária (None quando a aposta não os registrou)."""
+    return _json_opcional(d, 'trevos_json')
 
 
 def salvar_aposta(
@@ -509,7 +514,8 @@ def salvar_aposta(
     session_id: Optional[str] = None,
     titulo: Optional[str] = None,
     concurso_alvo: Optional[int] = None,
-    trevos: Optional[List[List[int]]] = None
+    trevos: Optional[List[List[int]]] = None,
+    complementos: Optional[List[Optional[str]]] = None
 ) -> int:
     """Salva um lote de jogos no banco de dados SQLite"""
     import json
@@ -527,10 +533,11 @@ def salvar_aposta(
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO user_bets 
-            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json, concurso_alvo, trevos_json)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            (user_id, session_id, loteria_type, titulo, modalidade, quantidade_jogos, dezenas_por_jogo, jogos_json, concurso_alvo,
+             trevos_json, complementos_json)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         ''', (user_id, session_id, loteria_type, titulo, modalidade, len(jogos), dezenas_por_jogo, jogos_json, concurso_alvo,
-              json.dumps(trevos) if trevos else None))
+              json.dumps(trevos) if trevos else None, json.dumps(complementos) if complementos else None))
         last_id = cursor.fetchone()['id']
         conn.commit()
     sync_db_to_cloud()
@@ -574,6 +581,7 @@ def listar_apostas(
             except Exception:
                 d['jogos'] = []
             d['trevos'] = _trevos_da_aposta(d)
+            d['complementos'] = _json_opcional(d, 'complementos_json')
             resultado.append(d)
         return resultado
 
@@ -596,6 +604,7 @@ def apostas_para_notificar(loteria_type: str, desde_concurso: int, ate_concurso:
         except Exception:
             d['jogos'] = []
         d['trevos'] = _trevos_da_aposta(d)
+        d['complementos'] = _json_opcional(d, 'complementos_json')
         resultado.append(d)
     return resultado
 
@@ -626,6 +635,7 @@ def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:
             except Exception:
                 d['jogos'] = []
             d['trevos'] = _trevos_da_aposta(d)
+            d['complementos'] = _json_opcional(d, 'complementos_json')
             return d
         return None
 

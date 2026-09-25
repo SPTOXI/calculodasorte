@@ -396,6 +396,21 @@ Exemplo para {{ config.nome }}:
                         </div>
                     </div>
 
+                    {% if loteria.value == 'mais_milionaria' %}
+                    <div style="flex: 0 1 180px; min-width: 160px;">
+                        <label for="trevos-jogo" style="font-weight: 700; display: block; margin-bottom: 8px; color: #0A1A3F;">
+                            🍀 Trevos por jogo
+                        </label>
+                        <select id="trevos-jogo" style="width: 100%; padding: 10px 14px; border: 2px solid #5B6B82; border-radius: 8px; font-size: 1.05rem;">
+                            <option value="2" selected>2 trevos</option>
+                            <option value="3">3 trevos</option>
+                            <option value="4">4 trevos</option>
+                            <option value="5">5 trevos</option>
+                            <option value="6">6 trevos</option>
+                        </select>
+                    </div>
+                    {% endif %}
+
                     <div style="flex: 1; min-width: 260px;">
                         <label for="dezenas-jogo" style="font-weight: 700; display: block; margin-bottom: 8px; color: #0A1A3F;">
                             Quantidade de dezenas por jogo:
@@ -1366,6 +1381,7 @@ Exemplo para {{ config.nome }}:
                     body: JSON.stringify({
                         quantidade_jogos: qtdJogos,
                         dezenas_por_jogo: dezenasPorJogo,
+                        trevos_por_jogo: document.getElementById('trevos-jogo') ? parseInt(document.getElementById('trevos-jogo').value) : undefined,
                         filtro_inteligente: document.getElementById('filtro-inteligente').checked,
                         numeros_base: numerosBasePayload.length > 0 ? numerosBasePayload : undefined
                     })
@@ -1417,6 +1433,16 @@ Exemplo para {{ config.nome }}:
                     `🎯 Filtro Inteligente: ${aprovados} de ${data.jogos.length} jogos no perfil típico e sem padrões populares.`;
             }
 
+            if (data.complemento_tipo === 'time') {
+                let lista = document.getElementById('lista-times-coracao');
+                if (!lista) {
+                    lista = document.createElement('datalist');
+                    lista.id = 'lista-times-coracao';
+                    document.body.appendChild(lista);
+                }
+                lista.innerHTML = (data.opcoes_complemento || []).map(t => `<option value="${escaparHtml(t)}">`).join('');
+            }
+
             data.jogos.forEach((jogo, idx) => {
                 const card = document.createElement('div');
                 card.className = 'jogo-card';
@@ -1434,6 +1460,19 @@ Exemplo para {{ config.nome }}:
                     });
                 }
                 bolasHtml += '</div>';
+
+                const estiloCampo = 'padding: 4px 8px; border-radius: 6px; border: 1px solid #5B6B82;';
+                const estiloRotulo = 'display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: #0A1A3F; flex-wrap: wrap;';
+                if (data.complemento_tipo === 'mes' && data.opcoes_complemento) {
+                    const opcoes = data.opcoes_complemento.map(o =>
+                        `<option value="${escaparHtml(o)}" ${o === (data.complementos || [])[idx] ? 'selected' : ''}>${escaparHtml(o)}</option>`).join('');
+                    bolasHtml += `<label style="${estiloRotulo}">📅 Mês da Sorte: <select class="complemento-jogo" style="${estiloCampo}">${opcoes}</select></label>`;
+                } else if (data.complemento_tipo === 'time') {
+                    // Qualquer um dos 80 clubes pode ser digitado; os já sorteados aparecem como sugestão
+                    const sugerido = (data.complementos || [])[idx] || '';
+                    bolasHtml += `<label style="${estiloRotulo}">⚽ Time do Coração:
+                        <input class="complemento-jogo" list="lista-times-coracao" value="${escaparHtml(sugerido)}" placeholder="Digite seu time (ex.: FLAMENGO/RJ)" maxlength="60" style="${estiloCampo} min-width: 200px;"></label>`;
+                }
 
                 card.innerHTML = `
                     <div class="jogo-header">
@@ -1750,6 +1789,11 @@ Exemplo para {{ config.nome }}:
                         modalidade: modo,
                         jogos: ultimosJogosGerados,
                         trevos: ultimosTrevosGerados,
+                        complementos: (() => {
+                            const campos = document.querySelectorAll('.complemento-jogo');
+                            if (!campos.length || campos.length !== ultimosJogosGerados.length) return undefined;
+                            return Array.from(campos).map(c => c.value.trim() || null);
+                        })(),
                         dezenas_por_jogo: dezenasPorJogo,
                         titulo: titulo
                     })
@@ -1804,6 +1848,9 @@ Exemplo para {{ config.nome }}:
                         <strong style="font-size: 0.8rem; margin-left: 8px;">2º sorteio:</strong> ${bolasSorteio(data.dezenas_segundo_sorteio)}`;
                 } else {
                     dezenasHtml = bolasSorteio(data.dezenas_sorteadas);
+                }
+                if (data.complemento_sorteado) {
+                    dezenasHtml += `<strong style="font-size: 0.8rem; margin-left: 8px;">${loteriaType === 'dia_de_sorte' ? '📅 Mês da Sorte' : '⚽ Time do Coração'}:</strong> ${escaparHtml(data.complemento_sorteado)}`;
                 }
                 if ((data.trevos_sorteados || []).length > 0) {
                     dezenasHtml += `<strong style="font-size: 0.8rem; margin-left: 8px;">🍀 Trevos:</strong> ` +
