@@ -652,8 +652,10 @@ Exemplo para {{ config.nome }}:
         const loteriaType = '{{ loteria.value }}';
         let analiseAtual = null;
         let ultimosJogosGerados = [];
+        let ultimosTrevosGerados = null;
         let historicoCaixaOficial = [];
         let trevosCaixaOficial = [];
+        let segundoSorteioCaixa = [];
         let modoGeracaoAtual = 'automatico';
         const numerosBaseSelecionados = new Set();
 
@@ -764,9 +766,12 @@ Exemplo para {{ config.nome }}:
                     if (loteriaType === 'mais_milionaria') {
                         trevosCaixaOficial = result.trevos || [];
                     }
+                    if (loteriaType === 'dupla_sena') {
+                        segundoSorteioCaixa = result.segundo_sorteio || [];
+                    }
 
                     // Renderiza a lista visual dos concursos da Caixa
-                    renderizarListaConcursosCaixa(result.historico, meta);
+                    renderizarListaConcursosCaixa(result.historico, meta, result.concursos || []);
 
                     // Executa a análise estatística em segundo plano para alimentar as abas canônicas
                     realizarAnalise();
@@ -780,7 +785,7 @@ Exemplo para {{ config.nome }}:
             }
         }
 
-        function renderizarListaConcursosCaixa(historico, meta) {
+        function renderizarListaConcursosCaixa(historico, meta, concursos = []) {
             const container = document.getElementById('lista-concursos-caixa');
             if (!container) return;
             if (!historico || historico.length === 0) {
@@ -794,7 +799,7 @@ Exemplo para {{ config.nome }}:
             let html = '';
             // Ordem decrescente (concursos mais recentes no topo)
             for (let i = total - 1; i >= 0; i--) {
-                const concursoNum = ultimoNum - (total - 1 - i);
+                const concursoNum = concursos.length === total ? concursos[i] : ultimoNum - (total - 1 - i);
                 const dezenas = historico[i];
                 
                 let bolasHtml = '<div class="bolas-caixa">';
@@ -809,16 +814,22 @@ Exemplo para {{ config.nome }}:
                     });
                 }
                 bolasHtml += '</div>';
+                const segundo = loteriaType === 'dupla_sena' ? (segundoSorteioCaixa[i] || []) : [];
+                if (segundo.length > 0) {
+                    bolasHtml = '<div style="font-size: 0.75rem; font-weight: 700; color: #5B6B82;">1º sorteio</div>' + bolasHtml +
+                        '<div style="font-size: 0.75rem; font-weight: 700; color: #5B6B82;">2º sorteio</div><div class="bolas-caixa">' +
+                        segundo.map(n => `<div class="bola-caixa">${n < 10 ? '0' + n : n}</div>`).join('') + '</div>';
+                }
 
                 html += `
                     <div class="concurso-card" data-concurso="${concursoNum}" data-dezenas="${dezenas.join(' ')}">
                         <div class="concurso-info-badge">
                             <span class="concurso-num">Concurso #${concursoNum}</span>
-                            <span class="concurso-data">${i === total - 1 && meta && meta.data_apuracao ? 'Apuração: ' + meta.data_apuracao : ''}</span>
+                            <span class="concurso-data">${concursoNum === ultimoNum && meta && meta.data_apuracao ? 'Apuração: ' + meta.data_apuracao : ''}</span>
                         </div>
                         ${bolasHtml}
                         <div style="font-size: 0.85rem; color: #5B6B82; font-weight: 600;">
-                            ${dezenas.length} dezenas${trevos.length > 0 ? ' + ' + trevos.length + ' trevos' : ''}
+                            ${segundo.length > 0 ? '2 sorteios de ' + dezenas.length + ' dezenas' : dezenas.length + ' dezenas'}${trevos.length > 0 ? ' + ' + trevos.length + ' trevos' : ''}
                         </div>
                     </div>
                 `;
@@ -1371,6 +1382,7 @@ Exemplo para {{ config.nome }}:
                 }
 
                 ultimosJogosGerados = data.jogos;
+                ultimosTrevosGerados = data.trevos || null;
                 ultimoFechamento = null;
                 exibirJogosGerados(data);
                 
@@ -1737,6 +1749,7 @@ Exemplo para {{ config.nome }}:
                         loteria_type: loteriaType,
                         modalidade: modo,
                         jogos: ultimosJogosGerados,
+                        trevos: ultimosTrevosGerados,
                         dezenas_por_jogo: dezenasPorJogo,
                         titulo: titulo
                     })
@@ -1785,10 +1798,17 @@ Exemplo para {{ config.nome }}:
 
                 // Renderizar dezenas da Caixa
                 let dezenasHtml = '';
-                (data.dezenas_sorteadas || []).forEach(num => {
-                    const nStr = num < 10 ? '0' + num : num;
-                    dezenasHtml += `<span class="bola-aposta acerto">${nStr}</span>`;
-                });
+                const bolasSorteio = lista => (lista || []).map(num => `<span class="bola-aposta acerto">${num < 10 ? '0' + num : num}</span>`).join('');
+                if ((data.dezenas_segundo_sorteio || []).length > 0) {
+                    dezenasHtml = `<strong style="font-size: 0.8rem;">1º sorteio:</strong> ${bolasSorteio(data.dezenas_sorteadas)}
+                        <strong style="font-size: 0.8rem; margin-left: 8px;">2º sorteio:</strong> ${bolasSorteio(data.dezenas_segundo_sorteio)}`;
+                } else {
+                    dezenasHtml = bolasSorteio(data.dezenas_sorteadas);
+                }
+                if ((data.trevos_sorteados || []).length > 0) {
+                    dezenasHtml += `<strong style="font-size: 0.8rem; margin-left: 8px;">🍀 Trevos:</strong> ` +
+                        data.trevos_sorteados.map(t => `<span class="bola-aposta acerto" style="background: #16a34a;">${t}</span>`).join('');
+                }
                 dezenasCaixaWrap.innerHTML = dezenasHtml;
 
                 // Resumo de premiações
@@ -1999,6 +2019,7 @@ Exemplo para {{ config.nome }}:
                 }
 
                 ultimosJogosGerados = data.jogos;
+                ultimosTrevosGerados = null;
                 ultimoFechamento = { grupo: grupo.length, garantia };
                 exibirJogosGerados({ ...data, modo: 'fechamento', filtro_inteligente: false, jogos_aprovados: [] });
                 document.getElementById('jogos-metricas-resumo').textContent =

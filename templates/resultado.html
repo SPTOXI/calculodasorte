@@ -171,11 +171,21 @@
             <h1>Resultado da {{ loteria.nome }}</h1>
             <div class="concurso-data">Concurso <strong>{{ dados.numero }}</strong> • Sorteio realizado em <strong>{{ dados.dataApuracao }}</strong></div>
             
+            {% if segundo_sorteio %}<div style="font-size: 0.9rem; font-weight: 800; color: var(--text-muted, #5B6B82); margin-top: 6px;">1º SORTEIO</div>{% endif %}
             <div class="bolinhas-container">
                 {% for num in numeros %}
                     <div class="bolinha">{{ '%02d'|format(num) }}</div>
                 {% endfor %}
             </div>
+            {% if segundo_sorteio %}
+            <div style="font-size: 0.9rem; font-weight: 800; color: var(--text-muted, #5B6B82);">2º SORTEIO</div>
+            <div class="bolinhas-container">
+                {% for num in segundo_sorteio %}
+                    <div class="bolinha">{{ '%02d'|format(num) }}</div>
+                {% endfor %}
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted, #5B6B82); margin-bottom: 10px;">Na Dupla Sena, cada aposta concorre nos dois sorteios.</p>
+            {% endif %}
 
             {% if trevos %}
             <div style="margin: 10px auto 20px; padding: 12px 18px; background: rgba(0,135,68,0.08); border: 1px solid rgba(0,135,68,0.25); border-radius: 12px; display: inline-block;">

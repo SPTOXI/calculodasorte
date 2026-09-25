@@ -420,6 +420,39 @@ def salvar_segundo_sorteio_local(loteria_type: str, sorteios: List[List[int]]):
     _SEGUNDO_SORTEIO_CACHE_TIME[loteria_type] = time.time()
 
 
+def carregar_concursos_local(loteria_type: str) -> List[int]:
+    """Número de cada concurso do histórico, na mesma ordem (vazio em históricos antigos)."""
+    nome = f'{loteria_type}_concursos.json'
+    for pasta in (DATA_DIR, ORIGINAL_DATA_DIR):
+        path = os.path.join(pasta, nome)
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    dados = json.load(f)
+                return dados if isinstance(dados, list) else []
+            except Exception as e:
+                print(f"[UPDATER] Erro ao carregar concursos {loteria_type}: {e}")
+            break
+    return []
+
+
+def salvar_concursos_local(loteria_type: str, concursos: List[int]):
+    with open(os.path.join(DATA_DIR, f'{loteria_type}_concursos.json'), 'w', encoding='utf-8') as f:
+        json.dump(concursos, f)
+
+
+def historico_consistente(loteria_type: str, historico: List[List[int]], ultimo_local: Optional[int],
+                          dados_ultimo_local: Optional[Dict[str, Any]]) -> bool:
+    """O último item do histórico precisa ser o sorteio do concurso que a meta diz ser o último.
+    Se não for, o histórico está defasado ou desalinhado e precisa ser recarregado."""
+    if not historico or not ultimo_local:
+        return False
+    if not dados_ultimo_local or dados_ultimo_local.get('numero') != ultimo_local:
+        return True  # sem como comparar: mantém
+    slug = LOTERIAS_SLUGS.get(loteria_type)
+    return historico[-1] == extrair_dezenas(dados_ultimo_local, slug)
+
+
 def extrair_segundo_sorteio(dados_caixa: Dict[str, Any]) -> List[int]:
     """Extrai as dezenas do 2º sorteio da Dupla Sena."""
     try:
@@ -575,6 +608,14 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
     historico_local = carregar_historico_local(loteria_type)
     ultimo_local = meta.get('ultimo_concurso')
 
+    # Histórico defasado (ex.: meta atualizada sem o histórico): recarrega do zero, senão
+    # os concursos que faltam nunca seriam baixados e a numeração ficaria errada
+    if historico_local and ultimo_local:
+        dados_ultimo_local = ultimo_dados if ultimo_local == ultimo_numero else consultar_caixa(slug, concurso=ultimo_local, max_retries=1)
+        if not historico_consistente(loteria_type, historico_local, ultimo_local, dados_ultimo_local):
+            print(f"[UPDATER] Histórico de {loteria_type} não confere com o concurso {ultimo_local}; recarregando.")
+            historico_local, ultimo_local = [], None
+
     # Backfill específico da Timemania: preenche o "Time do Coração" dos concursos
     # que já estavam salvos antes desta funcionalidade existir. Não afeta as outras loterias.
     if loteria_type == 'timemania' and ultimo_local and len(historico_local) >= 20:
@@ -627,6 +668,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         print(f"[UPDATER] Carga inicial de {inicio} até {ultimo_numero} para {loteria_type}...")
         
         historico_acumulado = []
+        concursos_acumulado = []
         times_acumulado = [] if loteria_type == 'timemania' else None
         trevos_acumulado = [] if loteria_type == 'mais_milionaria' else None
         segundos_acumulado = [] if loteria_type == 'dupla_sena' else None
@@ -640,6 +682,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     historico_acumulado.append(dezenas)
+                    concursos_acumulado.append(c)
                     if times_acumulado is not None:
                         times_acumulado.append(extrair_time_coracao(d))
                     if trevos_acumulado is not None:
@@ -651,6 +694,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
 
         if len(historico_acumulado) >= 10:
             salvar_historico_local(loteria_type, historico_acumulado)
+            salvar_concursos_local(loteria_type, concursos_acumulado)
             if times_acumulado is not None:
                 salvar_times_local(loteria_type, times_acumulado)
             if trevos_acumulado is not None:
@@ -685,6 +729,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
         qtd_pendentes = ultimo_numero - ultimo_local
         print(f"[UPDATER] Baixando {qtd_pendentes} novos concursos de {ultimo_local + 1} a {ultimo_numero}...")
         
+        novos_numeros = []
         novos_times = [] if loteria_type == 'timemania' else None
         novos_trevos = [] if loteria_type == 'mais_milionaria' else None
         novos_segundos = [] if loteria_type == 'dupla_sena' else None
@@ -698,6 +743,7 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     novos_concursos.append(dezenas)
+                    novos_numeros.append(c)
                     if novos_times is not None:
                         novos_times.append(extrair_time_coracao(d))
                     if novos_trevos is not None:
@@ -706,8 +752,12 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
                         novos_segundos.append(extrair_segundo_sorteio(d))
             time.sleep(0.04)
 
+        concursos_local = carregar_concursos_local(loteria_type)
+        alinhado = len(concursos_local) == len(historico_local)
         historico_local.extend(novos_concursos)
         salvar_historico_local(loteria_type, historico_local)
+        # Só mantém a numeração se ela já estava alinhada ao histórico
+        salvar_concursos_local(loteria_type, concursos_local + novos_numeros if alinhado else [])
         if novos_times is not None:
             times_local = carregar_times_local(loteria_type)
             times_local.extend(novos_times)
@@ -858,6 +908,11 @@ def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
         except Exception:
             pass
             
+    # Histórico que não confere com o último concurso registrado precisa ser recarregado
+    if not historico_consistente(loteria_type, carregar_historico_local(loteria_type),
+                                 meta.get('ultimo_concurso'), carregar_ultimo_resultado_local(loteria_type)):
+        return True
+
     try:
         atualizado_dt = datetime.strptime(atualizado_em_str, '%d/%m/%Y %H:%M:%S').replace(tzinfo=agora.tzinfo)
         diferenca = agora - atualizado_dt

@@ -1018,6 +1018,7 @@ def ver_resultado(loteria_type):
     trevos = updater.extrair_trevos(dados_caixa) if loteria_type == 'mais_milionaria' else []
     time_coracao = updater.extrair_time_coracao(dados_caixa) if loteria_type == 'timemania' else None
     mes_sorte = dados_caixa.get('nomeTimeCoracaoMesSorte') if loteria_type == 'dia_de_sorte' else None
+    segundo_sorteio = updater.extrair_segundo_sorteio(dados_caixa) if loteria_type == 'dupla_sena' else []
 
     # Tema visual oficial da modalidade para garantir contraste perfeito das bolinhas
     tema = LOTERIAS_THEME.get(loteria_type, {})
@@ -1034,7 +1035,8 @@ def ver_resultado(loteria_type):
                            numeros=numeros,
                            trevos=trevos,
                            time_coracao=time_coracao,
-                           mes_sorte=mes_sorte)
+                           mes_sorte=mes_sorte,
+                           segundo_sorteio=segundo_sorteio)
 
 
 @app.route('/blog')
@@ -1454,6 +1456,16 @@ def api_salvar_apostas():
     dezenas_por_jogo = len(jogos[0]) if jogos and isinstance(jogos[0], list) else 6
     user_id, session_id = _obter_identificadores_usuario()
 
+    # +Milionária: os 2 trevos de cada jogo também definem as faixas de prêmio
+    trevos = dados.get('trevos') if loteria == LoteriaType.MAIS_MILIONARIA else None
+    if trevos is not None:
+        valido = (isinstance(trevos, list) and len(trevos) == len(jogos) and all(
+            isinstance(t, list) and len(t) == 2 and len(set(t)) == 2
+            and all(isinstance(n, int) and not isinstance(n, bool) and 1 <= n <= 6 for n in t)
+            for t in trevos))
+        if not valido:
+            return jsonify({'erro': 'Trevos inválidos: informe 2 trevos diferentes (1 a 6) para cada jogo.'}), 400
+
     aposta_id = database.salvar_aposta(
         loteria_type=loteria_type,
         modalidade=modalidade,
@@ -1462,7 +1474,8 @@ def api_salvar_apostas():
         user_id=user_id,
         session_id=session_id,
         titulo=titulo,
-        concurso_alvo=conferencia.proximo_concurso(loteria_type)
+        concurso_alvo=conferencia.proximo_concurso(loteria_type),
+        trevos=trevos
     )
 
     return jsonify({
@@ -1534,7 +1547,8 @@ def api_conferir_aposta(aposta_id: int):
         return jsonify({'erro': 'Resultado desse concurso não está disponível para conferência'}), 400
 
     jogos_conferidos, premiacoes_resumo = conferencia.conferir_jogos(
-        loteria_type, aposta.get('jogos', []), sorteio['dezenas'], sorteio['segundo_sorteio'])
+        loteria_type, aposta.get('jogos', []), sorteio['dezenas'], sorteio['segundo_sorteio'],
+        sorteio.get('trevos'), aposta.get('trevos'))
 
     return jsonify({
         'sucesso': True,
@@ -1544,6 +1558,7 @@ def api_conferir_aposta(aposta_id: int):
         'data_apuracao': sorteio.get('data_apuracao') or '',
         'dezenas_sorteadas': sorteio['dezenas'],
         'dezenas_segundo_sorteio': sorteio['segundo_sorteio'],
+        'trevos_sorteados': sorteio.get('trevos') or [],
         'jogos_conferidos': jogos_conferidos,
         'premiacoes_resumo': premiacoes_resumo
     })
@@ -1608,6 +1623,11 @@ def api_carregar_historico(loteria_type: str):
         resposta['times_coracao'] = updater.carregar_times_local(loteria_type)
     if loteria_type == 'mais_milionaria':
         resposta['trevos'] = updater.carregar_trevos_local(loteria_type)
+    concursos = updater.carregar_concursos_local(loteria_type)
+    resposta['concursos'] = concursos if len(concursos) == len(historico) else []
+    if loteria_type == 'dupla_sena':
+        segundos = updater.carregar_segundo_sorteio_local(loteria_type)
+        resposta['segundo_sorteio'] = segundos if len(segundos) == len(historico) else []
     return jsonify(resposta)
 
 
@@ -1717,6 +1737,9 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         if len(trevos_historico) >= 10:
             modelo_trevo = ModeloCanonico30(trevos_historico, loteria, config_override=TREVO_CONFIG)
             trevos = [gerar_jogo_sugerido(modelo_trevo, 2) for _ in range(len(jogos))]
+        else:
+            # Sem histórico de trevos ainda: o volante exige 2 trevos, e todos têm a mesma chance
+            trevos = [sorted(secrets.SystemRandom().sample(range(1, 7), 2)) for _ in range(len(jogos))]
 
     database.consume_user_credit(user_id)
     access = database.check_user_access(user_id)
