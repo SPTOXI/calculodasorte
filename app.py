@@ -246,22 +246,16 @@ def sitemap_concursos(loteria_slug):
     host = "https://www.calculodasorte.com.br"
     historico = updater.carregar_historico_local(loteria_key)
     
-    xml = '<?xml version="1.0" encoding="UTF-8"?>
-'
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-'
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     
     lastmod = datetime.now().strftime('%Y-%m-%d')
     for i in range(len(historico)):
         numero = i + 1
-        xml += '  <url>
-'
-        xml += f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>
-'
-        xml += f'    <lastmod>{lastmod}</lastmod>
-'
-        xml += '  </url>
-'
+        xml += '  <url>\n'
+        xml += f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>\n'
+        xml += f'    <lastmod>{lastmod}</lastmod>\n'
+        xml += '  </url>\n'
         
     xml += '</urlset>'
     response = make_response(xml)
