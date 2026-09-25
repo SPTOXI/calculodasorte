@@ -41,7 +41,7 @@
                 
                 {% if access and access.is_vip %}
                     <div class="user-badge vip">
-                        <span>👑 VIP Ilimitado</span>
+                        <span>{{ '⏱️ Acesso 24h' if access.plan == 'vip_24h' else '👑 VIP Mensal' }}</span>
                     </div>
                 {% else %}
                     {% if access and access.credits > 0 %}
@@ -63,6 +63,8 @@
                 {% if not access or not access.is_vip %}
                     <a href="/planos" class="btn-top btn-top-vip">⭐ Assinar VIP</a>
                     <a href="/planos" class="btn-top btn-top-avulso">🪙 Por R$ 5,00</a>
+                {% elif access.plan == 'vip_24h' %}
+                    <a href="/planos" class="btn-top btn-top-vip">⭐ Assinar VIP Mensal</a>
                 {% endif %}
                 <a href="/minha-conta" class="btn-top btn-top-ghost">👤 Conta</a>
                 <a href="/logout" class="btn-top btn-top-exit">Sair</a>

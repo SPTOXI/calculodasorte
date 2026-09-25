@@ -111,7 +111,7 @@
             </div>
             <div>
                 {% if access and access.is_vip %}
-                    <span class="badge-status badge-vip">👑 Assinante VIP Ilimitado</span>
+                    <span class="badge-status badge-vip">{{ '⏱️ Acesso 24 Horas ativo' + (' até ' ~ access.expires_at if access.expires_at else '') if access.plan == 'vip_24h' else '👑 Assinante VIP Mensal' }}</span>
                 {% elif access and access.credits > 0 %}
                     <span class="badge-status badge-credits">🪙 {{ access.credits }} Análise(s) Disponível(is)</span>
                 {% else %}

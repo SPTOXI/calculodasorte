@@ -2439,7 +2439,8 @@ Exemplo para {{ config.nome }}:
             const badgeEl = document.getElementById('analise-user-badge');
             if (!badgeEl || !access) return;
             if (access.is_vip) {
-                badgeEl.innerHTML = '<span style="background: rgba(243,146,0, 0.2); color: #C97400; border: 1px solid rgba(243,146,0, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">👑 VIP ILIMITADO</span>';
+                const rotuloVip = access.plan === 'vip_24h' ? '⏱️ ACESSO 24H' : '👑 VIP MENSAL';
+                badgeEl.innerHTML = `<span style="background: rgba(243,146,0, 0.2); color: #C97400; border: 1px solid rgba(243,146,0, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">${rotuloVip}</span>`;
             } else if (access.credits > 0) {
                 badgeEl.innerHTML = `<span style="background: rgba(0,70,173, 0.2); color: #0046AD; border: 1px solid rgba(0,70,173, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">🪙 ${access.credits} CRÉDITO(S)</span>`;
             } else {
