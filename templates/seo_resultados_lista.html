@@ -14,12 +14,12 @@
     <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
         <ul style="list-style: none; padding: 0;">
             {% for item in itens %}
-            <li style="padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+            <li style="padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <strong style="color: #334155; font-size: 1.1em;">Concurso {{ item.concurso }}</strong>
                     <span style="color: #64748b; font-size: 0.9em; margin-left: 10px;">{{ item.data }}</span>
                 </div>
-                <a href="/{{ loteria_slug }}/concurso/{{ item.concurso }}" style="background: #f8fafc; color: var(--primary); border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.9em;">
+                <a href="/{{ loteria_slug }}/concurso/{{ item.concurso }}" style="background: #f8fafc; color: var(--primary); border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9em; white-space: nowrap;">
                     Ver Detalhes
                 </a>
             </li>
