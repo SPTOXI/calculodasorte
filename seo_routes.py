@@ -2,7 +2,14 @@ from flask import Blueprint, render_template, request, jsonify
 from math import comb
 import json
 import datetime
-from core import LOTERIAS_CONFIG
+from core import LOTERIAS_CONFIG, LoteriaType
+
+def get_config(loteria_slug):
+    loteria_key = loteria_slug.replace('-', '_')
+    for k, v in LOTERIAS_CONFIG.items():
+        if k.value == loteria_key:
+            return k.value, v
+    return None, None
 import updater
 
 seo_bp = Blueprint('seo', __name__)
@@ -70,9 +77,8 @@ def probabilidade(loteria_slug):
 
 @seo_bp.route('/<loteria_slug>/fechamento')
 def fechamento_geral(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     resposta_direta = f"O fechamento da {cfg.nome} é uma estratégia matemática que permite apostar com mais dezenas pagando menos. Se as {cfg.sorteados} dezenas sorteadas estiverem no seu grupo escolhido, o sistema garante uma faixa mínima de premiação (ex: {cfg.sorteados - 1} pontos)."
     
@@ -92,9 +98,8 @@ def fechamento_geral(loteria_slug):
 
 @seo_bp.route('/<loteria_slug>/simulador')
 def simulador(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     resposta_direta = f"O Simulador da {cfg.nome} analisa suas dezenas em relação a todos os concursos já realizados. Ele mostra se os seus números já foram sorteados antes e qual a chance real deles saírem no próximo sorteio."
     
@@ -113,9 +118,8 @@ def simulador(loteria_slug):
 
 @seo_bp.route('/<loteria_slug>/numeros-mais-sorteados')
 def numeros_mais_sorteados(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     mes_ano = datetime.datetime.now().strftime('%B/%Y').replace('September', 'Setembro') # rudimentar, mas serve pro proposito local
     
@@ -147,9 +151,8 @@ def numeros_mais_sorteados(loteria_slug):
 
 @seo_bp.route('/<loteria_slug>/concurso/<int:numero>')
 def concurso(loteria_slug, numero):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     historico = updater.carregar_historico_local(loteria_key)
     if numero < 1 or numero > len(historico):
@@ -176,9 +179,8 @@ def concurso(loteria_slug, numero):
 
 @seo_bp.route('/<loteria_slug>')
 def hub(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     ultimo_resultado = updater.carregar_ultimo_resultado_local(loteria_key)
     ultimo = None
@@ -202,9 +204,8 @@ def hub(loteria_slug):
 
 @seo_bp.route('/embed/<loteria_slug>/<ferramenta>')
 def embed(loteria_slug, ferramenta):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     return render_template('seo_embed.html',
                            loteria_nome=cfg.nome,
@@ -245,9 +246,8 @@ def lotofacil_desdobramento():
 
 @seo_bp.route('/<loteria_slug>/numeros-atrasados')
 def numeros_atrasados(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     return render_template('seo_estatisticas.html',
                            loteria_nome=cfg.nome,
@@ -262,9 +262,8 @@ def numeros_atrasados(loteria_slug):
 @seo_bp.route('/resultados/<loteria_slug>')
 @seo_bp.route('/resultados/<loteria_slug>/pagina/<int:page>')
 def resultados_lista(loteria_slug, page=1):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     
     historico = updater.carregar_historico_local(loteria_key)
     per_page = 20

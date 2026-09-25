@@ -240,7 +240,13 @@ def sitemap_estatisticas():
 @app.route('/sitemap-concursos-<loteria_slug>.xml')
 def sitemap_concursos(loteria_slug):
     loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG:
+    # Check if value exists in enum
+    valid = False
+    for k in LOTERIAS_CONFIG.keys():
+        if k.value == loteria_key:
+            valid = True
+            break
+    if not valid:
         return "Not found", 404
         
     host = "https://www.calculodasorte.com.br"
