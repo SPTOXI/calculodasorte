@@ -747,14 +747,16 @@ def activate_vip_plan(user_id: int, days: int = 30, plan_name: str = 'vip_mensal
     current_exp = user.get('vip_expires_at') if user else None
     current_plan = user.get('plan') if user else None
     
-    # Se o usuario ja for vip_mensal e comprar um avulso_24h, mantem vip_mensal para nao rebaixar o status visual
-    if current_plan == 'vip_mensal' and plan_name == 'vip_24h':
-        plan_name = 'vip_mensal'
-        
     base_date = now
     parsed = _como_datetime(current_exp)
-    if parsed and parsed > now:
+    vigente = bool(parsed and parsed > now)
+    if vigente:
         base_date = parsed
+
+    # Quem tem VIP mensal ainda vigente e compra 24 h continua mensal (só ganha +1 dia);
+    # um mensal já vencido não pode voltar a ser mensal comprando o avulso
+    if current_plan == 'vip_mensal' and plan_name == 'vip_24h' and vigente:
+        plan_name = 'vip_mensal'
             
     new_exp = (base_date + timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
     with get_db_connection() as conn:

@@ -598,6 +598,41 @@ class TestNovasFuncionalidades(unittest.TestCase):
         database.consume_user_credit(user_id)
         self.assertTrue(database.check_user_access(user_id)['has_access'])
 
+    def test_22b_avulso_libera_24h_e_nao_vira_mensal(self):
+        """O avulso de R$ 5,00 libera 24 h (vip_24h), inclusive para quem tem mensal vencido"""
+        import uuid
+        from datetime import datetime, timedelta
+
+        u = database.create_user(f"av24_{uuid.uuid4().hex[:6]}@teste.com", '123456', 'Avulso 24h', credits=0)
+        pagamento = database.create_payment(user_id=u['id'], tipo='avulso', valor=5.00)
+        self.assertTrue(database.approve_payment(pagamento['id']))
+        access = database.check_user_access(u['id'])
+        self.assertEqual(access['plan'], 'vip_24h')
+        validade = datetime.strptime(access['expires_at'], '%Y-%m-%d %H:%M:%S')
+        self.assertLess(validade, datetime.now() + timedelta(hours=25))
+
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = u['id']
+        html = self.client.get('/minha-conta').get_data(as_text=True)
+        self.assertIn('ACESSO 24 HORAS', html)
+        self.assertNotIn('PLANO VIP MENSAL', html)
+
+        # Mensal vencido comprando avulso vira 24 h, não mensal
+        v = database.create_user(f"venc_{uuid.uuid4().hex[:6]}@teste.com", '123456', 'Mensal vencido', credits=0)
+        with database.get_db_connection() as conn:
+            conn.execute("UPDATE users SET plan = 'vip_mensal', vip_expires_at = %s WHERE id = %s",
+                         (datetime.now() - timedelta(days=3), v['id']))
+            conn.commit()
+        pagamento = database.create_payment(user_id=v['id'], tipo='avulso', valor=5.00)
+        database.approve_payment(pagamento['id'])
+        self.assertEqual(database.check_user_access(v['id'])['plan'], 'vip_24h')
+
+        # Mensal vigente comprando avulso continua mensal
+        m = database.create_user(f"mens_{uuid.uuid4().hex[:6]}@teste.com", '123456', 'Mensal vigente', credits=0)
+        database.approve_payment(database.create_payment(user_id=m['id'], tipo='vip_mensal', valor=49.90)['id'])
+        database.approve_payment(database.create_payment(user_id=m['id'], tipo='avulso', valor=5.00)['id'])
+        self.assertEqual(database.check_user_access(m['id'])['plan'], 'vip_mensal')
+
     def test_23_api_unauthenticated_returns_json_not_html(self):
         """Garante que rotas /api/* retornem JSON 401 e nunca HTML (evitando SyntaxError: Unexpected token '<')"""
         # 1. /api/checkout/pix sem autenticação

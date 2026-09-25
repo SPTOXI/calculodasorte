@@ -33,7 +33,7 @@
 
             <div>
                 {% if access and access.is_vip %}
-                    <span class="badge-plan badge-vip">👑 PLANO VIP ILIMITADO</span>
+                    <span class="badge-plan badge-vip">{{ '⏱️ ACESSO 24 HORAS' if access.plan == 'vip_24h' else '👑 PLANO VIP MENSAL' }}</span>
                 {% elif access and access.credits > 0 %}
                     <span class="badge-plan badge-free">🪙 {{ access.credits }} CRÉDITO(S) DE CORTESIA</span>
                 {% else %}
@@ -88,7 +88,7 @@
                     <span class="info-label">Status da Assinatura:</span>
                     <span class="info-val">
                         {% if access and access.is_vip %}
-                            <strong style="color: #C97400;">VIP Ativo (Acesso Total)</strong>
+                            <strong style="color: #C97400;">{{ 'Acesso 24 Horas ativo' if access.plan == 'vip_24h' else 'VIP Mensal ativo (Acesso Total)' }}</strong>
                         {% else %}
                             <strong style="color: #0046AD;">Plano Gratuito / Degustação</strong>
                         {% endif %}
@@ -98,16 +98,16 @@
                     <span class="info-label">Saldo de Créditos:</span>
                     <span class="info-val">
                         {% if access and access.is_vip %}
-                            <span style="color: #C97400;">Ilimitado ∞</span>
+                            <span style="color: #C97400;">{{ 'Ilimitado por 24 h' if access.plan == 'vip_24h' else 'Ilimitado ∞' }}</span>
                         {% else %}
                             <strong>{{ access.credits if access else 0 }} análise(s)</strong>
                         {% endif %}
                     </span>
                 </div>
-                {% if access and access.is_vip and current_user.vip_expires_at %}
+                {% if access and access.is_vip and access.expires_at %}
                 <div class="info-row">
                     <span class="info-label">Válido até:</span>
-                    <span class="info-val" style="color: #C97400;">{{ current_user.vip_expires_at }}</span>
+                    <span class="info-val" style="color: #C97400;">{{ access.expires_at }}</span>
                 </div>
                 {% endif %}
 
