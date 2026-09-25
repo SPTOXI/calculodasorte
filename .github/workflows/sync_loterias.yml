@@ -4,10 +4,10 @@ on:
   schedule:
     # 20:45 Horário de Brasília (Segunda a Sábado) = 23:45 UTC
     - cron: '45 23 * * 1-6'
-    # 21:30 Horário de Brasília (Segunda a Sábado) = 00:30 UTC do dia seguinte
-    - cron: '30 0 * * 2-7'
-    # 22:30 Horário de Brasília (Consolidação final) = 01:30 UTC do dia seguinte
-    - cron: '30 1 * * 2-7'
+    # 21:30 Horário de Brasília (Segunda a Sábado) = 00:30 UTC do dia seguinte (Ter–Dom; domingo = 0)
+    - cron: '30 0 * * 0,2-6'
+    # 22:30 Horário de Brasília (Consolidação final) = 01:30 UTC do dia seguinte (Ter–Dom; domingo = 0)
+    - cron: '30 1 * * 0,2-6'
   workflow_dispatch:
 
 jobs:
