@@ -246,25 +246,22 @@ def sitemap_concursos(loteria_slug):
     host = "https://www.calculodasorte.com.br"
     historico = updater.carregar_historico_local(loteria_key)
     
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml = '<?xml version="1.0" encoding="UTF-8"?>
+'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+'
     
-    # Historico eh reverso? Depende do modelo
-    # Se houver mais de 5000 concursos, teremos q paginar, mas a Caixa tem ~3000 max.
-    for concurso in historico:
-        numero = concurso.get('concurso')
-        data_str = concurso.get('data')
-        try:
-            # Converter data dd/mm/yyyy para yyyy-mm-dd
-            d_obj = datetime.strptime(data_str, '%d/%m/%Y')
-            lastmod = d_obj.strftime('%Y-%m-%d')
-        except:
-            lastmod = datetime.now().strftime('%Y-%m-%d')
-            
-        xml += '  <url>\n'
-        xml += f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>\n'
-        xml += f'    <lastmod>{lastmod}</lastmod>\n'
-        xml += '  </url>\n'
+    lastmod = datetime.now().strftime('%Y-%m-%d')
+    for i in range(len(historico)):
+        numero = i + 1
+        xml += '  <url>
+'
+        xml += f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>
+'
+        xml += f'    <lastmod>{lastmod}</lastmod>
+'
+        xml += '  </url>
+'
         
     xml += '</urlset>'
     response = make_response(xml)

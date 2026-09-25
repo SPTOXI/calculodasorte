@@ -127,9 +127,8 @@ def numeros_mais_sorteados(loteria_slug):
     # Process frequency
     from collections import Counter
     todas_dezenas = []
-    for c in historico:
-        if 'dezenas' in c:
-            todas_dezenas.extend(c['dezenas'])
+    for dezenas in historico:
+        todas_dezenas.extend(dezenas)
             
     contagem = Counter(todas_dezenas)
     top_5 = contagem.most_common(5)
@@ -153,14 +152,19 @@ def concurso(loteria_slug, numero):
     cfg = LOTERIAS_CONFIG[loteria_key]
     
     historico = updater.carregar_historico_local(loteria_key)
-    concurso_data = next((c for c in historico if c.get('concurso') == numero), None)
-    if not concurso_data:
+    if numero < 1 or numero > len(historico):
         return "Concurso não encontrado.", 404
         
-    dezenas = concurso_data.get('dezenas', [])
-    data_str = concurso_data.get('data', '')
+    dezenas = historico[numero - 1]
+    data_str = ""
     
-    h1 = f"Resultado {cfg.nome} Concurso {numero} — {data_str}"
+    ultimo_resultado = updater.carregar_ultimo_resultado_local(loteria_key)
+    if ultimo_resultado and str(ultimo_resultado.get('numero', '')) == str(numero):
+        data_str = ultimo_resultado.get('dataApuracao', '')
+    
+    h1 = f"Resultado {cfg.nome} Concurso {numero} - {data_str}".strip(' -')
+    
+    concurso_data = {'concurso': numero, 'data': data_str, 'dezenas': dezenas}
     
     return render_template('seo_concurso.html',
                            loteria_nome=cfg.nome,
@@ -176,8 +180,18 @@ def hub(loteria_slug):
     if loteria_key not in LOTERIAS_CONFIG: return "Not found", 404
     cfg = LOTERIAS_CONFIG[loteria_key]
     
-    historico = updater.carregar_historico_local(loteria_key)
-    ultimo = historico[0] if historico else None
+    ultimo_resultado = updater.carregar_ultimo_resultado_local(loteria_key)
+    ultimo = None
+    if ultimo_resultado:
+        # A API da caixa retorna dezenas como string em listaDezenas
+        lista_dez = ultimo_resultado.get('listaDezenas', [])
+        # Caso seja lista de strings ['01', '02'], transformamos para int pra bater c o config se precisar, 
+        # mas o template printa normal.
+        ultimo = {
+            'concurso': ultimo_resultado.get('numero'),
+            'data': ultimo_resultado.get('dataApuracao', ''),
+            'dezenas': [int(d) for d in lista_dez] if lista_dez else []
+        }
     
     return render_template('seo_hub_loteria.html',
                            loteria_nome=cfg.nome,
@@ -262,7 +276,16 @@ def resultados_lista(loteria_slug, page=1):
         
     start = (page - 1) * per_page
     end = start + per_page
-    itens_pagina = historico[start:end]
+    
+    itens_pagina = []
+    # Reverso: concurso mais recente primeiro
+    for i in range(total - start, total - end, -1):
+        if i <= 0: break
+        itens_pagina.append({
+            'concurso': i,
+            'data': '',
+            'dezenas': historico[i - 1]
+        })
     
     return render_template('seo_resultados_lista.html',
                            loteria_nome=cfg.nome,
