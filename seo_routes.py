@@ -2,25 +2,26 @@ from flask import Blueprint, render_template, request, jsonify
 from math import comb
 import json
 import datetime
+from collections import Counter
 from core import LOTERIAS_CONFIG, LoteriaType
-
-def get_config(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    for k, v in LOTERIAS_CONFIG.items():
-        if k.value == loteria_key:
-            return k.value, v
-    return None, None
 import updater
 
 seo_bp = Blueprint('seo', __name__)
 
-# Helpers
+def get_config(loteria_slug):
+    loteria_key = str(loteria_slug).replace('-', '_').lower()
+    for k, v in LOTERIAS_CONFIG.items():
+        if k.value == loteria_key:
+            return k.value, v
+    return None, None
+
 def _calcula_probabilidade(loteria_key, apostadas, acertos_desejados):
-    cfg = LOTERIAS_CONFIG[loteria_key]
+    _, cfg = get_config(loteria_key)
+    if not cfg:
+        return 0
     N = cfg.universo
     k = cfg.sorteados
     if cfg.colunas:
-        # Simplificação para exibição da chance
         return 0
     try:
         if apostadas < k or acertos_desejados > k:
@@ -33,13 +34,10 @@ def _calcula_probabilidade(loteria_key, apostadas, acertos_desejados):
 
 @seo_bp.route('/<loteria_slug>/probabilidade')
 def probabilidade(loteria_slug):
-    loteria_key = loteria_slug.replace('-', '_')
-    if loteria_key not in LOTERIAS_CONFIG:
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg:
         return "Not found", 404
         
-    cfg = LOTERIAS_CONFIG[loteria_key]
-    
-    # Gerar tabela
     tabela = []
     if not cfg.colunas:
         for qtde in range(cfg.minimo_aposta, cfg.maximo_aposta + 1):
@@ -58,11 +56,12 @@ def probabilidade(loteria_slug):
                 linha['faixas'].append({'acertos': faixa, 'um_em': f"1 em {um_em:,}".replace(',','.') if um_em > 0 else '-'})
             tabela.append(linha)
             
-    resposta_direta = f"A probabilidade de ganhar o prêmio principal da {cfg.nome} com uma aposta simples de {cfg.minimo_aposta} números é de 1 em {round(1/_calcula_probabilidade(loteria_key, cfg.minimo_aposta, cfg.sorteados)):,}."
-    resposta_direta = resposta_direta.replace(',', '.')
+    prob_min = _calcula_probabilidade(loteria_key, cfg.minimo_aposta, cfg.sorteados)
+    chance_principal = f"1 em {round(1/prob_min):,}".replace(',', '.') if prob_min > 0 else "N/A"
+    resposta_direta = f"A probabilidade de ganhar o prêmio principal da {cfg.nome} com uma aposta simples de {cfg.minimo_aposta} números é de {chance_principal}."
 
     faq_items = [
-        (f"Qual a chance de ganhar na {cfg.nome}?", f"Com a aposta mínima ({cfg.minimo_aposta} dezenas), a chance é de 1 em {round(1/_calcula_probabilidade(loteria_key, cfg.minimo_aposta, cfg.sorteados)):,}.".replace(',', '.')),
+        (f"Qual a chance de ganhar na {cfg.nome}?", f"Com a aposta mínima ({cfg.minimo_aposta} dezenas), a chance é de {chance_principal}."),
         (f"Vale a pena jogar mais dezenas na {cfg.nome}?", f"Sim, a chance aumenta proporcionalmente, mas o custo da aposta também sobe. Verifique a tabela completa abaixo.")
     ]
 
@@ -83,7 +82,7 @@ def fechamento_geral(loteria_slug):
     resposta_direta = f"O fechamento da {cfg.nome} é uma estratégia matemática que permite apostar com mais dezenas pagando menos. Se as {cfg.sorteados} dezenas sorteadas estiverem no seu grupo escolhido, o sistema garante uma faixa mínima de premiação (ex: {cfg.sorteados - 1} pontos)."
     
     faq_items = [
-        (f"Qual a diferença entre fechamento e desdobramento na {cfg.nome}?", "O desdobramento joga todas as combinações possíveis de um grupo de números, o que pode ser caro. O fechamento elimina combinações redundantes, garantindo uma premiação menor (ex: quadra) e reduzindo drasticamente o custo da aposta."),
+        (f"Qual a diferença entre fechamento e desdobramento na {cfg.nome}?", f"O desdobramento joga todas as combinações possíveis de um grupo de números, o que pode ser caro. O fechamento elimina combinações redundantes, garantindo uma premiação menor e reduzindo drasticamente o custo da aposta."),
         ("O fechamento garante prêmio?", "A garantia matemática está condicionada ao acerto das dezenas sorteadas dentro do grupo de dezenas que você escolheu. Sem acertar as dezenas no grupo, não há garantia.")
     ]
     
@@ -121,15 +120,13 @@ def numeros_mais_sorteados(loteria_slug):
     loteria_key, cfg = get_config(loteria_slug)
     if not cfg: return "Not found", 404
     
-    mes_ano = datetime.datetime.now().strftime('%B/%Y').replace('September', 'Setembro') # rudimentar, mas serve pro proposito local
+    mes_ano = datetime.datetime.now().strftime('%m/%Y')
     
     h1 = f"Números que Mais Saem na {cfg.nome} (Atualizado {mes_ano})"
     resposta_direta = f"Aqui estão as dezenas mais sorteadas na história da {cfg.nome}. Lembre-se: no paradoxo do jogador, a frequência passada de um número não altera sua probabilidade futura, pois os sorteios são independentes."
     
     historico = updater.carregar_historico_local(loteria_key)
     
-    # Process frequency
-    from collections import Counter
     todas_dezenas = []
     for dezenas in historico:
         todas_dezenas.extend(dezenas)
@@ -138,7 +135,8 @@ def numeros_mais_sorteados(loteria_slug):
     top_5 = contagem.most_common(5)
     bottom_5 = contagem.most_common()[-5:] if len(contagem) >= 5 else []
     
-    resposta_direta = f"As 5 dezenas que mais saíram na {cfg.nome} até hoje foram {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
+    if top_5:
+        resposta_direta = f"As 5 dezenas que mais saíram na {cfg.nome} até hoje foram {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
     
     return render_template('seo_estatisticas.html',
                            loteria_nome=cfg.nome,
@@ -154,19 +152,46 @@ def concurso(loteria_slug, numero):
     loteria_key, cfg = get_config(loteria_slug)
     if not cfg: return "Not found", 404
     
+    meta = updater.carregar_meta(loteria_key)
+    ultimo_local = meta.get('ultimo_concurso') or 0
     historico = updater.carregar_historico_local(loteria_key)
-    if numero < 1 or numero > len(historico):
-        return "Concurso não encontrado.", 404
-        
-    dezenas = historico[numero - 1]
+    
+    dezenas = None
     data_str = ""
     
+    # 1. Checa se é o último concurso salvo completo
     ultimo_resultado = updater.carregar_ultimo_resultado_local(loteria_key)
     if ultimo_resultado and str(ultimo_resultado.get('numero', '')) == str(numero):
         data_str = ultimo_resultado.get('dataApuracao', '')
-    
-    h1 = f"Resultado {cfg.nome} Concurso {numero} - {data_str}".strip(' -')
-    
+        lista_dez = ultimo_resultado.get('listaDezenas', [])
+        dezenas = [int(d) for d in lista_dez] if lista_dez else None
+        
+    # 2. Checa se está no histórico local em disco
+    if not dezenas and historico and ultimo_local:
+        primeiro_local = ultimo_local - len(historico) + 1
+        if primeiro_local <= numero <= ultimo_local:
+            idx = numero - primeiro_local
+            dezenas = historico[idx]
+            
+    # 3. Se for mais antigo, busca na API oficial da Caixa
+    if not dezenas:
+        slug_caixa = updater.LOTERIAS_SLUGS.get(loteria_key)
+        if slug_caixa:
+            try:
+                dados_caixa = updater.consultar_caixa(slug_caixa, concurso=numero)
+                if dados_caixa and dados_caixa.get('numero'):
+                    dezenas = updater.extrair_dezenas(dados_caixa, slug_caixa)
+                    data_str = dados_caixa.get('dataApuracao', '')
+            except Exception as e:
+                print(f"[CONCURSO] Erro ao consultar Caixa concurso {numero}: {e}")
+                
+    if not dezenas:
+        return "Concurso não encontrado.", 404
+        
+    h1 = f"Resultado {cfg.nome} Concurso {numero}"
+    if data_str:
+        h1 += f" - {data_str}"
+        
     concurso_data = {'concurso': numero, 'data': data_str, 'dezenas': dezenas}
     
     return render_template('seo_concurso.html',
@@ -185,10 +210,7 @@ def hub(loteria_slug):
     ultimo_resultado = updater.carregar_ultimo_resultado_local(loteria_key)
     ultimo = None
     if ultimo_resultado:
-        # A API da caixa retorna dezenas como string em listaDezenas
         lista_dez = ultimo_resultado.get('listaDezenas', [])
-        # Caso seja lista de strings ['01', '02'], transformamos para int pra bater c o config se precisar, 
-        # mas o template printa normal.
         ultimo = {
             'concurso': ultimo_resultado.get('numero'),
             'data': ultimo_resultado.get('dataApuracao', ''),
@@ -201,7 +223,6 @@ def hub(loteria_slug):
                            cfg=cfg,
                            ultimo=ultimo)
 
-
 @seo_bp.route('/embed/<loteria_slug>/<ferramenta>')
 def embed(loteria_slug, ferramenta):
     loteria_key, cfg = get_config(loteria_slug)
@@ -213,10 +234,9 @@ def embed(loteria_slug, ferramenta):
                            cfg=cfg,
                            ferramenta_tipo=ferramenta)
 
-
 @seo_bp.route('/lotofacil/fechamento-<int:dezenas>-dezenas')
 def lotofacil_fechamento_especifico(dezenas):
-    cfg = LOTERIAS_CONFIG['lotofacil']
+    loteria_key, cfg = get_config('lotofacil')
     faq_items = [
         ("Vale a pena fazer esse fechamento?", "Sim, reduz bastante o custo comparado ao desdobramento completo."),
     ]
@@ -231,7 +251,7 @@ def lotofacil_fechamento_especifico(dezenas):
 
 @seo_bp.route('/lotofacil/desdobramento')
 def lotofacil_desdobramento():
-    cfg = LOTERIAS_CONFIG['lotofacil']
+    loteria_key, cfg = get_config('lotofacil')
     faq_items = [
         ("Como fazer o desdobramento da Lotofácil?", "Escolha mais de 15 dezenas no volante e o sistema gera todas as combinações possíveis."),
     ]
@@ -258,32 +278,35 @@ def numeros_atrasados(loteria_slug):
                            top_5=[],
                            bottom_5=[])
 
-
 @seo_bp.route('/resultados/<loteria_slug>')
 @seo_bp.route('/resultados/<loteria_slug>/pagina/<int:page>')
 def resultados_lista(loteria_slug, page=1):
     loteria_key, cfg = get_config(loteria_slug)
     if not cfg: return "Not found", 404
     
+    meta = updater.carregar_meta(loteria_key)
+    ultimo_local = meta.get('ultimo_concurso') or 0
     historico = updater.carregar_historico_local(loteria_key)
-    per_page = 20
     total = len(historico)
-    total_pages = (total + per_page - 1) // per_page
     
-    if page < 1 or (page > total_pages and total > 0):
+    per_page = 20
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    
+    if page < 1 or page > total_pages:
         return "Not found", 404
         
-    start = (page - 1) * per_page
-    end = start + per_page
+    start_offset = (page - 1) * per_page
+    end_offset = min(total, start_offset + per_page)
     
     itens_pagina = []
-    # Reverso: concurso mais recente primeiro
-    for i in range(total - start, total - end, -1):
-        if i <= 0: break
+    # Most recent first
+    for i in range(start_offset, end_offset):
+        idx_in_historico = total - 1 - i
+        num_concurso = ultimo_local - i if ultimo_local else (total - i)
         itens_pagina.append({
-            'concurso': i,
+            'concurso': num_concurso,
             'data': '',
-            'dezenas': historico[i - 1]
+            'dezenas': historico[idx_in_historico]
         })
     
     return render_template('seo_resultados_lista.html',
@@ -296,4 +319,3 @@ def resultados_lista(loteria_slug, page=1):
 
 def register_seo_routes(app):
     app.register_blueprint(seo_bp)
-

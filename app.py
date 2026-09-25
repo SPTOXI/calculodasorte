@@ -134,30 +134,172 @@ from flask import make_response
 def sitemap_index():
     host = "https://www.calculodasorte.com.br"
     hoje = datetime.now().strftime('%Y-%m-%d')
-    loterias = LOTERIAS_CONFIG.keys()
+    loterias = [k.value for k in LOTERIAS_CONFIG.keys()]
     
-    xml = f'<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
     sitemaps = [
         'sitemap-paginas.xml',
         'sitemap-ferramentas.xml',
         'sitemap-estatisticas.xml'
     ]
     for loteria in loterias:
-        sitemaps.append(f'sitemap-concursos-{loteria}.xml')
+        sitemaps.append(f'sitemap-concursos-{loteria.replace("_", "-")}.xml')
         
     for sm in sitemaps:
-        xml += '  <sitemap>\n'
-        xml += f'    <loc>{host}/{sm}</loc>\n'
-        xml += f'    <lastmod>{hoje}</lastmod>\n'
-        xml += '  </sitemap>\n'
+        parts.append('  <sitemap>')
+        parts.append(f'    <loc>{host}/{sm}</loc>')
+        parts.append(f'    <lastmod>{hoje}</lastmod>')
+        parts.append('  </sitemap>')
         
-    xml += '</sitemapindex>'
+    parts.append('</sitemapindex>')
+    xml = "\n".join(parts)
     
     response = make_response(xml)
     response.headers["Content-Type"] = "application/xml"
     return response
+
+@app.route('/sitemap-paginas.xml')
+def sitemap_paginas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    urls = [
+        '/', '/sobre', '/metodologia', '/autor/silvio-morais', '/planos'
+    ]
+    
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    for url in urls:
+        parts.append('  <url>')
+        parts.append(f'    <loc>{host}{url}</loc>')
+        parts.append(f'    <lastmod>{hoje}</lastmod>')
+        parts.append('  </url>')
+    
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        slug = loteria_enum.value.replace('_', '-')
+        parts.append('  <url>')
+        parts.append(f'    <loc>{host}/{slug}</loc>')
+        parts.append(f'    <lastmod>{hoje}</lastmod>')
+        parts.append('  </url>')
+        parts.append('  <url>')
+        parts.append(f'    <loc>{host}/resultados/{slug}</loc>')
+        parts.append(f'    <lastmod>{hoje}</lastmod>')
+        parts.append('  </url>')
+        
+    parts.append('</urlset>')
+    xml = "\n".join(parts)
+    
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-ferramentas.xml')
+def sitemap_ferramentas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        loteria = loteria_enum.value
+        slug = loteria.replace('_', '-')
+        ferramentas = ['simulador', 'probabilidade']
+        if loteria in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania']:
+            ferramentas.append('fechamento')
+            if loteria == 'lotofacil':
+                ferramentas.extend(['fechamento-18-dezenas', 'fechamento-20-dezenas', 'fechamento-24-dezenas', 'desdobramento'])
+            if loteria == 'mega_sena':
+                ferramentas.append('desdobramento')
+                
+        for fer in ferramentas:
+            parts.append('  <url>')
+            parts.append(f'    <loc>{host}/{slug}/{fer}</loc>')
+            parts.append(f'    <lastmod>{hoje}</lastmod>')
+            parts.append('  </url>')
+            
+    parts.append('</urlset>')
+    xml = "\n".join(parts)
+    
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-estatisticas.xml')
+def sitemap_estatisticas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        slug = loteria_enum.value.replace('_', '-')
+        for stat in ['numeros-mais-sorteados', 'numeros-atrasados']:
+            parts.append('  <url>')
+            parts.append(f'    <loc>{host}/{slug}/{stat}</loc>')
+            parts.append(f'    <lastmod>{hoje}</lastmod>')
+            parts.append('  </url>')
+            
+    parts.append('</urlset>')
+    xml = "\n".join(parts)
+    
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-concursos-<loteria_slug>.xml')
+def sitemap_concursos(loteria_slug):
+    loteria_key = loteria_slug.replace('-', '_')
+    valid = False
+    for k in LOTERIAS_CONFIG.keys():
+        if k.value == loteria_key:
+            valid = True
+            break
+    if not valid:
+        return "Not found", 404
+        
+    host = "https://www.calculodasorte.com.br"
+    historico = updater.carregar_historico_local(loteria_key)
+    meta = updater.carregar_meta(loteria_key)
+    ultimo_concurso = meta.get('ultimo_concurso') or len(historico)
+    
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    
+    lastmod = datetime.now().strftime('%Y-%m-%d')
+    if historico and ultimo_concurso:
+        primeiro = max(1, ultimo_concurso - len(historico) + 1)
+        for numero in range(primeiro, ultimo_concurso + 1):
+            parts.append('  <url>')
+            parts.append(f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>')
+            parts.append(f'    <lastmod>{lastmod}</lastmod>')
+            parts.append('  </url>')
+    else:
+        for i in range(len(historico)):
+            numero = i + 1
+            parts.append('  <url>')
+            parts.append(f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>')
+            parts.append(f'    <lastmod>{lastmod}</lastmod>')
+            parts.append('  </url>')
+        
+    parts.append('</urlset>')
+    xml = "\n".join(parts)
+    
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
 
 @app.route('/sitemap-paginas.xml')
 def sitemap_paginas():
