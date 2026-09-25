@@ -235,31 +235,35 @@ def embed(loteria_slug, ferramenta):
                            ferramenta_tipo=ferramenta)
 
 @seo_bp.route('/lotofacil/fechamento-<int:dezenas>-dezenas')
-def lotofacil_fechamento_especifico(dezenas):
-    loteria_key, cfg = get_config('lotofacil')
+@seo_bp.route('/<loteria_slug>/fechamento-<int:dezenas>-dezenas')
+def fechamento_especifico(dezenas, loteria_slug='lotofacil'):
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     faq_items = [
         ("Vale a pena fazer esse fechamento?", "Sim, reduz bastante o custo comparado ao desdobramento completo."),
     ]
     return render_template('seo_ferramenta_form.html',
                            loteria_nome=cfg.nome,
-                           loteria_slug='lotofacil',
-                           h1_title=f"Fechamento Lotofácil {dezenas} Dezenas",
-                           resposta_direta=f"Fechamento otimizado para jogar {dezenas} dezenas na Lotofácil garantindo prêmios menores com custo reduzido.",
+                           loteria_slug=loteria_slug,
+                           h1_title=f"Fechamento {cfg.nome} {dezenas} Dezenas",
+                           resposta_direta=f"Fechamento otimizado para jogar {dezenas} dezenas na {cfg.nome} garantindo prêmios menores com custo reduzido.",
                            cfg=cfg,
                            ferramenta_tipo='fechamento',
                            faq_items=faq_items)
 
 @seo_bp.route('/lotofacil/desdobramento')
-def lotofacil_desdobramento():
-    loteria_key, cfg = get_config('lotofacil')
+@seo_bp.route('/<loteria_slug>/desdobramento')
+def desdobramento(loteria_slug='lotofacil'):
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg: return "Not found", 404
     faq_items = [
-        ("Como fazer o desdobramento da Lotofácil?", "Escolha mais de 15 dezenas no volante e o sistema gera todas as combinações possíveis."),
+        (f"Como fazer o desdobramento da {cfg.nome}?", f"Escolha mais de {cfg.minimo_aposta} dezenas no volante e o sistema gera todas as combinações possíveis."),
     ]
     return render_template('seo_ferramenta_form.html',
                            loteria_nome=cfg.nome,
-                           loteria_slug='lotofacil',
-                           h1_title="Como Fazer Desdobramento da Lotofácil",
-                           resposta_direta="O desdobramento da Lotofácil consiste em gerar absolutamente todas as combinações de 15 números possíveis dentro de um grupo maior de dezenas.",
+                           loteria_slug=loteria_slug,
+                           h1_title=f"Como Fazer Desdobramento da {cfg.nome}",
+                           resposta_direta=f"O desdobramento da {cfg.nome} consiste em gerar absolutamente todas as combinações de {cfg.minimo_aposta} números possíveis dentro de um grupo maior de dezenas.",
                            cfg=cfg,
                            ferramenta_tipo='simulador',
                            faq_items=faq_items)
