@@ -127,7 +127,7 @@
             --font-heading:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
         }
         *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
-        body{background-color:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+        body{background-color:var(--bg);background-image:url('/static/bg-trevos-sorte.svg');background-repeat:repeat;background-size:700px auto;background-position:top center;color:var(--text);line-height:1.6;overflow-x:hidden}
 
         /* Navbar */
         .navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 2.5%;gap:16px;background:rgba(255,255,255,0.94);backdrop-filter:blur(12px);position:sticky;top:0;z-index:1000;border-bottom:1px solid var(--card-border);box-shadow:0 2px 12px rgba(10,26,63,0.05)}
@@ -280,6 +280,7 @@
 
         /* ================= Hero "Lotofácil da Independência" — gradiente diagonal azul ================= */
         .hero-independencia-section{position:relative;background:linear-gradient(135deg,#00234F 0%,#0046AD 45%,#2E7DE1 100%) !important;border:none;border-radius:0;padding:48px 24px 36px;margin-bottom:32px;text-align:center;box-shadow:0 16px 45px rgba(0,51,128,0.35);overflow:hidden}
+        .hero-independencia-section::before{content:'';position:absolute;inset:0;background:url('/static/bg-trevos-sorte.svg') repeat top center / 700px auto;filter:invert(1) brightness(10);opacity:0.75;pointer-events:none;z-index:0}
         .indep-glow-bg{position:absolute;top:0;left:50%;transform:translateX(-50%);width:750px;height:250px;background:radial-gradient(ellipse at 50% 0%,rgba(255,178,32,0.22) 0%,rgba(255,255,255,0.10) 40%,transparent 70%);pointer-events:none}
         .indep-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,178,32,0.16);border:1px solid rgba(255,178,32,0.55);color:#FFE3B0;padding:5px 16px;border-radius:999px;font-size:clamp(0.72rem,2.2vw,0.82rem);font-weight:800;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px;box-shadow:0 0 16px rgba(255,178,32,0.25);position:relative;z-index:1;max-width:95%}
         .indep-subtitle-top{font-size:clamp(0.74rem,2.2vw,0.86rem);font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:1.6px;margin-bottom:10px;text-transform:uppercase;position:relative;z-index:1}
@@ -639,7 +640,7 @@
 
     
     <!-- Ferramentas Grátis -->
-    <section id="ferramentas" class="section" style="background: #ffffff;">
+    <section id="ferramentas" class="section" style="background-color: rgba(255, 255, 255, 0.55);">
         <div class="section-header">
             <h2>Ferramentas Grátis — Sem Cadastro</h2>
             <p>Utilize nossos simuladores, fechamentos e tabelas de probabilidade abertos ao público.</p>
@@ -680,7 +681,7 @@
 
 
     <!-- Como Funciona / 3 Pilares -->
-    <section id="diferenciais" class="section" style="background: #F2F6FC;">
+    <section id="diferenciais" class="section" style="background-color: rgba(242, 246, 252, 0.65);">
         <div class="section-header">
             <h2>Por que o Cálculo da Sorte é Diferente?</h2>
             <p>Esqueça escolhas cegas ou geradores aleatórios comuns. Conheça a precisão analítica da nossa plataforma:</p>
@@ -794,7 +795,7 @@
     </section>
 
     <!-- Dúvidas Frequentes & Transparência Legal -->
-    <section id="faq" class="section" style="background: #EEF3FB;">
+    <section id="faq" class="section" style="background-color: rgba(238, 243, 251, 0.65);">
         <div class="section-header">
             <div class="badge-pill" style="margin-bottom: 14px;">
                 <span>❓ Esclarecimentos & Jogo Responsável</span>

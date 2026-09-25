@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <!-- Trevo exclusivo Cálculo da Sorte: 4 pétalas de coração orgânicas + núcleo estelar + caule curvado (diferente do trevo da Caixa) -->
+    <g id="trevo-sorte">
+      <!-- Pétala Superior -->
+      <path d="M 0,-9 C -5,-20 -33,-26 -33,-44 C -33,-57 -15,-63 0,-49 C 15,-63 33,-57 33,-44 C 33,-26 5,-20 0,-9 Z" />
+      <!-- Pétala Direita -->
+      <path d="M 0,-9 C -5,-20 -33,-26 -33,-44 C -33,-57 -15,-63 0,-49 C 15,-63 33,-57 33,-44 C 33,-26 5,-20 0,-9 Z" transform="rotate(90)" />
+      <!-- Pétala Inferior -->
+      <path d="M 0,-9 C -5,-20 -33,-26 -33,-44 C -33,-57 -15,-63 0,-49 C 15,-63 33,-57 33,-44 C 33,-26 5,-20 0,-9 Z" transform="rotate(180)" />
+      <!-- Pétala Esquerda -->
+      <path d="M 0,-9 C -5,-20 -33,-26 -33,-44 C -33,-57 -15,-63 0,-49 C 15,-63 33,-57 33,-44 C 33,-26 5,-20 0,-9 Z" transform="rotate(270)" />
+      <!-- Núcleo central em losango/estrela -->
+      <path d="M 0,-6.5 L 2.2,-2.2 L 6.5,0 L 2.2,2.2 L 0,6.5 L -2.2,2.2 L -6.5,0 L -2.2,-2.2 Z" />
+      <!-- Caule curvado exclusivo -->
+      <path d="M 4,11 Q 16,44 32,64" fill="none" stroke="#0A1A3F" stroke-width="5.5" stroke-linecap="round" />
+    </g>
+  </defs>
+
+  <!-- Composição suave inspirada na imagem enviada, com opacidade marca-d'água -->
+  <g fill="#0A1A3F" opacity="0.055">
+    <!-- Trevo médio superior direito -->
+    <use href="#trevo-sorte" transform="translate(615, 170) rotate(18) scale(1.15)" />
+    <!-- Trevo grande centro-direita inferior -->
+    <use href="#trevo-sorte" transform="translate(490, 440) rotate(-22) scale(1.55)" />
+    <!-- Trevo grande canto inferior esquerdo -->
+    <use href="#trevo-sorte" transform="translate(190, 560) rotate(-15) scale(1.75)" />
+    <!-- Trevo pequeno canto inferior direito -->
+    <use href="#trevo-sorte" transform="translate(715, 495) rotate(28) scale(0.72)" />
+    <!-- Trevo pequeno sutil superior esquerdo -->
+    <use href="#trevo-sorte" transform="translate(115, 130) rotate(-25) scale(0.65)" opacity="0.65" />
+  </g>
+</svg>
