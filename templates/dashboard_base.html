@@ -12,9 +12,16 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Painel — Cálculo da Sorte{% endblock %}</title>
+    <title>{% block title %}{{ h1_title ~ ' | Cálculo da Sorte' if h1_title else ('Fechamentos e Estatísticas da ' ~ loteria_nome ~ ' | Cálculo da Sorte' if loteria_nome else 'Painel — Cálculo da Sorte') }}{% endblock %}</title>
 
+    {% block meta_robots %}
+    {% if request.path.startswith('/dashboard') or request.path.startswith('/painel') or request.path.startswith('/minha-conta') or request.path.startswith('/admin') %}
     <meta name="robots" content="noindex, nofollow">
+    {% else %}
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <link rel="canonical" href="https://www.calculodasorte.com.br{{ request.path }}">
+    {% endif %}
+    {% endblock %}
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 
@@ -35,6 +42,7 @@
     <div class="container">
         <!-- TOP NAV BAR -->
         <header class="user-top-bar">
+            {% if current_user or session.get('user_id') %}
             <div class="user-info-group">
                 <a href="/dashboard" class="user-brand-logo">
                     <img src="/static/logo.png" alt="Logo" style="width: 20px; height: 20px; object-fit: contain;"> <span>Cálculo da <span class="highlight">Sorte</span></span>
@@ -70,6 +78,24 @@
                 <a href="/minha-conta" class="btn-top btn-top-ghost">👤 Conta</a>
                 <a href="/logout" class="btn-top btn-top-exit">Sair</a>
             </div>
+            {% else %}
+            <div class="user-info-group">
+                <a href="/" class="user-brand-logo">
+                    <img src="/static/logo.png" alt="Logo" style="width: 20px; height: 20px; object-fit: contain;"> <span>Cálculo da <span class="highlight">Sorte</span></span>
+                </a>
+                <div class="user-badge credits">
+                    <span>✨ Ferramentas Grátis</span>
+                </div>
+            </div>
+
+            <div class="user-top-actions">
+                <a href="/" class="btn-top btn-top-ghost">🏠 Início</a>
+                <a href="/resultados" class="btn-top btn-top-ghost">📊 Resultados</a>
+                <a href="/login" class="btn-top btn-top-ghost">🔑 Entrar</a>
+                <a href="/cadastro" class="btn-top btn-top-avulso">🎁 1 Análise Grátis</a>
+                <a href="/cadastro?plano=vip" class="btn-top btn-top-vip">👑 VIP R$ 49,90</a>
+            </div>
+            {% endif %}
         </header>
 
         <!-- MAIN CONTENT BLOCK -->
