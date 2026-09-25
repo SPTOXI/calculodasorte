@@ -1,0 +1,74 @@
+{% extends "dashboard_base.html" %}
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "Sorteio {{ cfg.nome }} Concurso {{ concurso.concurso }}",
+  "startDate": "{{ concurso.data }}",
+  "location": {
+    "@type": "Place",
+    "name": "Caixa Econômica Federal"
+  },
+  "description": "Resultado oficial do sorteio da {{ cfg.nome }} número {{ concurso.concurso }} realizado em {{ concurso.data }}."
+
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.calculodasorte.com.br/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ cfg.nome }}",
+      "item": "https://www.calculodasorte.com.br/{{ loteria_slug }}"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Concurso {{ concurso.concurso }}"
+    }
+  ]
+}
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 20px;">
+    <!-- Breadcrumb -->
+    <nav style="font-size: 0.9em; margin-bottom: 20px; color: #666;">
+        <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> &gt; 
+        <a href="/{{ loteria_slug }}" style="color: var(--primary); text-decoration: none;">{{ cfg.nome }}</a> &gt; 
+        <strong>Concurso {{ concurso.concurso }}</strong>
+    </nav>
+
+    <h1 style="color: var(--primary); margin-bottom: 15px;">{{ h1_title }}</h1>
+
+    <div class="card" style="margin-bottom: 40px; border: 1px solid #e2e8f0; padding: 30px; text-align: center;">
+        <h2 style="font-size: 1.2em; color: #64748b; margin-bottom: 20px;">Dezenas Sorteadas</h2>
+        
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+            {% for dezena in dezenas %}
+            <div style="background: var(--primary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: bold;">
+                {{ "%02d" % dezena }}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <p style="color: #475569;">Gostaria de ver se os seus números teriam ganho neste concurso?</p>
+            <a href="/cadastro" class="btn-primary" style="display: inline-block; margin-top: 15px; padding: 12px 24px; text-decoration: none;">Usar o Simulador VIP</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

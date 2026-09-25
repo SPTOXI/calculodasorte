@@ -1,0 +1,79 @@
+{% extends "seo_ferramenta.html" %}
+
+{% block schema_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for p, r in faq_items %}
+    {
+      "@type": "Question",
+      "name": "{{ p }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ r }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block ferramenta %}
+    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">Tabela de Probabilidades Oficiais</h2>
+    
+    {% if cfg.colunas %}
+    <p style="text-align: center; color: #64748b;">A {{ cfg.nome }} funciona por colunas, as probabilidades dependem do preenchimento por coluna.</p>
+    {% else %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.95em;">
+            <thead>
+                <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-align: center;">
+                    <th style="padding: 12px; border: 1px solid #e2e8f0;">Qtd. Números</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0;">Apostas</th>
+                    <th style="padding: 12px; border: 1px solid #e2e8f0;">Custo</th>
+                    {% for f in cfg.faixas_premiacao %}
+                    <th style="padding: 12px; border: 1px solid #e2e8f0;">{{ f }} Acertos</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in tabela %}
+                <tr style="border-bottom: 1px solid #e2e8f0; text-align: center; {{ 'background: #f8fafc;' if loop.index0 % 2 != 0 else '' }}">
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>{{ linha.quantidade }}</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">{{ linha.apostas }}</td>
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">{{ linha.custo }}</td>
+                    {% for f in linha.faixas %}
+                    <td style="padding: 12px; border: 1px solid #e2e8f0;">{{ f.um_em }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    </div>
+
+    <!-- Código Embed -->
+    <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+        <h3 style="font-size: 1.1em; color: #334155; margin-bottom: 10px;">Incorpore no seu site</h3>
+        <p style="font-size: 0.9em; color: #64748b; margin-bottom: 10px;">Copie o código abaixo para adicionar esta ferramenta grátis ao seu blog ou site.</p>
+        <textarea readonly style="width: 100%; height: 80px; padding: 10px; font-family: monospace; font-size: 0.85em; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; resize: none;" onclick="this.select();">
+&lt;iframe src="https://www.calculodasorte.com.br/embed/{{ loteria_slug }}/{{ 'probabilidade' }}" width="100%" height="450" frameborder="0" style="border:1px solid #e2e8f0; border-radius:8px;"&gt;&lt;/iframe&gt;
+&lt;div style="text-align:right; font-size:11px; margin-top:5px;"&gt;&lt;a href="https://www.calculodasorte.com.br/{{ loteria_slug }}/{{ 'probabilidade' }}" target="_blank" style="color:#666; text-decoration:none;"&gt;Calculadora por Cálculo da Sorte&lt;/a&gt;&lt;/div&gt;
+        </textarea>
+    </div>
+
+{% endblock %}
+
+{% block artigo_conteudo %}
+<h2 style="margin-top: 40px; color: var(--primary);">Como funciona a matemática da {{ loteria_nome }}?</h2>
+<p style="line-height: 1.6; color: #475569; margin-top: 15px;">
+    Na {{ loteria_nome }}, você escolhe entre {{ cfg.minimo_aposta }} e {{ cfg.maximo_aposta }} dezenas dentro de um universo de {{ cfg.universo }} dezenas possíveis. O custo da aposta cresce proporcionalmente à quantidade de combinações (apostas simples) que seu jogo gera.
+</p>
+<p style="line-height: 1.6; color: #475569; margin-top: 15px;">
+    <strong>Todas as dezenas têm a mesma probabilidade de serem sorteadas.</strong> Não existem "dezenas mágicas". A matemática comprova que qualquer aposta de {{ cfg.minimo_aposta }} dezenas tem a chance exata de 1 em {{ (tabela[0].faixas[0].um_em).replace('1 em ', '') }} de ganhar o prêmio principal. O Cálculo da Sorte existe para organizar os seus jogos de forma estruturada, permitindo que você feche faixas de premiação de maneira mais eficiente.
+</p>
+{% endblock %}

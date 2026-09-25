@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embed — {{ loteria_nome }} - {{ ferramenta_tipo }}</title>
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        :root { --primary: #0046AD; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background: #fff; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, #003380 100%); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 15px;">
+        <h3 style="color: var(--primary); margin: 0 0 10px 0;">
+            {% if ferramenta_tipo == 'simulador' %}Simulador da {{ loteria_nome }}{% else %}Fechamento da {{ loteria_nome }}{% endif %}
+        </h3>
+        <p style="font-size: 0.9em; color: #64748b; margin: 0;">Powered by Cálculo da Sorte</p>
+    </div>
+
+    <div style="max-width: 400px; margin: 0 auto;">
+        <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-bottom: 20px;">
+            {% for i in range(1, cfg.universo + 1) %}
+            <button type="button" 
+                    style="aspect-ratio: 1; border-radius: 50%; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 0.85em; padding: 0;"
+                    onclick="this.style.background = this.style.background === 'var(--primary)' ? '#fff' : 'var(--primary)'; this.style.color = this.style.background === 'var(--primary)' ? '#fff' : '#333';">
+                {{ "%02d" % i }}
+            </button>
+            {% endfor %}
+        </div>
+        
+        <button class="btn-primary" style="width: 100%; padding: 12px; font-size: 1em; cursor: not-allowed; opacity: 0.8;" onclick="alert('Funcionalidade limitada no modo demonstração. Cesse calculodasorte.com.br para gerar jogos.'); window.open('https://www.calculodasorte.com.br', '_blank');">
+            Analisar Dezenas
+        </button>
+    </div>
+</body>
+</html>

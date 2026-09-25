@@ -1,0 +1,38 @@
+{% extends "dashboard_base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 20px; max-width: 800px;">
+    <h1 style="color: var(--primary); margin-bottom: 20px;">Metodologia Matemática e Dados</h1>
+    
+    <div class="card" style="padding: 30px; line-height: 1.7; color: #334155;">
+        <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Como Calculamos Nossas Probabilidades?</h2>
+        <p style="margin-bottom: 20px;">
+            Todas as tabelas de probabilidade presentes no <strong>Cálculo da Sorte</strong> utilizam a fórmula clássica de análise combinatória para calcular Combinações Simples:
+        </p>
+        
+        <div style="background: #f1f5f9; padding: 15px; text-align: center; font-family: monospace; font-size: 1.2em; border-radius: 8px; margin-bottom: 20px;">
+            C(n, p) = n! / (p! * (n - p)!)
+        </div>
+        
+        <p style="margin-bottom: 20px;">
+            Onde <strong>n</strong> é o número total de elementos (ex: 60 na Mega-Sena) e <strong>p</strong> é o número de elementos escolhidos por combinação (ex: 6 na aposta simples). 
+            Cruzamos esse valor com o número de apostas geradas pelo desdobramento escolhido pelo usuário para fornecer a probabilidade exata (1 em X).
+        </p>
+
+        <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Fonte dos Dados (Histórico de Sorteios)</h2>
+        <p style="margin-bottom: 20px;">
+            A confiabilidade dos nossos simuladores depende da precisão do banco de dados. 
+            Sincronizamos nossos registros diariamente às 23:59 via API de Dados Abertos e através dos arquivos ZIP oficiais disponibilizados pela Caixa Econômica Federal em seu site público de Loterias.
+        </p>
+
+        <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Matrizes de Fechamento</h2>
+        <p style="margin-bottom: 20px;">
+            Nossos algoritmos de fechamento (por exemplo, "18-15-14-15") utilizam a biblioteca matemática avançada para reduzir o número de combinações de um desdobramento completo, eliminando jogos redundantes que cobririam a mesma faixa de premiação. As matrizes garantem que, condicionado ao acerto das dezenas sorteadas dentro das dezenas escolhidas, a configuração geométrica assegura pelo menos um bilhete premiado na faixa estipulada.
+        </p>
+
+        <div style="margin-top: 30px; padding: 15px; border-left: 4px solid var(--primary); background: #f8fafc;">
+            <strong>Aviso de Transparência Científica:</strong> Nós não fornecemos "sistemas infalíveis". O objetivo da metodologia descrita acima é organizar o jogo e otimizar custos, mantendo as premissas inalteráveis de que todo sorteio lotérico é um evento independente e estocástico.
+        </div>
+    </div>
+</div>
+{% endblock %}

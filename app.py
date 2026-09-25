@@ -80,6 +80,241 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 # ==========================================
+# ==========================================
+# SEO & GEO GLOBALS (Redirects, Robots, LLMs)
+# ==========================================
+
+@app.before_request
+def enforce_canonical_domain():
+    # Only redirect in production if the host is calculodasorte.com.br
+    # Avoid breaking localhost, 127.0.0.1 or Vercel preview domains
+    host = request.headers.get('Host', '')
+    if host == 'calculodasorte.com.br':
+        url = request.url.replace('http://', 'https://', 1).replace('calculodasorte.com.br', 'www.calculodasorte.com.br', 1)
+        return redirect(url, code=301)
+    # Redirect http to https for www.calculodasorte.com.br if behind proxy (X-Forwarded-Proto)
+    proto = request.headers.get('X-Forwarded-Proto', 'http')
+    if host == 'www.calculodasorte.com.br' and proto == 'http':
+        return redirect(request.url.replace('http://', 'https://', 1), code=301)
+
+@app.route('/robots.txt')
+def robots_txt():
+    content = """User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bingbot
+Allow: /
+Disallow: /login
+Disallow: /cadastro
+Disallow: /painel
+Disallow: /api
+
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /cadastro
+Disallow: /painel
+Disallow: /api
+Disallow: /*?plano=*
+
+Sitemap: https://www.calculodasorte.com.br/sitemap.xml
+"""
+    return Response(content, mimetype='text/plain')
+
+from flask import make_response
+
+@app.route('/sitemap.xml')
+def sitemap_index():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    loterias = LOTERIAS_CONFIG.keys()
+    
+    xml = f'<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    sitemaps = [
+        'sitemap-paginas.xml',
+        'sitemap-ferramentas.xml',
+        'sitemap-estatisticas.xml'
+    ]
+    for loteria in loterias:
+        sitemaps.append(f'sitemap-concursos-{loteria}.xml')
+        
+    for sm in sitemaps:
+        xml += '  <sitemap>\n'
+        xml += f'    <loc>{host}/{sm}</loc>\n'
+        xml += f'    <lastmod>{hoje}</lastmod>\n'
+        xml += '  </sitemap>\n'
+        
+    xml += '</sitemapindex>'
+    
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-paginas.xml')
+def sitemap_paginas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    urls = [
+        '/', '/sobre', '/metodologia', '/planos', '/resultados'
+    ]
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for url in urls:
+        xml += '  <url>\n'
+        xml += f'    <loc>{host}{url}</loc>\n'
+        xml += f'    <lastmod>{hoje}</lastmod>\n'
+        xml += '  </url>\n'
+    
+    # Hubs por loteria
+    for loteria in LOTERIAS_CONFIG.keys():
+        xml += '  <url>\n'
+        xml += f'    <loc>{host}/{loteria.replace("_", "-")}</loc>\n'
+        xml += f'    <lastmod>{hoje}</lastmod>\n'
+        xml += '  </url>\n'
+        
+    xml += '</urlset>'
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-ferramentas.xml')
+def sitemap_ferramentas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    for loteria in LOTERIAS_CONFIG.keys():
+        slug = loteria.replace('_', '-')
+        ferramentas = ['simulador', 'probabilidade']
+        if loteria in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania']:
+            ferramentas.append('fechamento')
+            if loteria == 'lotofacil':
+                ferramentas.extend(['fechamento-18-dezenas', 'fechamento-20-dezenas', 'fechamento-24-dezenas', 'desdobramento'])
+            if loteria == 'mega_sena':
+                ferramentas.append('desdobramento')
+                
+        for fer in ferramentas:
+            xml += '  <url>\n'
+            xml += f'    <loc>{host}/{slug}/{fer}</loc>\n'
+            xml += f'    <lastmod>{hoje}</lastmod>\n'
+            xml += '  </url>\n'
+            
+    xml += '</urlset>'
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-estatisticas.xml')
+def sitemap_estatisticas():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    for loteria in LOTERIAS_CONFIG.keys():
+        slug = loteria.replace('_', '-')
+        for stat in ['numeros-mais-sorteados', 'numeros-atrasados']:
+            xml += '  <url>\n'
+            xml += f'    <loc>{host}/{slug}/{stat}</loc>\n'
+            xml += f'    <lastmod>{hoje}</lastmod>\n'
+            xml += '  </url>\n'
+            
+    xml += '</urlset>'
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-concursos-<loteria_slug>.xml')
+def sitemap_concursos(loteria_slug):
+    loteria_key = loteria_slug.replace('-', '_')
+    if loteria_key not in LOTERIAS_CONFIG:
+        return "Not found", 404
+        
+    host = "https://www.calculodasorte.com.br"
+    historico = updater.carregar_historico_local(loteria_key)
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Historico eh reverso? Depende do modelo
+    # Se houver mais de 5000 concursos, teremos q paginar, mas a Caixa tem ~3000 max.
+    for concurso in historico:
+        numero = concurso.get('concurso')
+        data_str = concurso.get('data')
+        try:
+            # Converter data dd/mm/yyyy para yyyy-mm-dd
+            d_obj = datetime.strptime(data_str, '%d/%m/%Y')
+            lastmod = d_obj.strftime('%Y-%m-%d')
+        except:
+            lastmod = datetime.now().strftime('%Y-%m-%d')
+            
+        xml += '  <url>\n'
+        xml += f'    <loc>{host}/{loteria_slug}/concurso/{numero}</loc>\n'
+        xml += f'    <lastmod>{lastmod}</lastmod>\n'
+        xml += '  </url>\n'
+        
+    xml += '</urlset>'
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+
+@app.route('/llms-full.txt')
+def llms_full_txt():
+    content = """# Cálculo da Sorte - Full Document
+Ferramentas estatísticas e fechamentos.
+
+## Metodologia
+Todas as tabelas usam a fórmula C(n,k) = n! / (k!(n-k)!). As combinações não garantem vitórias incondicionais, mas cobrem faixas específicas caso os números sorteados estejam no grupo escolhido.
+
+## Hubs e Ferramentas
+- Mega-Sena: 1 em 50 milhões (6 dezenas). Ferramentas de desdobramento disponíveis.
+- Lotofácil: 1 em 3.2 milhões (15 dezenas). Fechamentos otimizados (18, 20, 24 dezenas) reduzem drasticamente o custo do desdobramento completo.
+
+## Dúvidas Comuns
+O fechamento elimina combinações redundantes de um desdobramento completo, economizando dinheiro ao abrir mão da garantia do prêmio máximo (que fica sujeita à sorte), garantindo prêmios menores se as condições matemáticas (acertar as dezenas) forem atingidas.
+"""
+    return Response(content, mimetype='text/plain')
+
+@app.route('/llms.txt')
+def llms_txt():
+    content = """# Cálculo da Sorte
+Ferramentas estatísticas, desdobramentos, fechamentos e análise histórica para as loterias da Caixa Econômica Federal.
+Este serviço organiza dados matemáticos e oficiais. NÃO fazemos apostas, NÃO garantimos ganhos, apenas fornecemos ferramentas analíticas.
+
+## Ferramentas grátis
+- [Mega-Sena](/mega-sena): Simulador, resultados e estatísticas da Mega-Sena.
+- [Lotofácil](/lotofacil): Fechamentos e análises da Lotofácil.
+- [Quina](/quina): Ferramentas gratuitas para Quina.
+- [Lotomania](/lotomania): Ferramentas gratuitas para Lotomania.
+- [Super Sete](/super_sete): Ferramentas gratuitas para Super Sete.
+- [Dupla Sena](/dupla_sena): Ferramentas gratuitas para Dupla Sena.
+- [Timemania](/timemania): Ferramentas gratuitas para Timemania.
+- [Dia de Sorte](/dia_de_sorte): Ferramentas gratuitas para Dia de Sorte.
+- [+Milionária](/mais_milionaria): Ferramentas gratuitas para +Milionária.
+
+## Estatísticas
+- [/lotofacil/numeros-mais-sorteados](/lotofacil/numeros-mais-sorteados): Números que mais saem na Lotofácil.
+
+## Metodologia
+- [/metodologia](/metodologia): Como calculamos nossas probabilidades (fórmulas exatas, C(n,k)).
+"""
+    return Response(content, mimetype='text/plain')
+
+# ==========================================
 # CABEÇALHOS DE SEGURANÇA E RATE LIMITING
 # ==========================================
 
@@ -2228,6 +2463,41 @@ O [Cálculo da Sorte](https://calculodasorte.com.br) oferece ferramentas de gera
 - **Jogo Responsável (+18)**: Ferramenta estritamente voltada a estudo probabilístico.
 """
     return Response(conteudo, mimetype='text/markdown')
+
+import seo_routes
+seo_routes.register_seo_routes(app)
+
+
+@app.route('/sobre')
+def sobre():
+    return render_template('seo_sobre.html')
+
+@app.route('/metodologia')
+def metodologia():
+    return render_template('seo_metodologia.html')
+
+
+
+@app.route('/<path:path>.md')
+def serve_markdown(path):
+    # Fallback genérico para LLMs (na prática, chamaria a rota real e extrairia o texto, ou buscaria de um cache MD)
+    # Por segurança e simplicidade, redirecionamos para o llms-full ou enviamos um texto limpo
+    return Response(f"# Cálculo da Sorte\nVeja mais em https://www.calculodasorte.com.br/{path}", mimetype='text/markdown')
+
+
+@app.route('/8473a2b1c9f4d5e68473a2b1c9f4d5e6.txt')
+def indexnow_key():
+    return Response("8473a2b1c9f4d5e68473a2b1c9f4d5e6", mimetype='text/plain')
+
+
+@app.route('/autor/silvio-morais')
+def autor():
+    return render_template('seo_autor.html')
+
+
+@app.route('/blog/quais-os-numeros-que-mais-saem-na-lotofacil')
+def old_blog_post_redirect():
+    return redirect('/lotofacil/numeros-mais-sorteados', code=301)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -1,0 +1,43 @@
+{% extends "dashboard_base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 20px;">
+    <!-- Breadcrumb -->
+    <nav style="font-size: 0.9em; margin-bottom: 20px; color: #666;">
+        <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> &gt; 
+        <a href="/{{ loteria_slug }}" style="color: var(--primary); text-decoration: none;">{{ cfg.nome }}</a> &gt; 
+        <strong>Resultados</strong>
+    </nav>
+
+    <h1 style="color: var(--primary); margin-bottom: 15px;">Resultados da {{ loteria_nome }}</h1>
+    
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+        <ul style="list-style: none; padding: 0;">
+            {% for item in itens %}
+            <li style="padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #334155; font-size: 1.1em;">Concurso {{ item.concurso }}</strong>
+                    <span style="color: #64748b; font-size: 0.9em; margin-left: 10px;">{{ item.data }}</span>
+                </div>
+                <a href="/{{ loteria_slug }}/concurso/{{ item.concurso }}" style="background: #f8fafc; color: var(--primary); border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.9em;">
+                    Ver Detalhes
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Paginação indexável -->
+        <div style="margin-top: 20px; text-align: center;">
+            {% if page > 1 %}
+            <a href="/resultados/{{ loteria_slug }}{{ '/pagina/' ~ (page - 1) if page - 1 > 1 else '' }}" style="display: inline-block; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 4px; text-decoration: none; color: #333; margin: 0 5px;">&laquo; Anterior</a>
+            {% endif %}
+            
+            <span style="display: inline-block; padding: 10px 15px; color: #666;">Página {{ page }} de {{ total_pages }}</span>
+            
+            {% if page < total_pages %}
+            <a href="/resultados/{{ loteria_slug }}/pagina/{{ page + 1 }}" style="display: inline-block; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 4px; text-decoration: none; color: #333; margin: 0 5px;">Próxima &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

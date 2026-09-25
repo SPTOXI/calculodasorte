@@ -1,0 +1,70 @@
+{% extends "seo_ferramenta.html" %}
+
+{% block schema_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for p, r in faq_items %}
+    {
+      "@type": "Question",
+      "name": "{{ p }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ r }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block ferramenta %}
+    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">
+        {% if ferramenta_tipo == 'simulador' %}Simular Dezenas{% else %}Gerar Matriz de Fechamento Grátis{% endif %}
+    </h2>
+    <p style="text-align: center; color: #64748b; margin-bottom: 20px;">
+        Esta versão pública permite gerar até 4 jogos ou exibir a matriz para até 20 dezenas. Crie sua conta para acesso ilimitado.
+    </p>
+
+    <!-- UI do Volante Simplificada -->
+    <div style="max-width: 500px; margin: 0 auto;">
+        <div style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-bottom: 20px;">
+            {% for i in range(1, cfg.universo + 1) %}
+            <button type="button" 
+                    style="aspect-ratio: 1; border-radius: 50%; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 0.9em; padding: 0;"
+                    onclick="this.style.background = this.style.background === 'var(--primary)' ? '#fff' : 'var(--primary)'; this.style.color = this.style.background === 'var(--primary)' ? '#fff' : '#333';">
+                {{ "%02d" % i }}
+            </button>
+            {% endfor %}
+        </div>
+        
+        <button class="btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; cursor: not-allowed; opacity: 0.8;" onclick="alert('Funcionalidade limitada na versão sem cadastro. Crie sua conta grátis para gerar jogos ilimitados.'); window.location.href='/cadastro';">
+            {% if ferramenta_tipo == 'simulador' %}Analisar Dezenas Selecionadas{% else %}Gerar Jogos do Fechamento{% endif %}
+        </button>
+
+    </div>
+
+    <!-- Código Embed -->
+    <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+        <h3 style="font-size: 1.1em; color: #334155; margin-bottom: 10px;">Incorpore no seu site</h3>
+        <p style="font-size: 0.9em; color: #64748b; margin-bottom: 10px;">Copie o código abaixo para adicionar esta ferramenta grátis ao seu blog ou site.</p>
+        <textarea readonly style="width: 100%; height: 80px; padding: 10px; font-family: monospace; font-size: 0.85em; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; resize: none;" onclick="this.select();">
+&lt;iframe src="https://www.calculodasorte.com.br/embed/{{ loteria_slug }}/{{ ferramenta_tipo }}" width="100%" height="450" frameborder="0" style="border:1px solid #e2e8f0; border-radius:8px;"&gt;&lt;/iframe&gt;
+&lt;div style="text-align:right; font-size:11px; margin-top:5px;"&gt;&lt;a href="https://www.calculodasorte.com.br/{{ loteria_slug }}/{{ ferramenta_tipo }}" target="_blank" style="color:#666; text-decoration:none;"&gt;Calculadora por Cálculo da Sorte&lt;/a&gt;&lt;/div&gt;
+        </textarea>
+    </div>
+{% endblock %}
+
+{% block artigo_conteudo %}
+<h2 style="margin-top: 40px; color: var(--primary);">Exemplo Prático</h2>
+<p style="line-height: 1.6; color: #475569; margin-top: 15px;">
+    {% if ferramenta_tipo == 'fechamento' %}
+    Imagine que você escolha 18 dezenas na {{ loteria_nome }}. O desdobramento completo (todas as combinações possíveis dessas 18 dezenas) custaria o equivalente a {{ cfg.maximo_aposta * 10 }} apostas simples. Utilizando uma matriz de fechamento otimizada pelo Cálculo da Sorte para garantir quadra (se acertar as sorteadas dentro das suas 18), você pode precisar de apenas algumas dezenas de jogos. Isso representa uma economia drástica, mantendo uma estratégia estruturada.
+    {% else %}
+    Ao inserir 6 dezenas no simulador, o sistema cruza esses números com todos os sorteios já realizados da {{ loteria_nome }} desde o concurso 1. Ele retornará um relatório mostrando quantas vezes essa combinação específica já fez Quadra, Quina ou Sena, e qual o maior atraso histórico. Isso ajuda a entender a dinâmica dos sorteios sem investir dinheiro cegamente.
+    {% endif %}
+</p>
+{% endblock %}
