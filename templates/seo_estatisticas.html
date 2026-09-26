@@ -18,36 +18,42 @@
 {% endblock %}
 
 {% block ferramenta %}
-    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">TOP 5 Dezenas Mais Sorteadas</h2>
-    
+    {% set unidade = 'concursos sem sair' if modo == 'atrasadas' else 'vezes' %}
+    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">{{ 'TOP 5 Dezenas Mais Atrasadas' if modo == 'atrasadas' else 'TOP 5 Dezenas Mais Sorteadas' }}</h2>
+
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px;">
         {% for dezena, count in top_5 %}
         <div style="background: var(--primary); color: white; padding: 20px; border-radius: 12px; text-align: center; min-width: 100px;">
             <div style="font-size: 2em; font-weight: bold;">{{ "%02d" % dezena }}</div>
-            <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">{{ count }} vezes</div>
+            <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">{{ count }} {{ unidade }}</div>
         </div>
         {% endfor %}
     </div>
 
-    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">E as Menos Sorteadas...</h2>
+    <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">{{ 'E as Menos Atrasadas...' if modo == 'atrasadas' else 'E as Menos Sorteadas...' }}</h2>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
         {% for dezena, count in bottom_5 %}
         <div style="background: #cbd5e1; color: #334155; padding: 15px; border-radius: 12px; text-align: center; min-width: 80px;">
             <div style="font-size: 1.5em; font-weight: bold;">{{ "%02d" % dezena }}</div>
-            <div style="font-size: 0.8em; margin-top: 5px;">{{ count }} vezes</div>
+            <div style="font-size: 0.8em; margin-top: 5px;">{{ count }} {{ unidade }}</div>
         </div>
         {% endfor %}
     </div>
+    {% if not top_5 %}
+    <p style="text-align: center; color: #64748b; margin-top: 20px;">Estamos sincronizando o histórico desta loteria. Volte em breve para ver a estatística completa.</p>
+    {% endif %}
 {% endblock %}
 
 {% block artigo_conteudo %}
 <h2 style="margin-top: 40px; color: var(--primary);">Como interpretar a frequência de sorteios?</h2>
 <p style="line-height: 1.6; color: #475569; margin-top: 15px;">
-    Muitos jogadores acreditam que um número que saiu muitas vezes está "quente" e deve ser apostado, ou que um número que está demorando muito está "atrasado" e deve sair logo (Lei dos Grandes Números aplicada erroneamente a curto prazo). 
+    Muitos jogadores acreditam que um número que saiu muitas vezes está "quente" e deve ser apostado, ou que um número que está demorando muito está "atrasado" e deve sair logo (Lei dos Grandes Números aplicada erroneamente a curto prazo).
 </p>
+{% if top_5 and bottom_5 %}
 <p style="line-height: 1.6; color: #475569; margin-top: 15px;">
-    O Cálculo da Sorte adverte: Loterias são sorteios independentes. A bola dentro do globo não tem memória. A probabilidade da dezena {{ "%02d" % top_5[0][0] }} sair no próximo sorteio é exatamente a mesma da dezena {{ "%02d" % bottom_5[0][0] }}. 
+    O Cálculo da Sorte adverte: Loterias são sorteios independentes. A bola dentro do globo não tem memória. A probabilidade da dezena {{ "%02d" % top_5[0][0] }} sair no próximo sorteio é exatamente a mesma da dezena {{ "%02d" % bottom_5[0][0] }}.
 </p>
+{% endif %}
 <p style="line-height: 1.6; color: #475569; margin-top: 15px;">
     Então por que disponibilizamos estas estatísticas? Porque muitos assinantes VIP usam essas tabelas para evitar apostar em padrões muito desequilibrados, ou simplesmente para compor matrizes de fechamento baseadas em seus critérios pessoais de escolha. A decisão é sua; os dados, nós fornecemos.
 </p>

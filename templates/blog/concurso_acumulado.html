@@ -1,0 +1,19 @@
+<p>A <strong>{{ post.loteria_nome }}</strong> acumulou e o próximo concurso paga <strong>{{ post.valor_fmt }}</strong>{% if post.data_proximo %}, com sorteio previsto para <strong>{{ post.data_proximo }}</strong>{% endif %}. Antes de preencher o volante, vale entender o que a estatística real dos sorteios anteriores mostra sobre o comportamento dos números.</p>
+
+<h2>Por que o concurso acumulou?</h2>
+<p>O acúmulo acontece quando nenhuma aposta atinge a faixa de premiação principal no concurso anterior{% if post.numero_concurso %} (concurso {{ post.numero_concurso }}){% endif %}. Isso eleva o valor estimado do próximo sorteio, aumentando o volume de apostas — e, consequentemente, a divisão do prêmio caso mais de um apostador acerte.</p>
+
+<h2>O que considerar antes de apostar</h2>
+<ul>
+    <li><strong>Distribuição par/ímpar:</strong> concursos acumulados tendem a atrair volantes com padrões repetitivos (datas, sequências); equilibrar pares e ímpares reduz a chance de dividir o prêmio com apostas idênticas.</li>
+    <li><strong>Dispersão de quadrantes:</strong> evite concentrar dezenas em uma única faixa do volante.</li>
+    <li><strong>Frequência histórica:</strong> analise quais números têm saído com mais regularidade e quais estão "atrasados" nos últimos concursos.</li>
+</ul>
+
+<p>O <strong>Cálculo da Sorte</strong> processa o histórico oficial da Caixa para gerar fechamentos e desdobramentos otimizados para a {{ post.loteria_nome }}, em vez de depender de palpites aleatórios.</p>
+
+<p>
+    <a href="/{{ post.loteria_slug }}/numeros-mais-sorteados">Ver números mais sorteados da {{ post.loteria_nome }} →</a><br>
+    <a href="/{{ post.loteria_slug }}/numeros-atrasados">Ver números atrasados da {{ post.loteria_nome }} →</a><br>
+    <a href="/resultados/{{ post.loteria_slug|replace('-', '_') }}">Ver último resultado da {{ post.loteria_nome }} →</a>
+</p>

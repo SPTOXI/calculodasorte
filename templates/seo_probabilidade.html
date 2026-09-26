@@ -69,10 +69,19 @@
 
 {% block artigo_conteudo %}
 <h2 style="margin-top: 40px; color: var(--primary);">Como funciona a matemática da {{ loteria_nome }}?</h2>
+{% if cfg.colunas %}
+<p style="line-height: 1.6; color: #475569; margin-top: 15px;">
+    Na {{ loteria_nome }}, o volante é dividido em {{ cfg.colunas }} colunas independentes, cada uma com {{ cfg.universo }} algarismos possíveis (0 a 9). Marcar mais de um algarismo por coluna aumenta o custo da aposta, mas também aumenta a chance de acerto naquela coluna especificamente.
+</p>
+<p style="line-height: 1.6; color: #475569; margin-top: 15px;">
+    <strong>Todas as combinações têm a mesma probabilidade de saírem.</strong> Não existem "colunas mágicas". O Cálculo da Sorte existe para organizar os seus jogos de forma estruturada, permitindo que você combine algarismos por coluna de maneira mais eficiente.
+</p>
+{% else %}
 <p style="line-height: 1.6; color: #475569; margin-top: 15px;">
     Na {{ loteria_nome }}, você escolhe entre {{ cfg.minimo_aposta }} e {{ cfg.maximo_aposta }} dezenas dentro de um universo de {{ cfg.universo }} dezenas possíveis. O custo da aposta cresce proporcionalmente à quantidade de combinações (apostas simples) que seu jogo gera.
 </p>
 <p style="line-height: 1.6; color: #475569; margin-top: 15px;">
-    <strong>Todas as dezenas têm a mesma probabilidade de serem sorteadas.</strong> Não existem "dezenas mágicas". A matemática comprova que qualquer aposta de {{ cfg.minimo_aposta }} dezenas tem a chance exata de 1 em {{ (tabela[0].faixas[0].um_em).replace('1 em ', '') }} de ganhar o prêmio principal. O Cálculo da Sorte existe para organizar os seus jogos de forma estruturada, permitindo que você feche faixas de premiação de maneira mais eficiente.
+    <strong>Todas as dezenas têm a mesma probabilidade de serem sorteadas.</strong> Não existem "dezenas mágicas".{% if tabela and tabela[0].faixas %} A matemática comprova que qualquer aposta de {{ cfg.minimo_aposta }} dezenas tem a chance exata de 1 em {{ (tabela[0].faixas[0].um_em).replace('1 em ', '') }} de ganhar o prêmio principal.{% endif %} O Cálculo da Sorte existe para organizar os seus jogos de forma estruturada, permitindo que você feche faixas de premiação de maneira mais eficiente.
 </p>
+{% endif %}
 {% endblock %}

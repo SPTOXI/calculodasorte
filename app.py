@@ -197,36 +197,44 @@ def sitemap_paginas():
     response.headers["Content-Type"] = "application/xml"
     return response
 
+def ferramentas_da_loteria(loteria_key):
+    """Lista de slugs de ferramentas válidas para uma loteria (chave enum, ex: 'mega_sena').
+    Usada pelo sitemap para anunciar exatamente as URLs que o blueprint seo_routes atende."""
+    ferramentas = ['simulador', 'probabilidade']
+    if loteria_key in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania']:
+        ferramentas.append('fechamento')
+        if loteria_key == 'lotofacil':
+            ferramentas.extend(['fechamento-18-dezenas', 'fechamento-20-dezenas', 'fechamento-24-dezenas', 'desdobramento'])
+        if loteria_key == 'mega_sena':
+            ferramentas.append('desdobramento')
+    return ferramentas
+
+
+ESTATISTICAS_SLUGS = ['numeros-mais-sorteados', 'numeros-atrasados']
+
+
 @app.route('/sitemap-ferramentas.xml')
 def sitemap_ferramentas():
     host = "https://www.calculodasorte.com.br"
     hoje = datetime.now().strftime('%Y-%m-%d')
-    
+
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     ]
-    
+
     for loteria_enum in LOTERIAS_CONFIG.keys():
         loteria = loteria_enum.value
         slug = loteria.replace('_', '-')
-        ferramentas = ['simulador', 'probabilidade']
-        if loteria in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania']:
-            ferramentas.append('fechamento')
-            if loteria == 'lotofacil':
-                ferramentas.extend(['fechamento-18-dezenas', 'fechamento-20-dezenas', 'fechamento-24-dezenas', 'desdobramento'])
-            if loteria == 'mega_sena':
-                ferramentas.append('desdobramento')
-                
-        for fer in ferramentas:
+        for fer in ferramentas_da_loteria(loteria):
             parts.append('  <url>')
             parts.append(f'    <loc>{host}/{slug}/{fer}</loc>')
             parts.append(f'    <lastmod>{hoje}</lastmod>')
             parts.append('  </url>')
-            
+
     parts.append('</urlset>')
     xml = "\n".join(parts)
-    
+
     response = make_response(xml)
     response.headers["Content-Type"] = "application/xml"
     return response
@@ -235,23 +243,23 @@ def sitemap_ferramentas():
 def sitemap_estatisticas():
     host = "https://www.calculodasorte.com.br"
     hoje = datetime.now().strftime('%Y-%m-%d')
-    
+
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     ]
-    
+
     for loteria_enum in LOTERIAS_CONFIG.keys():
         slug = loteria_enum.value.replace('_', '-')
-        for stat in ['numeros-mais-sorteados', 'numeros-atrasados']:
+        for stat in ESTATISTICAS_SLUGS:
             parts.append('  <url>')
             parts.append(f'    <loc>{host}/{slug}/{stat}</loc>')
             parts.append(f'    <lastmod>{hoje}</lastmod>')
             parts.append('  </url>')
-            
+
     parts.append('</urlset>')
     xml = "\n".join(parts)
-    
+
     response = make_response(xml)
     response.headers["Content-Type"] = "application/xml"
     return response
@@ -1010,6 +1018,7 @@ def resultados_index():
 
 @app.route('/resultados/<loteria_type>')
 def ver_resultado(loteria_type):
+    loteria_type = loteria_type.replace('-', '_')
     try:
         loteria_enum = LoteriaType(loteria_type)
     except ValueError:
@@ -1053,14 +1062,68 @@ def ver_resultado(loteria_type):
                            segundo_sorteio=segundo_sorteio)
 
 
+def _slug_to_loteria(loteria_slug):
+    """Converte um slug de URL pública (com hífen ou underscore) para o LoteriaType correspondente."""
+    chave = loteria_slug.replace('-', '_')
+    try:
+        enum = LoteriaType(chave)
+    except ValueError:
+        return None
+    if enum not in LOTERIAS_CONFIG:
+        return None
+    return enum
+
+
+def _gerar_post_acumulado(loteria_slug):
+    """Post de blog dinâmico: título e conteúdo montados a partir do valor acumulado
+    real e atual da loteria (não é um texto estático salvo em arquivo)."""
+    loteria_enum = _slug_to_loteria(loteria_slug)
+    if loteria_enum is None:
+        return None
+    loteria_key = loteria_enum.value
+    config = LOTERIAS_CONFIG[loteria_enum]
+
+    dados_caixa = updater.obter_ultimo_resultado_completo(loteria_key)
+    if not dados_caixa or not dados_caixa.get('acumulado'):
+        return None
+    valor = dados_caixa.get('valorEstimadoProximoConcurso')
+    if not valor:
+        return None
+
+    valor_fmt = f"R$ {valor:,.0f}".replace(',', '.')
+    slug_canonico = loteria_key.replace('_', '-')
+
+    return {
+        'title': f'Análise Estatística para o Concurso Acumulado da {config.nome} de {valor_fmt}',
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'author': 'Equipe Cálculo da Sorte',
+        'description': f'A {config.nome} acumulou e o próximo concurso paga {valor_fmt}. Veja a análise estatística do histórico de sorteios antes de montar seu jogo.',
+        'template': 'blog/concurso_acumulado.html',
+        'dinamico': True,
+        'loteria_nome': config.nome,
+        'loteria_slug': slug_canonico,
+        'valor_fmt': valor_fmt,
+        'numero_concurso': dados_caixa.get('numero'),
+        'data_proximo': dados_caixa.get('dataProximoConcurso'),
+    }
+
+
 @app.route('/blog')
 def blog_index():
-    return render_template('blog_index.html', posts=BLOG_POSTS)
+    posts = dict(BLOG_POSTS)
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        slug_canonico = loteria_enum.value.replace('_', '-')
+        post = _gerar_post_acumulado(slug_canonico)
+        if post:
+            posts[f'concurso-acumulado-{slug_canonico}'] = post
+    return render_template('blog_index.html', posts=posts)
 
 
 @app.route('/blog/<slug>')
 def blog_post(slug):
     post = BLOG_POSTS.get(slug)
+    if not post and slug.startswith('concurso-acumulado-'):
+        post = _gerar_post_acumulado(slug[len('concurso-acumulado-'):])
     if not post:
         return "Artigo não encontrado", 404
     return render_template('blog_post.html', post=post, slug=slug)
