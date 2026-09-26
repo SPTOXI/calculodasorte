@@ -22,6 +22,7 @@ import avaliacao
 import conferencia
 import fechamento
 from core import (
+    proximo_sorteio,
     ModeloCanonico30,
     ValidaçãoCamada7,
     gerar_jogo_sugerido,
@@ -554,7 +555,12 @@ def index():
         user = database.get_user_by_id(session['user_id'])
         if user and not user['is_blocked']:
             return redirect(url_for('dashboard'))
-    return render_template('landing.html')
+    agora = updater.agora_brasilia()
+    proximos = {}
+    for lt in LoteriaType:
+        prox = proximo_sorteio(LOTERIAS_CONFIG[lt], agora)
+        proximos[lt.value] = prox[1] if prox else ''
+    return render_template('landing.html', proximos=proximos)
 
 
 # Configuração sintética do universo dos "trevos" da +Milionária (1 a 6, 2 sorteados),
@@ -581,7 +587,7 @@ LOTERIAS_THEME = {
         'tag': 'Maior Prêmio da Caixa',
         'tag_bg': 'rgba(32, 152, 105, 0.12)',
         'tag_cor': '#135c3f',
-        'dias_resumo': 'Ter, Qui, Sáb',
+        'dias_resumo': 'Ter, Qui, Dom',
         'seo_title': 'Gerador de Números e Fechamento Mega-Sena | Inteligência Artificial',
         'seo_desc': 'Use nosso simulador de fechamento para a Mega-Sena. Gere palpites matemáticos, veja os números que mais saem e utilize nossa IA para otimizar suas apostas.',
     },
@@ -594,7 +600,7 @@ LOTERIAS_THEME = {
         'tag': 'A Mais Fácil de Ganhar',
         'tag_bg': 'rgba(147, 0, 137, 0.12)',
         'tag_cor': '#5c0055',
-        'dias_resumo': 'Seg a Sáb',
+        'dias_resumo': 'Dom a Sex',
         'seo_title': 'Desdobramento e Simulador Lotofácil 15 a 20 números | Grátis',
         'seo_desc': 'Simulador de desdobramento Lotofácil com inteligência artificial. Gere combinações precisas baseadas nos padrões históricos para 14 e 15 pontos.',
     },
@@ -604,10 +610,10 @@ LOTERIAS_THEME = {
         'cor_gradiente': 'linear-gradient(135deg, #260085 0%, #11003d 100%)',
         'cor_glow': 'rgba(38, 0, 133, 0.45)',
         'icone': '⭐',
-        'tag': 'Sorteio de Seg a Sáb',
+        'tag': 'Sorteio de Domingo a Sexta',
         'tag_bg': 'rgba(38, 0, 133, 0.12)',
         'tag_cor': '#170052',
-        'dias_resumo': 'Seg a Sáb',
+        'dias_resumo': 'Dom a Sex',
     },
     'lotomania': {
         'cor': '#f78100',
@@ -629,7 +635,7 @@ LOTERIAS_THEME = {
         'tag': 'Mínimo R$ 10 Milhões',
         'tag_bg': 'rgba(196, 130, 8, 0.14)',
         'tag_cor': '#734c03',
-        'dias_resumo': 'Qua, Sáb',
+        'dias_resumo': 'Qua, Dom',
     },
     'dupla_sena': {
         'cor': '#a61322',
@@ -640,7 +646,7 @@ LOTERIAS_THEME = {
         'tag': '2 Sorteios no Mesmo Jogo',
         'tag_bg': 'rgba(166, 19, 34, 0.12)',
         'tag_cor': '#610a13',
-        'dias_resumo': 'Ter, Qui, Sáb',
+        'dias_resumo': 'Seg, Qua, Sex',
     },
     'timemania': {
         'cor': '#049645',
@@ -651,7 +657,7 @@ LOTERIAS_THEME = {
         'tag': 'Seu Time do Coração',
         'tag_bg': 'rgba(4, 150, 69, 0.12)',
         'tag_cor': '#025225',
-        'dias_resumo': 'Ter, Qui, Sáb',
+        'dias_resumo': 'Ter, Qui, Dom',
     },
     'dia_de_sorte': {
         'cor': '#cb852a',
@@ -662,7 +668,7 @@ LOTERIAS_THEME = {
         'tag': 'Dias e Meses da Sorte',
         'tag_bg': 'rgba(203, 133, 42, 0.14)',
         'tag_cor': '#754a14',
-        'dias_resumo': 'Ter, Qui, Sáb',
+        'dias_resumo': 'Dom a Sex',
     },
     'super_sete': {
         'cor': '#8bc53f',
@@ -1604,6 +1610,33 @@ def api_excluir_aposta(aposta_id: int):
     return jsonify({'erro': 'Aposta não encontrada ou não autorizada'}), 404
 
 
+@app.route('/api/apostas/<int:aposta_id>/complementos', methods=['POST'])
+@login_required
+def api_atualizar_complementos(aposta_id: int):
+    """Troca o Time do Coração / Mês da Sorte dos jogos de uma aposta ainda não sorteada."""
+    aposta = database.obter_aposta(aposta_id)
+    if not aposta or aposta.get('user_id') != session['user_id']:
+        return jsonify({'erro': 'Aposta não encontrada'}), 404
+    loteria_type = aposta['loteria_type']
+    if loteria_type not in conferencia.ROTULO_COMPLEMENTO:
+        return jsonify({'erro': 'Esta loteria não tem Time do Coração / Mês da Sorte'}), 400
+    if conferencia.sorteio_do_concurso(loteria_type, aposta.get('concurso_alvo'))['status'] != 'aguardando':
+        return jsonify({'erro': 'O concurso desta aposta já foi sorteado'}), 400
+
+    complementos = (request.get_json(silent=True) or {}).get('complementos')
+    jogos = aposta.get('jogos') or []
+    if not (isinstance(complementos, list) and len(complementos) == len(jogos)
+            and all(c is None or (isinstance(c, str) and 0 < len(c) <= 60) for c in complementos)):
+        return jsonify({'erro': 'Informe um Time do Coração / Mês da Sorte válido para cada jogo.'}), 400
+    if loteria_type == 'dia_de_sorte' and any(
+            c and conferencia.normalizar_complemento(c) not in {conferencia.normalizar_complemento(m) for m in conferencia.MESES}
+            for c in complementos):
+        return jsonify({'erro': 'Mês da Sorte inválido.'}), 400
+
+    database.atualizar_complementos_aposta(aposta_id, complementos)
+    return jsonify({'sucesso': True})
+
+
 @app.route('/api/apostas/conferir/<int:aposta_id>', methods=['GET'])
 def api_conferir_aposta(aposta_id: int):
     """Confere as cartelas de uma aposta salva contra o último sorteio oficial da Caixa com validação de posse"""
@@ -1846,8 +1879,24 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     database.consume_user_credit(user_id)
     access = database.check_user_access(user_id)
 
+    # Todo jogo gerado vai direto para "Meus Jogos Salvos" e entra na conferência automática
+    aposta_id = database.salvar_aposta(
+        loteria_type=loteria_type,
+        modalidade='fechamento' if numeros_base else 'automatico',
+        jogos=jogos,
+        dezenas_por_jogo=dezenas,
+        user_id=user_id,
+        titulo=(f'Jogos a partir dos seus {len(numeros_base)} números - {len(jogos)} jogo(s)' if numeros_base
+                else f'Geração Automática Canônica - {len(jogos)} jogo(s)'),
+        concurso_alvo=conferencia.proximo_concurso(loteria_type),
+        trevos=trevos,
+        complementos=complementos,
+    )
+
     return jsonify({
         'sucesso': True,
+        'aposta_id': aposta_id,
+        'concurso_alvo': conferencia.proximo_concurso(loteria_type),
         'loteria': config.nome,
         'quantidade_jogos': len(jogos),
         'dezenas_por_jogo': dezenas,
@@ -1902,12 +1951,23 @@ def api_fechamento(loteria_type: str):
         return jsonify({'erro': str(e)}), 422
 
     database.consume_user_credit(user_id)
+    aposta_id = database.salvar_aposta(
+        loteria_type=loteria_type,
+        modalidade='fechamento',
+        jogos=jogos,
+        dezenas_por_jogo=tamanho_jogo,
+        user_id=user_id,
+        titulo=f'Fechamento com garantia ({len(grupo)} dezenas, {garantia} acertos) - {len(jogos)} jogo(s)',
+        concurso_alvo=conferencia.proximo_concurso(loteria_type),
+    )
     chance = fechamento.chance_condicao(config, len(grupo), condicao)
     custo_jogo = comb(tamanho_jogo, config.minimo_aposta) * config.custo_minimo
     premio = re.sub(r'\s*[🏆⭐🎯]', '', conferencia.rotulo_premio(loteria_type, garantia) or f'{garantia} acertos')
 
     return jsonify({
         'sucesso': True,
+        'aposta_id': aposta_id,
+        'concurso_alvo': conferencia.proximo_concurso(loteria_type),
         'loteria': config.nome,
         'jogos': jogos,
         'quantidade_jogos': len(jogos),

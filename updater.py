@@ -921,12 +921,15 @@ def verificar_se_necessita_atualizacao(loteria_type: str) -> bool:
         if diferenca > timedelta(hours=24):
             return True
             
-        # Se já foi atualizado com sucesso hoje após o horário de sorteio (20:15h), não tenta de novo
-        if atualizado_dt.date() == agora.date() and (atualizado_dt.hour > 20 or (atualizado_dt.hour == 20 and atualizado_dt.minute >= 15)):
+        # Resultados saem ~30 min após o sorteio: 11h aos domingos e 21h nos demais dias
+        # (calendário da Caixa desde 19/07/2026, sem sorteios aos sábados)
+        liberacao = agora.replace(hour=11 if agora.weekday() == 6 else 21, minute=30, second=0, microsecond=0)
+
+        # Se já foi atualizado com sucesso hoje após o horário dos resultados, não tenta de novo
+        if atualizado_dt >= liberacao:
             return False
-            
-        # A partir das 20:15h (horário dos primeiros resultados da Caixa)
-        if agora.hour > 20 or (agora.hour == 20 and agora.minute >= 15):
+
+        if agora >= liberacao:
             return True
             
         return False

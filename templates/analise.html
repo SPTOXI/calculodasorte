@@ -459,12 +459,10 @@ Exemplo para {{ config.nome }}:
                 <div class="actions-export-bar">
                     <div>
                         <strong>Exportar estas combinações:</strong>
+                        <div id="status-salvamento-auto" style="color: #15803d; font-size: 0.85rem; font-weight: 700;"></div>
                         <div style="color: #5B6B82; font-size: 0.85rem;">Pronto para marcar na lotérica ou salvar nos seus arquivos</div>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn-action" onclick="salvarJogosGeradosNoHistorico()" style="background: #0046AD; font-size: 0.9rem;">
-                            💾 Salvar no Meu Histórico
-                        </button>
                         <button class="btn-action" onclick="baixarJogosGerados('txt')" style="background: #5B6B82; font-size: 0.9rem;">
                             📄 Baixar em .TXT
                         </button>
@@ -668,6 +666,37 @@ Exemplo para {{ config.nome }}:
         let analiseAtual = null;
         let ultimosJogosGerados = [];
         let ultimosTrevosGerados = null;
+        let apostaGeradaId = null;
+
+        // Os jogos gerados são salvos pelo servidor na hora da geração
+        function marcarSalvamentoAutomatico(data) {
+            apostaGeradaId = data.aposta_id || null;
+            const status = document.getElementById('status-salvamento-auto');
+            if (status) {
+                status.textContent = data.aposta_id
+                    ? `✅ Salvo automaticamente em "Meus Jogos Salvos"${data.concurso_alvo ? ' · concorre no concurso ' + data.concurso_alvo : ''} · conferência automática após o sorteio`
+                    : '';
+            }
+            if (data.aposta_id && typeof carregarApostasSalvas === 'function') carregarApostasSalvas();
+        }
+
+        // Troca de Time do Coração / Mês da Sorte atualiza a aposta já salva
+        document.addEventListener('change', async (ev) => {
+            if (!ev.target.classList || !ev.target.classList.contains('complemento-jogo') || !apostaGeradaId) return;
+            const campos = document.querySelectorAll('.complemento-jogo');
+            const status = document.getElementById('status-salvamento-auto');
+            try {
+                const res = await fetch(`/api/apostas/${apostaGeradaId}/complementos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ complementos: Array.from(campos).map(c => c.value.trim() || null) })
+                });
+                const data = await res.json();
+                if (status) status.textContent = data.sucesso ? '✅ Alteração salva automaticamente' : ('⚠️ ' + (data.erro || 'Não foi possível salvar a alteração'));
+            } catch (e) {
+                if (status) status.textContent = '⚠️ Não foi possível salvar a alteração';
+            }
+        });
         let historicoCaixaOficial = [];
         let trevosCaixaOficial = [];
         let segundoSorteioCaixa = [];
@@ -1401,6 +1430,7 @@ Exemplo para {{ config.nome }}:
                 ultimosTrevosGerados = data.trevos || null;
                 ultimoFechamento = null;
                 exibirJogosGerados(data);
+                marcarSalvamentoAutomatico(data);
                 
                 exibirParecer(data.parecer);
             } catch (e) {
@@ -1682,7 +1712,7 @@ Exemplo para {{ config.nome }}:
                         <div style="font-size: 3rem; margin-bottom: 10px;">🎲</div>
                         <h3 style="color: #0A1A3F; margin-bottom: 8px;">Nenhuma aposta salva para a ${CONFIG_LOTERIA.nome}</h3>
                         <p style="color: #5B6B82; max-width: 500px; margin: 0 auto 20px;">
-                            Você pode gerar novos jogos na aba <strong>"🎲 Gerador de Jogos"</strong> ou digitar suas combinações na aba <strong>"✍️ Meus Números"</strong> e clicar em <strong>"Salvar no Meu Histórico"</strong>.
+                            Você pode gerar novos jogos na aba <strong>"🎲 Gerador de Jogos"</strong> ou digitar suas combinações na aba <strong>"✍️ Meus Números"</strong> e salvar — os jogos gerados são salvos automaticamente.
                         </p>
                         <button class="btn-action" onclick="showTab('jogos')">Ir para o Gerador de Jogos</button>
                     </div>
@@ -1764,51 +1794,6 @@ Exemplo para {{ config.nome }}:
             });
 
             container.innerHTML = html;
-        }
-
-        async function salvarJogosGeradosNoHistorico() {
-            if (!ultimosJogosGerados || ultimosJogosGerados.length === 0) {
-                alert('Gere jogos primeiro antes de salvar!');
-                return;
-            }
-
-            const modo = modoGeracaoAtual === 'manual_pool' ? 'fechamento' : 'automatico';
-            const dezenasPorJogo = ultimosJogosGerados[0].length;
-            const titulo = ultimoFechamento
-                ? `Fechamento com garantia (${ultimoFechamento.grupo} dezenas, ${ultimoFechamento.garantia} acertos) - ${ultimosJogosGerados.length} jogo(s)`
-                : (modo === 'fechamento'
-                    ? `Fechamento (${numerosBaseSelecionados.size} dezenas base) - ${ultimosJogosGerados.length} jogo(s)`
-                    : `Geração Automática Canônica - ${ultimosJogosGerados.length} jogo(s)`);
-
-            try {
-                const res = await fetch('/api/apostas/salvar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        loteria_type: loteriaType,
-                        modalidade: modo,
-                        jogos: ultimosJogosGerados,
-                        trevos: ultimosTrevosGerados,
-                        complementos: (() => {
-                            const campos = document.querySelectorAll('.complemento-jogo');
-                            if (!campos.length || campos.length !== ultimosJogosGerados.length) return undefined;
-                            return Array.from(campos).map(c => c.value.trim() || null);
-                        })(),
-                        dezenas_por_jogo: dezenasPorJogo,
-                        titulo: titulo
-                    })
-                });
-
-                const data = await res.json();
-                if (data.sucesso) {
-                    alert(`✅ ${data.mensagem}\n\nVocê pode visualizá-los e conferir acertos na aba "Meus Jogos Salvos".`);
-                    carregarApostasSalvas();
-                } else {
-                    alert('Erro ao salvar apostas: ' + (data.erro || 'Falha na gravação.'));
-                }
-            } catch (e) {
-                alert('Erro ao salvar no banco: ' + e.message);
-            }
         }
 
         async function conferirAposta(apostaId) {
@@ -2069,6 +2054,7 @@ Exemplo para {{ config.nome }}:
                 ultimosTrevosGerados = null;
                 ultimoFechamento = { grupo: grupo.length, garantia };
                 exibirJogosGerados({ ...data, modo: 'fechamento', filtro_inteligente: false, jogos_aprovados: [] });
+                marcarSalvamentoAutomatico(data);
                 document.getElementById('jogos-metricas-resumo').textContent =
                     `🔒 ${data.quantidade_jogos} jogos · custo total R$ ${data.custo_total.toFixed(2).replace('.', ',')}`;
 

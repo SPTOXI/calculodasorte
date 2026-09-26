@@ -106,7 +106,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=7,
         maximo_aposta=15,
         custo_minimo=2.5,
-        dias_sorteio=["terça", "quinta", "domingo"],
+        dias_sorteio=["domingo", "segunda", "terça", "quarta", "quinta", "sexta"],
         faixas_premiacao=[4, 5, 6, 7]
     ),
     LoteriaType.SUPER_SETE: LoteriaConfig(
@@ -889,3 +889,35 @@ if __name__ == "__main__":
     print(f"Concursos analisados: {resumo['total_concursos']}")
     print(f"ICT Médio: {resumo['estatisticas_gerais']['ict_medio']:.4f}")
     print(f"Entropia: {resumo['camada_informacional']['entropia']:.4f}")
+
+
+# Calendário da Caixa desde 19/07/2026: não há sorteios aos sábados; os de domingo são às 11h
+# e os dos demais dias às 21h (horário de Brasília).
+DIAS_SEMANA = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
+
+
+def horario_sorteio(dia_semana: int) -> int:
+    return 11 if dia_semana == 6 else 21
+
+
+def proximo_sorteio(config: 'LoteriaConfig', agora) -> Optional[Tuple[object, str]]:
+    """Data do próximo sorteio (hoje conta até 1 h depois do horário) e um rótulo curto."""
+    from datetime import timedelta
+    dias = {DIAS_SEMANA.index(d) for d in config.dias_sorteio if d in DIAS_SEMANA}
+    if not dias:
+        return None
+    for adiante in range(8):
+        data = (agora + timedelta(days=adiante)).date()
+        if data.weekday() not in dias:
+            continue
+        if adiante == 0 and agora.hour >= horario_sorteio(data.weekday()) + 1:
+            continue
+        hora = horario_sorteio(data.weekday())
+        if adiante == 0:
+            rotulo = f'Sorteia Hoje, {hora}h'
+        elif adiante == 1:
+            rotulo = f'Sorteia Amanhã, {hora}h'
+        else:
+            rotulo = f'Sorteia {DIAS_SEMANA[data.weekday()].capitalize()}, {hora}h'
+        return data, rotulo
+    return None

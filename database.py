@@ -623,6 +623,13 @@ def set_avisos_email(user_id: int, ativo: bool):
         conn.commit()
 
 
+def atualizar_complementos_aposta(aposta_id: int, complementos: List[Optional[str]]):
+    with get_db_connection() as conn:
+        conn.execute('UPDATE user_bets SET complementos_json = %s WHERE id = %s',
+                     (json.dumps(complementos), aposta_id))
+        conn.commit()
+
+
 def obter_aposta(aposta_id: int) -> Optional[Dict[str, Any]]:
     """Obtém detalhes completos de uma aposta por ID"""
     import json
