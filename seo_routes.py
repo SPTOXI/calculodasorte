@@ -144,6 +144,7 @@ def numeros_mais_sorteados(loteria_slug):
                            h1_title=h1,
                            resposta_direta=resposta_direta,
                            cfg=cfg,
+                           modo='sorteadas',
                            top_5=top_5,
                            bottom_5=bottom_5)
 
@@ -272,15 +273,37 @@ def desdobramento(loteria_slug='lotofacil'):
 def numeros_atrasados(loteria_slug):
     loteria_key, cfg = get_config(loteria_slug)
     if not cfg: return "Not found", 404
-    
+
+    historico = updater.carregar_historico_local(loteria_key)
+    universo_numeros = cfg.numeros
+    ultima_aparicao = {n: None for n in universo_numeros}
+    for idx, dezenas in enumerate(historico):
+        for n in dezenas:
+            if n in ultima_aparicao:
+                ultima_aparicao[n] = idx
+
+    total = len(historico)
+
+    def atraso(n):
+        return total if ultima_aparicao[n] is None else total - 1 - ultima_aparicao[n]
+
+    ranking = sorted(universo_numeros, key=lambda n: (-atraso(n), n))
+    top_5 = [(n, atraso(n)) for n in ranking[:5]]
+    bottom_5 = [(n, atraso(n)) for n in ranking[-5:]] if len(ranking) >= 5 else []
+
+    resposta_direta = f"Aqui estão as dezenas que não saem há mais tempo na {cfg.nome}. Lembre-se: no paradoxo do jogador, a frequência passada não altera a probabilidade futura."
+    if top_5:
+        resposta_direta = f"As dezenas mais atrasadas da {cfg.nome} são {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
+
     return render_template('seo_estatisticas.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
                            h1_title=f"Números mais Atrasados na {cfg.nome}",
-                           resposta_direta=f"Aqui estão as dezenas que não saem há mais tempo na {cfg.nome}. Lembre-se: no paradoxo do jogador, a frequência passada não altera a probabilidade futura.",
+                           resposta_direta=resposta_direta,
                            cfg=cfg,
-                           top_5=[],
-                           bottom_5=[])
+                           modo='atrasadas',
+                           top_5=top_5,
+                           bottom_5=bottom_5)
 
 @seo_bp.route('/resultados/<loteria_slug>')
 @seo_bp.route('/resultados/<loteria_slug>/pagina/<int:page>')
