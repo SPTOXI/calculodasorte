@@ -1,16 +1,15 @@
 {% extends "dashboard_base.html" %}
-{% block title %}Silvio Morais — Autor e Metodologia | Cálculo da Sorte{% endblock %}
+{% block title %}Equipe Cálculo da Sorte — Autoria e Metodologia{% endblock %}
 {% block meta_description %}
-<meta name="description" content="Silvio Morais, engenheiro de dados e idealizador do Cálculo da Sorte, plataforma de análise estatística para as loterias da Caixa.">
+<meta name="description" content="Conheça a Equipe Cálculo da Sorte, responsável pela engenharia de dados e pela metodologia estatística usada nas ferramentas e artigos da plataforma.">
 {% endblock %}
 {% block head_extra %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "Silvio Morais",
-  "jobTitle": "Engenheiro de Dados e Estatístico",
-  "worksFor": {
+  "@type": "Organization",
+  "name": "Equipe Cálculo da Sorte",
+  "parentOrganization": {
     "@type": "Organization",
     "name": "Cálculo da Sorte"
   }
@@ -20,12 +19,12 @@
 
 {% block content %}
 <div class="container" style="margin-top: 20px; max-width: 800px;">
-    <h1 style="color: var(--primary); margin-bottom: 20px;">Silvio Morais</h1>
-    <p style="font-size: 1.1em; color: #475569; margin-bottom: 30px;">Engenheiro de Dados e Idealizador do Cálculo da Sorte</p>
-    
+    <h1 style="color: var(--primary); margin-bottom: 20px;">Equipe Cálculo da Sorte</h1>
+    <p style="font-size: 1.1em; color: #475569; margin-bottom: 30px;">Engenharia de dados e metodologia estatística por trás da plataforma</p>
+
     <div class="card" style="padding: 30px; line-height: 1.7; color: #334155;">
-        <p>Silvio Morais é especialista em análise combinatória e engenharia de dados. Com mais de 10 anos de experiência estruturando grandes volumes de informações estocásticas, ele criou o Cálculo da Sorte para traduzir a matemática pesada das loterias em ferramentas acessíveis ao público.</p>
-        <p>Seu compromisso é com a transparência: "A matemática é imutável. A única forma de jogar melhor é entendendo que a probabilidade não pode ser enganada, apenas organizada matematicamente através de fechamentos lógicos."</p>
+        <p>Os artigos, ferramentas e análises do Cálculo da Sorte são produzidos pela <strong>Equipe Cálculo da Sorte</strong>, responsável pela engenharia de dados, pela sincronização dos resultados oficiais da Caixa e pela metodologia combinatória descrita na <a href="/metodologia" style="color: var(--primary);">página de Metodologia</a>.</p>
+        <p>Nosso compromisso é com a transparência: a matemática é imutável — a probabilidade de um sorteio não pode ser alterada, apenas organizada de forma mais eficiente através de fechamentos e desdobramentos combinatórios.</p>
     </div>
 </div>
 {% endblock %}
