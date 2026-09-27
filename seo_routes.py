@@ -115,29 +115,44 @@ def simulador(loteria_slug):
                            ferramenta_tipo='simulador',
                            faq_items=faq_items)
 
+def _provenance(loteria_key, historico):
+    """Dados de rastreabilidade da janela de concursos analisada localmente —
+    evita alegar 'histórico completo' quando só uma amostra recente está disponível."""
+    meta = updater.carregar_meta(loteria_key)
+    ultimo_concurso = meta.get('ultimo_concurso')
+    total = len(historico)
+    primeiro_concurso = (ultimo_concurso - total + 1) if (ultimo_concurso and total) else None
+    return {
+        'total_concursos': total,
+        'primeiro_concurso': primeiro_concurso,
+        'ultimo_concurso': ultimo_concurso,
+        'atualizado_em': meta.get('atualizado_em'),
+    }
+
+
 @seo_bp.route('/<loteria_slug>/numeros-mais-sorteados')
 def numeros_mais_sorteados(loteria_slug):
     loteria_key, cfg = get_config(loteria_slug)
     if not cfg: return "Not found", 404
-    
-    mes_ano = datetime.datetime.now().strftime('%m/%Y')
-    
-    h1 = f"Números que Mais Saem na {cfg.nome} (Atualizado {mes_ano})"
-    resposta_direta = f"Aqui estão as dezenas mais sorteadas na história da {cfg.nome}. Lembre-se: no paradoxo do jogador, a frequência passada de um número não altera sua probabilidade futura, pois os sorteios são independentes."
-    
+
+    h1 = f"Números que Mais Saem na {cfg.nome} (Últimos Concursos)"
+
     historico = updater.carregar_historico_local(loteria_key)
-    
+    prov = _provenance(loteria_key, historico)
+
     todas_dezenas = []
     for dezenas in historico:
         todas_dezenas.extend(dezenas)
-            
+
     contagem = Counter(todas_dezenas)
     top_5 = contagem.most_common(5)
     bottom_5 = contagem.most_common()[-5:] if len(contagem) >= 5 else []
-    
+
+    janela = f"dos últimos {prov['total_concursos']} concursos sincronizados (concurso {prov['primeiro_concurso']} a {prov['ultimo_concurso']})" if prov['primeiro_concurso'] else f"de {prov['total_concursos']} concursos sincronizados localmente"
+    resposta_direta = f"Frequência calculada a partir {janela} da {cfg.nome} — não é o histórico completo da modalidade. Lembre-se: no paradoxo do jogador, a frequência passada de um número não altera sua probabilidade futura, pois os sorteios são independentes."
     if top_5:
-        resposta_direta = f"As 5 dezenas que mais saíram na {cfg.nome} até hoje foram {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
-    
+        resposta_direta = f"Nos {prov['total_concursos']} concursos mais recentes, as dezenas que mais saíram na {cfg.nome} foram {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
+
     return render_template('seo_estatisticas.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
@@ -145,6 +160,7 @@ def numeros_mais_sorteados(loteria_slug):
                            resposta_direta=resposta_direta,
                            cfg=cfg,
                            modo='sorteadas',
+                           prov=prov,
                            top_5=top_5,
                            bottom_5=bottom_5)
 
@@ -194,11 +210,14 @@ def concurso(loteria_slug, numero):
         h1 += f" - {data_str}"
         
     concurso_data = {'concurso': numero, 'data': data_str, 'dezenas': dezenas}
-    
+
+    resposta_direta = f"O resultado da {cfg.nome} no concurso {numero}{f', sorteio de {data_str}' if data_str else ''}, foi: {', '.join(str(d) for d in dezenas)}."
+
     return render_template('seo_concurso.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
                            h1_title=h1,
+                           resposta_direta=resposta_direta,
                            concurso=concurso_data,
                            dezenas=dezenas,
                            cfg=cfg)
@@ -218,9 +237,12 @@ def hub(loteria_slug):
             'dezenas': [int(d) for d in lista_dez] if lista_dez else []
         }
     
+    resposta_direta = f"Simulador, fechamento matemático e estatísticas grátis da {cfg.nome}: {cfg.sorteados} dezenas sorteadas em um universo de {cfg.universo} números, com dados oficiais da Caixa Econômica Federal."
+
     return render_template('seo_hub_loteria.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
+                           resposta_direta=resposta_direta,
                            cfg=cfg,
                            ultimo=ultimo)
 
@@ -275,6 +297,7 @@ def numeros_atrasados(loteria_slug):
     if not cfg: return "Not found", 404
 
     historico = updater.carregar_historico_local(loteria_key)
+    prov = _provenance(loteria_key, historico)
     universo_numeros = cfg.numeros
     ultima_aparicao = {n: None for n in universo_numeros}
     for idx, dezenas in enumerate(historico):
@@ -291,17 +314,19 @@ def numeros_atrasados(loteria_slug):
     top_5 = [(n, atraso(n)) for n in ranking[:5]]
     bottom_5 = [(n, atraso(n)) for n in ranking[-5:]] if len(ranking) >= 5 else []
 
-    resposta_direta = f"Aqui estão as dezenas que não saem há mais tempo na {cfg.nome}. Lembre-se: no paradoxo do jogador, a frequência passada não altera a probabilidade futura."
+    janela = f"nos últimos {prov['total_concursos']} concursos sincronizados (concurso {prov['primeiro_concurso']} a {prov['ultimo_concurso']})" if prov['primeiro_concurso'] else f"nos {prov['total_concursos']} concursos sincronizados localmente"
+    resposta_direta = f"Aqui estão as dezenas que não saem há mais tempo {janela} da {cfg.nome} — não é o histórico completo da modalidade. Lembre-se: no paradoxo do jogador, a frequência passada não altera a probabilidade futura."
     if top_5:
-        resposta_direta = f"As dezenas mais atrasadas da {cfg.nome} são {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
+        resposta_direta = f"Nessa janela recente, as dezenas mais atrasadas da {cfg.nome} são {', '.join(str(d) for d, v in top_5)}. " + resposta_direta
 
     return render_template('seo_estatisticas.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
-                           h1_title=f"Números mais Atrasados na {cfg.nome}",
+                           h1_title=f"Números mais Atrasados na {cfg.nome} (Últimos Concursos)",
                            resposta_direta=resposta_direta,
                            cfg=cfg,
                            modo='atrasadas',
+                           prov=prov,
                            top_5=top_5,
                            bottom_5=bottom_5)
 
@@ -336,9 +361,12 @@ def resultados_lista(loteria_slug, page=1):
             'dezenas': historico[idx_in_historico]
         })
     
+    resposta_direta = f"Lista dos últimos resultados da {cfg.nome} (página {page} de {total_pages}), com as dezenas sorteadas em cada concurso."
+
     return render_template('seo_resultados_lista.html',
                            loteria_nome=cfg.nome,
                            loteria_slug=loteria_slug,
+                           resposta_direta=resposta_direta,
                            cfg=cfg,
                            itens=itens_pagina,
                            page=page,

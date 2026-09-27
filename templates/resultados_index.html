@@ -15,17 +15,17 @@
     <title>Resultados das Loterias da Caixa Hoje — Cálculo da Sorte</title>
     <meta name="description" content="Confira o resultado do concurso atual de todas as 9 loterias da Caixa: Mega-Sena, Lotofácil, Quina, Lotomania, +Milionária, Dupla Sena, Timemania, Dia de Sorte e Super Sete.">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://calculodasorte.com.br/resultados">
+    <link rel="canonical" href="https://www.calculodasorte.com.br/resultados">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 
     <!-- Open Graph / Redes Sociais e WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:site_name" content="Cálculo da Sorte">
-    <meta property="og:url" content="https://calculodasorte.com.br/resultados">
+    <meta property="og:url" content="https://www.calculodasorte.com.br/resultados">
     <meta property="og:title" content="Resultados das Loterias da Caixa Hoje — Cálculo da Sorte">
     <meta property="og:description" content="Confira o resultado do concurso atual de todas as 9 loterias da Caixa.">
-    <meta property="og:image" content="https://calculodasorte.com.br/static/og-banner.png">
+    <meta property="og:image" content="https://www.calculodasorte.com.br/static/og-banner.png">
 
     <!-- Dados Estruturados JSON-LD (Schema.org) para Google e Motores de IA (GEO / LLM) -->
     <script type="application/ld+json">
@@ -33,14 +33,14 @@
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": "Resultados das Loterias da Caixa",
-      "url": "https://calculodasorte.com.br/resultados",
+      "url": "https://www.calculodasorte.com.br/resultados",
       "inLanguage": "pt-BR",
       "hasPart": [
         {% for loteria in loterias %}
         {
           "@type": "WebPage",
           "name": {{ loteria.nome|tojson }},
-          "url": "https://calculodasorte.com.br/resultados/{{ loteria.id }}"
+          "url": "https://www.calculodasorte.com.br/resultados/{{ loteria.id }}"
         }{% if not loop.last %},{% endif %}
         {% endfor %}
       ]

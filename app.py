@@ -144,7 +144,8 @@ def sitemap_index():
     sitemaps = [
         'sitemap-paginas.xml',
         'sitemap-ferramentas.xml',
-        'sitemap-estatisticas.xml'
+        'sitemap-estatisticas.xml',
+        'sitemap-blog.xml'
     ]
     for loteria in loterias:
         sitemaps.append(f'sitemap-concursos-{loteria.replace("_", "-")}.xml')
@@ -257,6 +258,32 @@ def sitemap_estatisticas():
             parts.append(f'    <loc>{host}/{slug}/{stat}</loc>')
             parts.append(f'    <lastmod>{hoje}</lastmod>')
             parts.append('  </url>')
+
+    parts.append('</urlset>')
+    xml = "\n".join(parts)
+
+    response = make_response(xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@app.route('/sitemap-blog.xml')
+def sitemap_blog():
+    host = "https://www.calculodasorte.com.br"
+    hoje = datetime.now().strftime('%Y-%m-%d')
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    parts.append('  <url>')
+    parts.append(f'    <loc>{host}/blog</loc>')
+    parts.append(f'    <lastmod>{hoje}</lastmod>')
+    parts.append('  </url>')
+    for slug, post in BLOG_POSTS.items():
+        parts.append('  <url>')
+        parts.append(f'    <loc>{host}/blog/{slug}</loc>')
+        parts.append(f'    <lastmod>{post.get("date", hoje)}</lastmod>')
+        parts.append('  </url>')
 
     parts.append('</urlset>')
     xml = "\n".join(parts)
