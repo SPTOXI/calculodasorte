@@ -14,6 +14,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ h1_title ~ ' | Cálculo da Sorte' if h1_title else ('Fechamentos e Estatísticas da ' ~ loteria_nome ~ ' | Cálculo da Sorte' if loteria_nome else 'Painel — Cálculo da Sorte') }}{% endblock %}</title>
 
+    {% block meta_description %}
+    <meta name="description" content="{% if resposta_direta %}{{ resposta_direta|striptags|truncate(160, True, '') }}{% elif h1_title %}{{ h1_title }} — simulador, fechamento e estatísticas grátis com dados oficiais da Caixa.{% elif loteria_nome %}Simulador, fechamento matemático e estatísticas grátis da {{ loteria_nome }} com dados oficiais da Caixa.{% else %}Simulador, fechamento matemático e estatísticas grátis para as 9 loterias da Caixa: Mega-Sena, Lotofácil, Quina e mais.{% endif %}">
+    {% endblock %}
+
     {% block meta_robots %}
     {% if request.path.startswith('/dashboard') or request.path.startswith('/painel') or request.path.startswith('/minha-conta') or request.path.startswith('/admin') %}
     <meta name="robots" content="noindex, nofollow">

@@ -6,9 +6,8 @@
 {
   "@context": "https://schema.org",
   "@type": "Dataset",
-  "name": "Estatísticas da {{ loteria_nome }}",
-  "description": "Frequência e atraso das dezenas da {{ loteria_nome }} com base no histórico oficial.",
-  "temporalCoverage": "2000-01-01/..",
+  "name": "Estatísticas da {{ loteria_nome }} (últimos {{ prov.total_concursos }} concursos)",
+  "description": "Frequência e atraso das dezenas da {{ loteria_nome }} com base nos últimos {{ prov.total_concursos }} concursos sincronizados localmente{% if prov.primeiro_concurso %} (concurso {{ prov.primeiro_concurso }} a {{ prov.ultimo_concurso }}){% endif %}. Não representa o histórico completo da modalidade.",
   "creator": {
     "@type": "Organization",
     "name": "Cálculo da Sorte"
@@ -19,6 +18,14 @@
 
 {% block ferramenta %}
     {% set unidade = 'concursos sem sair' if modo == 'atrasadas' else 'vezes' %}
+
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; margin-bottom: 25px; font-size: 0.9em; color: #1e3a5f; line-height: 1.6;">
+        <strong>Fonte:</strong> Caixa Econômica Federal (sincronização local).
+        <strong>Concursos analisados:</strong> {{ prov.total_concursos }}{% if prov.primeiro_concurso %} (concurso {{ prov.primeiro_concurso }} a {{ prov.ultimo_concurso }}){% endif %}.
+        {% if prov.atualizado_em %}<strong>Atualizado em:</strong> {{ prov.atualizado_em }}.{% endif %}
+        Esta é uma <strong>amostra dos concursos mais recentes</strong>, não o histórico completo da {{ loteria_nome }}.
+    </div>
+
     <h2 style="font-size: 1.4em; color: #334155; margin-bottom: 20px; text-align: center;">{{ 'TOP 5 Dezenas Mais Atrasadas' if modo == 'atrasadas' else 'TOP 5 Dezenas Mais Sorteadas' }}</h2>
 
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px;">

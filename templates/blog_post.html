@@ -15,17 +15,17 @@
     <title>{{ post.title }} — Cálculo da Sorte</title>
     <meta name="description" content="{{ post.description }}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://calculodasorte.com.br/blog/{{ slug }}">
+    <link rel="canonical" href="https://www.calculodasorte.com.br/blog/{{ slug }}">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 
     <!-- Open Graph / Redes Sociais e WhatsApp -->
     <meta property="og:type" content="article">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:site_name" content="Cálculo da Sorte">
-    <meta property="og:url" content="https://calculodasorte.com.br/blog/{{ slug }}">
+    <meta property="og:url" content="https://www.calculodasorte.com.br/blog/{{ slug }}">
     <meta property="og:title" content="{{ post.title }}">
     <meta property="og:description" content="{{ post.description }}">
-    <meta property="og:image" content="https://calculodasorte.com.br/static/og-banner.png">
+    <meta property="og:image" content="https://www.calculodasorte.com.br/static/og-banner.png">
     <meta property="article:published_time" content="{{ post.date }}">
     <meta property="article:author" content="{{ post.author }}">
 
@@ -33,7 +33,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ post.title }}">
     <meta name="twitter:description" content="{{ post.description }}">
-    <meta name="twitter:image" content="https://calculodasorte.com.br/static/og-banner.png">
+    <meta name="twitter:image" content="https://www.calculodasorte.com.br/static/og-banner.png">
 
     <!-- Tipografia institucional (peso forte, arredondada) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,15 +115,15 @@
       "@type": "BlogPosting",
       "headline": "{{ post.title }}",
       "description": {{ post.description|tojson }},
-      "url": "https://calculodasorte.com.br/blog/{{ slug }}",
+      "url": "https://www.calculodasorte.com.br/blog/{{ slug }}",
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": "https://calculodasorte.com.br/blog/{{ slug }}"
+        "@id": "https://www.calculodasorte.com.br/blog/{{ slug }}"
       },
       "inLanguage": "pt-BR",
       "datePublished": "{{ post.date }}",
       "dateModified": "{{ post.date }}",
-      "image": "https://calculodasorte.com.br/static/og-banner.png",
+      "image": "https://www.calculodasorte.com.br/static/og-banner.png",
       "author": {
         "@type": "Organization",
         "name": "{{ post.author }}"
@@ -133,7 +133,7 @@
         "name": "Cálculo da Sorte",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://calculodasorte.com.br/static/logo.png"
+          "url": "https://www.calculodasorte.com.br/static/logo.png"
         }
       }
     }
