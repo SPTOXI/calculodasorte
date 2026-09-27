@@ -915,8 +915,6 @@ def proximo_sorteio(config: 'LoteriaConfig', agora) -> Optional[Tuple[object, st
         hora = horario_sorteio(data.weekday())
         if adiante == 0:
             rotulo = f'Sorteia Hoje, {hora}h'
-        elif adiante == 1:
-            rotulo = f'Sorteia Amanhã, {hora}h'
         else:
             rotulo = f'Sorteia {DIAS_SEMANA[data.weekday()].capitalize()}, {hora}h'
         return data, rotulo
