@@ -34,7 +34,7 @@
     <!-- Tipografia institucional -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" fetchpriority="high">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet"></noscript>
 
@@ -241,7 +241,7 @@
         .loteria-card:hover{transform:translateY(-4px);border-color:var(--primary-light);box-shadow:0 10px 26px rgba(0,70,173,0.14)}
         .loteria-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
         .loteria-card h3{font-family:var(--font-heading);font-size:1.3rem;font-weight:700;color:var(--navy)}
-        .loteria-badge{background:rgba(243,146,0,0.12);color:var(--gold-dark);padding:4px 10px;border-radius:6px;font-size:0.78rem;font-weight:700}
+        .loteria-badge{background:rgba(243,146,0,0.12);color:#935300;padding:4px 10px;border-radius:6px;font-size:0.78rem;font-weight:700}
         .loteria-card-details{font-size:0.9rem;color:var(--text-muted);margin-bottom:20px}
         .loteria-card-details li{list-style:none;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 
@@ -400,7 +400,7 @@
     <!-- Navegação -->
     <nav class="navbar">
         <a href="/" class="logo">
-            <div class="logo-icon"><img src="/static/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;"></div>
+            <div class="logo-icon"><img src="/static/logo.webp" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;"></div>
             <span class="logo-text">Cálculo da <span class="logo-highlight">Sorte</span></span>
         </a>
         <div class="nav-links" id="main-nav-links">
@@ -430,6 +430,8 @@
             <button type="button" class="mobile-menu-btn" aria-label="Menu" onclick="document.getElementById('main-nav-links').classList.toggle('open')">☰</button>
         </div>
     </nav>
+
+    <main>
 
     <!-- ============================================================
          HERO: PRÊMIOS ACUMULADOS DAS LOTERIAS DA CAIXA
@@ -558,7 +560,7 @@
                     </ul>
                 </div>
                 <a href="/mega-sena" class="btn-secondary btn-mega" style="text-align: center;">Analisar Mega-Sena</a>
-                <a href="/resultados/mega_sena" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/mega_sena" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Mega-Sena">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Lotofacil -->
@@ -576,7 +578,7 @@
                     </ul>
                 </div>
                 <a href="/lotofacil" class="btn-secondary btn-lotofacil" style="text-align: center;">Analisar Lotofácil</a>
-                <a href="/resultados/lotofacil" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/lotofacil" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Lotofácil">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Quina -->
@@ -594,7 +596,7 @@
                     </ul>
                 </div>
                 <a href="/quina" class="btn-secondary btn-quina" style="text-align: center;">Analisar Quina</a>
-                <a href="/resultados/quina" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/quina" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Quina">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Lotomania -->
@@ -612,7 +614,7 @@
                     </ul>
                 </div>
                 <a href="/lotomania" class="btn-secondary btn-lotomania" style="text-align: center;">Analisar Lotomania</a>
-                <a href="/resultados/lotomania" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/lotomania" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Lotomania">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- +Milionária -->
@@ -630,7 +632,7 @@
                     </ul>
                 </div>
                 <a href="/mais-milionaria" class="btn-secondary btn-milionaria" style="text-align: center;">Analisar +Milionária</a>
-                <a href="/resultados/mais_milionaria" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/mais_milionaria" class="loteria-result-link" aria-label="Ver resultado do concurso atual da +Milionária">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Dia de Sorte -->
@@ -648,7 +650,7 @@
                     </ul>
                 </div>
                 <a href="/dia_de_sorte" class="btn-secondary btn-diadesorte" style="text-align: center;">Analisar Dia de Sorte</a>
-                <a href="/resultados/dia_de_sorte" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/dia_de_sorte" class="loteria-result-link" aria-label="Ver resultado do concurso atual do Dia de Sorte">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Dupla Sena -->
@@ -666,7 +668,7 @@
                     </ul>
                 </div>
                 <a href="/dupla_sena" class="btn-secondary btn-duplasena" style="text-align: center;">Analisar Dupla Sena</a>
-                <a href="/resultados/dupla_sena" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/dupla_sena" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Dupla Sena">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Timemania -->
@@ -684,7 +686,7 @@
                     </ul>
                 </div>
                 <a href="/timemania" class="btn-secondary btn-timemania" style="text-align: center;">Analisar Timemania</a>
-                <a href="/resultados/timemania" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/timemania" class="loteria-result-link" aria-label="Ver resultado do concurso atual da Timemania">Ver resultado do concurso atual →</a>
             </div>
 
             <!-- Super Sete -->
@@ -702,7 +704,7 @@
                     </ul>
                 </div>
                 <a href="/super_sete" class="btn-secondary btn-supersete" style="text-align: center;">Analisar Super Sete</a>
-                <a href="/resultados/super_sete" class="loteria-result-link">Ver resultado do concurso atual →</a>
+                <a href="/resultados/super_sete" class="loteria-result-link" aria-label="Ver resultado do concurso atual do Super Sete">Ver resultado do concurso atual →</a>
             </div>
         </div>
     </section>
@@ -917,6 +919,8 @@
             </div>
         </div>
     </section>
+
+    </main>
 
     <!-- Rodapé -->
     <footer class="footer">
