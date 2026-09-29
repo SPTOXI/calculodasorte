@@ -1149,14 +1149,29 @@
             document.getElementById('btn-imp-confirmar').disabled = true;
         }
 
+        // O arquivo é lido para a memória assim que é escolhido: se o original mudar ou ficar
+        // indisponível (Downloads/Drive/celular), o envio não falha com "Failed to fetch"
+        let arquivoImportacao = null;
         ['imp-arquivo', 'imp-url'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('change', () => { document.getElementById('btn-imp-confirmar').disabled = true; });
         });
+        document.getElementById('imp-arquivo').addEventListener('change', async (ev) => {
+            arquivoImportacao = null;
+            const f = ev.target.files[0];
+            if (!f) return;
+            try {
+                const dados = await f.arrayBuffer();
+                arquivoImportacao = { nome: f.name, blob: new Blob([dados], { type: f.type || 'application/octet-stream' }) };
+            } catch (e) {
+                showToast('Não foi possível ler o arquivo. Salve-o no computador/celular e escolha de novo.', 'error');
+                ev.target.value = '';
+            }
+        });
 
         async function importarResultados(confirmar) {
             const loteria = document.getElementById('imp-loteria').value;
-            const arquivo = document.getElementById('imp-arquivo').files[0];
+            const arquivo = arquivoImportacao;
             const url = document.getElementById('imp-url').value.trim();
             const saida = document.getElementById('imp-resultado');
             if (!arquivo && !url) { showToast('Escolha um arquivo ou informe o link do Google Sheets.', 'warning'); return; }
@@ -1164,13 +1179,18 @@
 
             const fd = new FormData();
             fd.append('loteria', loteria);
-            if (arquivo) fd.append('arquivo', arquivo); else fd.append('url', url);
+            if (arquivo) fd.append('arquivo', arquivo.blob, arquivo.nome); else fd.append('url', url);
             fd.append('confirmar', confirmar ? '1' : '0');
             fd.append('ultimos', document.getElementById('imp-ultimos').value || '0');
 
             showLoading(confirmar ? 'Importando concursos...' : 'Lendo e validando a planilha...');
             try {
                 const res = await fetch('/api/admin/importar-resultados', { method: 'POST', body: fd });
+                if (!(res.headers.get('Content-Type') || '').includes('json')) {
+                    throw new Error(res.status === 413 ? 'arquivo grande demais para o servidor'
+                        : res.status === 504 ? 'o servidor demorou demais para processar a planilha'
+                        : 'resposta inesperada do servidor (HTTP ' + res.status + ')');
+                }
                 const data = await res.json();
                 if (!data.sucesso && !data.validos) {
                     saida.innerHTML = `<div class="alert-banner" style="border-left-color:#ef4444;background:#fef2f2;"><div><strong style="color:#b91c1c;">Não foi possível importar</strong><p style="color:#7f1d1d;">${escImp(data.erro)}</p></div></div>`;
@@ -1203,7 +1223,7 @@
                     carregarStatusLoterias();
                 }
             } catch (e) {
-                showToast('Erro na importação: ' + e.message, 'error');
+                showToast('Erro na importação: ' + e.message + '. Verifique a conexão e escolha o arquivo de novo.', 'error');
             } finally {
                 hideLoading();
             }
