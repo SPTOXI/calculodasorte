@@ -244,6 +244,20 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS concursos_importados (
+                loteria_type TEXT NOT NULL,
+                concurso INTEGER NOT NULL,
+                data_sorteio TEXT,
+                dezenas_json TEXT NOT NULL,
+                segundo_json TEXT,
+                trevos_json TEXT,
+                complemento TEXT,
+                importado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (loteria_type, concurso)
+            )
+        """)
         conn.commit()
 
     seed_admin()
@@ -477,6 +491,71 @@ def log_sync(
             VALUES (%s, %s, %s, %s, %s)
         ''', (loteria_type, concurso, data_sorteio, status, mensagem))
         conn.commit()
+
+
+def salvar_concursos_importados(loteria_type: str, concursos: List[Dict[str, Any]]) -> int:
+    """Grava (ou substitui) concursos importados por planilha. Retorna quantos foram gravados."""
+    if not concursos:
+        return 0
+    with get_db_connection() as conn:
+        cur = conn.cursor()
+        for c in concursos:
+            cur.execute('''
+                INSERT INTO concursos_importados
+                    (loteria_type, concurso, data_sorteio, dezenas_json, segundo_json, trevos_json, complemento, importado_em)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (loteria_type, concurso) DO UPDATE SET
+                    data_sorteio = EXCLUDED.data_sorteio,
+                    dezenas_json = EXCLUDED.dezenas_json,
+                    segundo_json = EXCLUDED.segundo_json,
+                    trevos_json = EXCLUDED.trevos_json,
+                    complemento = EXCLUDED.complemento,
+                    importado_em = CURRENT_TIMESTAMP
+            ''', (
+                loteria_type, c['concurso'], c.get('data'), json.dumps(c['dezenas']),
+                json.dumps(c['segundo']) if c.get('segundo') else None,
+                json.dumps(c['trevos']) if c.get('trevos') else None,
+                c.get('complemento'),
+            ))
+        conn.commit()
+    return len(concursos)
+
+
+def listar_concursos_importados(loteria_type: str) -> List[Dict[str, Any]]:
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT concurso, data_sorteio, dezenas_json, segundo_json, trevos_json, complemento
+            FROM concursos_importados WHERE loteria_type = %s ORDER BY concurso
+        ''', (loteria_type,)).fetchall()
+    return [{
+        'concurso': r['concurso'],
+        'data': r['data_sorteio'],
+        'dezenas': json.loads(r['dezenas_json']),
+        'segundo': json.loads(r['segundo_json']) if r['segundo_json'] else [],
+        'trevos': json.loads(r['trevos_json']) if r['trevos_json'] else [],
+        'complemento': r['complemento'],
+    } for r in rows]
+
+
+def resumo_concursos_importados() -> Dict[str, Dict[str, Any]]:
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT loteria_type, COUNT(*) AS total, MIN(concurso) AS primeiro, MAX(concurso) AS ultimo,
+                   MAX(importado_em) AS importado_em
+            FROM concursos_importados GROUP BY loteria_type
+        ''').fetchall()
+    return {r['loteria_type']: {
+        'total': r['total'], 'primeiro': r['primeiro'], 'ultimo': r['ultimo'],
+        'importado_em': r['importado_em'].strftime('%d/%m/%Y %H:%M') if r['importado_em'] else None,
+    } for r in rows}
+
+
+def excluir_concursos_importados(loteria_type: str) -> int:
+    with get_db_connection() as conn:
+        cur = conn.execute('DELETE FROM concursos_importados WHERE loteria_type = %s', (loteria_type,))
+        n = cur.rowcount
+        conn.commit()
+    return n
 
 
 def get_latest_sync_logs(limit: int = 20) -> List[Dict[str, Any]]:

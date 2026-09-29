@@ -22,6 +22,7 @@ import ai_agent
 import avaliacao
 import conferencia
 import fechamento
+import importador
 from core import (
     proximo_sorteio,
     ModeloCanonico30,
@@ -1503,6 +1504,96 @@ def api_admin_sincronizar_todas():
     """Sincroniza todas as 9 loterias da Caixa"""
     res = updater.sincronizar_todas(n_historico=50)
     return jsonify(res)
+
+
+@app.route('/api/admin/importar-resultados', methods=['POST'])
+@admin_required
+def api_admin_importar_resultados():
+    """Importa resultados anteriores de uma loteria a partir de CSV, Excel ou Google Sheets.
+    Com confirmar=0 só valida e mostra a prévia; com confirmar=1 grava e mescla ao histórico."""
+    loteria_type = (request.form.get('loteria') or '').strip()
+    if loteria_type not in updater.LOTERIAS_SLUGS:
+        return jsonify({'sucesso': False, 'erro': 'Selecione uma loteria válida.'}), 400
+    arquivo = request.files.get('arquivo')
+    conteudo = arquivo.read() if arquivo and arquivo.filename else None
+    if conteudo and len(conteudo) > 4 * 1024 * 1024:
+        return jsonify({'sucesso': False, 'erro': 'Arquivo muito grande (limite de 4 MB). Divida a planilha.'}), 400
+    try:
+        res = importador.processar(
+            loteria_type,
+            nome_arquivo=arquivo.filename if conteudo else '',
+            conteudo=conteudo,
+            url=(request.form.get('url') or '').strip(),
+        )
+    except importador.ErroImportacao as e:
+        return jsonify({'sucesso': False, 'erro': str(e)}), 400
+
+    concursos = res['concursos']
+    resposta = {
+        'sucesso': True,
+        'loteria': loteria_type,
+        'validos': len(concursos),
+        'ignoradas': res['ignoradas'],
+        'erros': res['erros'][:importador.MAX_ERROS_EXIBIDOS],
+        'total_erros': len(res['erros']),
+        'primeiro': concursos[0]['concurso'] if concursos else None,
+        'ultimo': concursos[-1]['concurso'] if concursos else None,
+        'amostra': concursos[:3] + (concursos[-2:] if len(concursos) > 5 else []),
+        'comparacao': updater.comparar_com_local(loteria_type, concursos) if concursos else None,
+    }
+    if request.form.get('confirmar') != '1':
+        resposta['previa'] = True
+        return jsonify(resposta)
+    if not concursos:
+        return jsonify({'sucesso': False, 'erro': 'Nenhum concurso válido para importar.', **resposta}), 400
+
+    database.salvar_concursos_importados(loteria_type, concursos)
+    mescla = updater.mesclar_importados(loteria_type)
+    total = updater.carregar_meta(loteria_type).get('total_concursos')
+    database.log_sync(loteria_type, concursos[-1]['concurso'], concursos[-1].get('data'), 'SUCESSO',
+                      f'Importação por planilha: {len(concursos)} concursos '
+                      f'({mescla["adicionados"]} novos, {mescla["alterados"]} corrigidos).')
+    resposta.update({'previa': False, 'importados': len(concursos), 'total_local': total, **mescla})
+    return jsonify(resposta)
+
+
+@app.route('/api/admin/importar-resultados/resumo', methods=['GET'])
+@admin_required
+def api_admin_importar_resumo():
+    resumo = database.resumo_concursos_importados()
+    itens = []
+    for loteria_type, nome in updater.LOTERIAS_NOMES.items():
+        meta = updater.carregar_meta(loteria_type)
+        itens.append({
+            'loteria': loteria_type,
+            'nome': nome,
+            'total_local': meta.get('total_concursos') or len(updater.carregar_historico_local(loteria_type)),
+            'ultimo_concurso': meta.get('ultimo_concurso'),
+            'importados': resumo.get(loteria_type),
+        })
+    return jsonify({'loterias': itens})
+
+
+@app.route('/api/admin/importar-resultados/modelo/<loteria_type>', methods=['GET'])
+@admin_required
+def api_admin_importar_modelo(loteria_type: str):
+    try:
+        conteudo = importador.modelo_csv(loteria_type)
+    except importador.ErroImportacao as e:
+        return jsonify({'erro': str(e)}), 404
+    return Response('\ufeff' + conteudo, mimetype='text/csv', headers={
+        'Content-Disposition': f'attachment; filename=modelo_{loteria_type}.csv'})
+
+
+@app.route('/api/admin/importar-resultados/<loteria_type>', methods=['DELETE'])
+@admin_required
+def api_admin_importar_excluir(loteria_type: str):
+    if loteria_type not in updater.LOTERIAS_SLUGS:
+        return jsonify({'sucesso': False, 'erro': 'Loteria inválida.'}), 400
+    removidos = updater.remover_importados(loteria_type)
+    database.log_sync(loteria_type, None, None, 'SUCESSO',
+                      f'Importação por planilha desfeita: {removidos} concursos removidos do histórico.')
+    return jsonify({'sucesso': True, 'removidos': removidos})
 
 
 # ==========================================
