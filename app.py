@@ -1547,14 +1547,29 @@ def api_admin_importar_resultados():
     if not concursos:
         return jsonify({'sucesso': False, 'erro': 'Nenhum concurso válido para importar.', **resposta}), 400
 
-    database.salvar_concursos_importados(loteria_type, concursos)
-    mescla = updater.mesclar_importados(loteria_type)
-    total = updater.carregar_meta(loteria_type).get('total_concursos')
+    # Só grava os concursos que ainda não temos; os existentes são ignorados
+    existentes = updater.concursos_existentes(loteria_type)
+    novos = [c for c in concursos if c['concurso'] not in existentes]
+    if novos:
+        database.salvar_concursos_importados(loteria_type, novos)
+        updater.mesclar_importados(loteria_type, novos)
     database.log_sync(loteria_type, concursos[-1]['concurso'], concursos[-1].get('data'), 'SUCESSO',
-                      f'Importação por planilha: {len(concursos)} concursos '
-                      f'({mescla["adicionados"]} novos, {mescla["alterados"]} corrigidos).')
-    resposta.update({'previa': False, 'importados': len(concursos), 'total_local': total, **mescla})
+                      f'Importação por planilha: {len(novos)} concursos novos, '
+                      f'{len(concursos) - len(novos)} já existentes ignorados.')
+    resposta.update({'previa': False, 'adicionados': len(novos), 'ignorados': len(concursos) - len(novos),
+                     'total_local': len(updater.concursos_existentes(loteria_type))})
     return jsonify(resposta)
+
+
+@app.route('/api/admin/historico-completo/<loteria_type>', methods=['POST'])
+@admin_required
+def api_admin_historico_completo(loteria_type: str):
+    """Baixa da API todos os concursos que faltam da loteria (os existentes são ignorados).
+    Pode ser chamado repetidamente até 'faltam' chegar a zero."""
+    if loteria_type not in updater.LOTERIAS_SLUGS:
+        return jsonify({'sucesso': False, 'erro': 'Loteria inválida.'}), 400
+    usar_lista = request.args.get('lista', '1') != '0'
+    return jsonify(updater.baixar_historico_completo(loteria_type, usar_lista_completa=usar_lista))
 
 
 @app.route('/api/admin/importar-resultados/resumo', methods=['GET'])

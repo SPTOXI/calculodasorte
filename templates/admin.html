@@ -254,7 +254,7 @@
                 <div class="card-header">
                     <div>
                         <h3><span>📥</span> Importar Resultados Anteriores</h3>
-                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Complete o histórico de uma loteria com planilha Excel (.xlsx), CSV ou Google Sheets quando a API da Caixa não trouxer todos os concursos. Os dados ficam salvos no banco e são reaplicados após cada sincronização.</p>
+                        <p style="color: #64748b; font-size: 0.9rem; margin-top: 4px;">Complete o histórico de cada loteria pela API ou, para o que faltar, por planilha Excel (.xlsx), CSV ou Google Sheets. Os dados ficam salvos no banco e são reaplicados após cada sincronização.</p>
                     </div>
                 </div>
                 <div class="form-grid">
@@ -284,6 +284,10 @@
                     </div>
                 </div>
                 <p style="color:#64748b;font-size:0.85rem;margin-bottom:14px;">Colunas reconhecidas: <strong>Concurso</strong>, Data, Bola1…BolaN (ou Dezena1…, ou uma coluna "Dezenas" com os números juntos). Dupla Sena: 2º sorteio em colunas "Bola1 2º Sorteio"… ou as 12 dezenas em sequência. +Milionária: Trevo1, Trevo2. Timemania: Time do Coração. Dia de Sorte: Mês da Sorte. Colunas extras (ganhadores, rateio, cidades) são ignoradas, então a planilha oficial da Caixa funciona direto.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                    <button class="btn-primary" id="btn-hist-todas" onclick="baixarHistoricoTodas()">⬇️ Baixar histórico completo das 9 loterias pela API</button>
+                </div>
+                <p style="color:#64748b;font-size:0.85rem;margin-bottom:14px;">A API é a primeira opção: busca todos os concursos e <strong>ignora os que já temos</strong>. Use a planilha só para o que a API não conseguir trazer (na planilha, concursos já existentes também são ignorados).</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn-secondary" id="btn-imp-previa" onclick="importarResultados(false)">🔍 Validar e pré-visualizar</button>
                     <button class="btn-primary" id="btn-imp-confirmar" onclick="importarResultados(true)" disabled>📥 Importar concursos</button>
@@ -292,7 +296,7 @@
                 <div class="table-responsive" style="margin-top:18px;">
                     <table class="responsive-card-table">
                         <thead>
-                            <tr><th>Loteria</th><th>Concursos no histórico</th><th>Importados por planilha</th><th>Faixa importada</th><th>Última importação</th><th>Ações</th></tr>
+                            <tr><th>Loteria</th><th>Concursos no histórico</th><th>Salvos no banco</th><th>Faixa importada</th><th>Última importação</th><th>Ações</th></tr>
                         </thead>
                         <tbody id="tabela-importacao-body"><tr><td colspan="6" style="text-align:center;color:#64748b;">Carregando...</td></tr></tbody>
                     </table>
@@ -1178,15 +1182,15 @@
                 }).join('');
                 const titulo = data.previa
                     ? `Prévia: ${data.validos} concursos válidos (${data.primeiro ?? '-'} a ${data.ultimo ?? '-'})`
-                    : `Importação concluída: ${data.adicionados} novos e ${data.alterados} corrigidos. Histórico agora tem ${data.total_local} concursos.`;
+                    : `Importação concluída: ${data.adicionados} concursos novos, ${data.ignorados} já existentes ignorados. Histórico agora tem ${data.total_local} concursos.`;
                 saida.innerHTML = `
                     <div class="alert-banner" style="border-left-color:${data.previa ? '#0046AD' : '#16a34a'};background:${data.previa ? '#eff6ff' : '#f0fdf4'};display:block;">
                         <strong style="color:#1e293b;">${titulo}</strong>
-                        ${data.previa && data.validos ? `<p style="color:#334155;">Novos: <strong>${cmp.novos ?? 0}</strong> · Iguais aos atuais: <strong>${cmp.iguais ?? 0}</strong> · Divergentes (serão substituídos): <strong style="color:${cmp.divergentes ? '#b91c1c' : 'inherit'}">${cmp.divergentes ?? 0}</strong> · Linhas ignoradas: ${data.ignoradas}</p>` : ''}
+                        ${data.previa && data.validos ? `<p style="color:#334155;">Novos (serão importados): <strong>${cmp.novos ?? 0}</strong> · Já existentes (serão ignorados): <strong>${cmp.ja_existentes ?? 0}</strong>${cmp.divergentes ? ` <span style="color:#b91c1c;">(${cmp.divergentes} com dezenas diferentes das nossas; mantemos as atuais)</span>` : ''} · Linhas sem concurso: ${data.ignoradas}</p>` : ''}
                         ${amostra ? `<p style="color:#334155;margin-top:8px;">Amostra:</p><ul style="margin:4px 0 0 18px;color:#334155;font-size:0.88rem;">${amostra}</ul>` : ''}
                         ${data.total_erros ? `<p style="color:#b91c1c;margin-top:8px;">${data.total_erros} linha(s) com erro (não serão importadas):</p><ul style="margin:4px 0 0 18px;color:#7f1d1d;font-size:0.85rem;max-height:180px;overflow:auto;">${erros}</ul>` : ''}
                     </div>`;
-                document.getElementById('btn-imp-confirmar').disabled = !(data.previa && data.validos > 0);
+                document.getElementById('btn-imp-confirmar').disabled = !(data.previa && (cmp.novos || 0) > 0);
                 if (!data.previa) {
                     showToast('Concursos importados com sucesso!', 'success');
                     carregarResumoImportacao();
@@ -1210,14 +1214,55 @@
                     return `<tr>
                         <td data-label="Loteria"><strong>${escImp(l.nome)}</strong></td>
                         <td data-label="Concursos no histórico">${l.total_local || 0}${l.ultimo_concurso ? ' (até #' + l.ultimo_concurso + ')' : ''}</td>
-                        <td data-label="Importados por planilha">${imp ? imp.total : '—'}</td>
+                        <td data-label="Salvos no banco">${imp ? imp.total : '—'}</td>
                         <td data-label="Faixa importada">${imp ? '#' + imp.primeiro + ' a #' + imp.ultimo : '—'}</td>
                         <td data-label="Última importação">${imp && imp.importado_em ? escImp(imp.importado_em) : '—'}</td>
-                        <td data-label="Ações">${imp ? `<button class="btn-sm btn-delete-sm" onclick="desfazerImportacao('${l.loteria}', '${escImp(l.nome)}')">🗑️ Desfazer</button>` : ''}</td>
+                        <td data-label="Ações"><div class="action-btns"><button class="btn-sm btn-sync-sm" onclick="baixarHistoricoCompleto('${l.loteria}', '${escImp(l.nome)}')">⬇️ Baixar tudo da API</button>${imp ? `<button class="btn-sm btn-delete-sm" onclick="desfazerImportacao('${l.loteria}', '${escImp(l.nome)}')">🗑️ Desfazer</button>` : ''}</div></td>
                     </tr>`;
                 }).join('');
             } catch (e) {
                 corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;">Erro ao carregar o resumo.</td></tr>';
+            }
+        }
+
+        async function baixarHistoricoCompleto(loteria, nome, silencioso = false) {
+            // Chama o servidor em rodadas: cada chamada baixa o que der em ~20s
+            let totalNovos = 0, rodada = 0, usarLista = 1, ultimo = null;
+            try {
+                while (rodada < 400) {
+                    rodada++;
+                    showLoading(`${nome}: baixando histórico da API... ${totalNovos} concursos novos até agora` + (ultimo && ultimo.faltam ? ` (faltam ~${ultimo.faltam})` : ''));
+                    const res = await fetch(`/api/admin/historico-completo/${loteria}?lista=${usarLista}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (!data.sucesso) { showToast(`${nome}: ${data.erro || 'erro na API'}`, 'error'); return totalNovos; }
+                    ultimo = data;
+                    totalNovos += data.novos;
+                    usarLista = 0;  // lista completa só na primeira rodada; depois, concurso a concurso
+                    if (!data.faltam || (data.novos === 0 && data.falhas > 0 && rodada > 3)) break;
+                }
+                if (!silencioso) {
+                    showToast(`${nome}: ${totalNovos} concursos novos. Histórico com ${ultimo ? ultimo.total_local : '?'} concursos.` + (ultimo && ultimo.faltam ? ` A API não trouxe ${ultimo.faltam}; use a planilha para eles.` : ''), totalNovos ? 'success' : 'info');
+                }
+                return totalNovos;
+            } catch (e) {
+                showToast(`${nome}: erro ao baixar histórico: ${e.message}`, 'error');
+                return totalNovos;
+            } finally {
+                if (!silencioso) { hideLoading(); carregarResumoImportacao(); carregarStatusLoterias(); }
+            }
+        }
+
+        async function baixarHistoricoTodas() {
+            if (!confirm('Baixar da API todos os concursos das 9 loterias? Os que já temos são ignorados. Pode levar alguns minutos; mantenha a página aberta.')) return;
+            const opcoes = Array.from(document.getElementById('imp-loteria').options);
+            let total = 0;
+            try {
+                for (const op of opcoes) total += await baixarHistoricoCompleto(op.value, op.text, true);
+                showToast(`Histórico completo: ${total} concursos novos nas 9 loterias.`, 'success');
+            } finally {
+                hideLoading();
+                carregarResumoImportacao();
+                carregarStatusLoterias();
             }
         }
 

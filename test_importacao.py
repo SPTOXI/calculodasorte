@@ -148,6 +148,50 @@ class TestImportacaoAdmin(unittest.TestCase):
         self.assertEqual(self.client.delete('/api/admin/importar-resultados/quina').get_json()['removidos'], 2)
         self.assertEqual(len(updater.carregar_historico_local('quina')), antes)
 
+    def test_concursos_existentes_sao_ignorados(self):
+        self._enviar(True)
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        existente = updater.carregar_historico_local('quina')[-1]
+        csv = ('Concurso;Bola1;Bola2;Bola3;Bola4;Bola5\n'
+               '1;1;2;3;4;5\n'                                   # já importado: ignora (mesmo divergente)
+               f'{ultimo};' + ';'.join(str(n) for n in existente) + '\n'  # já veio da Caixa: ignora
+               '3;10;20;30;40;50\n')                              # novo
+        dados = {'loteria': 'quina', 'arquivo': (io.BytesIO(csv.encode()), 'q.csv')}
+        previa = self.client.post('/api/admin/importar-resultados', data={**dados, 'confirmar': '0'},
+                                  content_type='multipart/form-data').get_json()
+        self.assertEqual((previa['comparacao']['novos'], previa['comparacao']['ja_existentes']), (1, 2))
+        dados['arquivo'] = (io.BytesIO(csv.encode()), 'q.csv')
+        res = self.client.post('/api/admin/importar-resultados', data={**dados, 'confirmar': '1'},
+                               content_type='multipart/form-data').get_json()
+        self.assertEqual((res['adicionados'], res['ignorados']), (1, 2))
+        self.assertEqual(updater.carregar_historico_local('quina')[0], [25, 45, 60, 76, 79])
+        self.assertEqual(updater.carregar_concursos_local('quina')[:3], [1, 2, 3])
+
+    def test_historico_completo_pela_api(self):
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        lista = [{'concurso': n, 'data': '01/01/2000', 'dezenas': ['01', '02', '03', '04', f'{n % 70 + 5:02d}']}
+                 for n in range(1, ultimo + 1)]
+        antes = len(updater.carregar_historico_local('quina'))
+        with patch.object(updater, '_baixar_lista_completa', return_value=lista):
+            res = self.client.post('/api/admin/historico-completo/quina').get_json()
+        self.assertEqual(res['novos'], ultimo - antes)
+        self.assertEqual(res['faltam'], 0)
+        self.assertEqual(len(updater.carregar_historico_local('quina')), ultimo)
+        # Segunda vez: nada novo
+        with patch.object(updater, '_baixar_lista_completa', return_value=lista):
+            self.assertEqual(self.client.post('/api/admin/historico-completo/quina').get_json()['novos'], 0)
+
+    def test_historico_concurso_a_concurso(self):
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        def falso(slug, concurso=None, max_retries=2):
+            return {'numero': concurso, 'dataApuracao': '01/01/2000', 'listaDezenas': ['01', '02', '03', '04', '05']}
+        with patch.object(updater, '_baixar_lista_completa', return_value=None), \
+                patch.object(updater, 'consultar_caixa', side_effect=falso):
+            res = updater.baixar_historico_completo('quina', limite_segundos=0)
+        self.assertEqual(res['fonte'], 'concurso a concurso')
+        self.assertEqual(res['novos'], 30)
+        self.assertEqual(res['faltam'], ultimo - len(updater.carregar_historico_local('quina')))
+
     def test_somente_admin(self):
         cliente = app.test_client()
         res = cliente.post('/api/admin/importar-resultados', data={'loteria': 'quina'})

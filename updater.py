@@ -512,8 +512,8 @@ def _gravar_concursos(loteria_type: str, por_numero: Dict[int, Dict[str, Any]]):
 
 
 def mesclar_importados(loteria_type: str, importados: Optional[List[Dict[str, Any]]] = None) -> Dict[str, int]:
-    """Junta os concursos importados ao histórico local. Os dados importados prevalecem
-    sobre os locais do mesmo concurso. Retorna quantos foram adicionados/alterados."""
+    """Junta ao histórico local os concursos importados que ainda não existem nele.
+    Concursos que já temos são ignorados. Retorna quantos foram adicionados."""
     _IMPORTADOS_MESCLADOS.add(loteria_type)
     if importados is None:
         importados = database.listar_concursos_importados(loteria_type)
@@ -522,27 +522,26 @@ def mesclar_importados(loteria_type: str, importados: Optional[List[Dict[str, An
     por_numero = _concursos_por_numero(loteria_type)
     adicionados = alterados = 0
     for imp in importados:
-        atual = por_numero.get(imp['concurso'])
-        novo = {
+        if imp['concurso'] in por_numero:
+            continue  # já temos este concurso: ignora
+        por_numero[imp['concurso']] = {
             'dezenas': imp['dezenas'],
-            'complemento': imp.get('complemento') or (atual or {}).get('complemento'),
-            'trevos': imp.get('trevos') or (atual or {}).get('trevos') or [],
-            'segundo': imp.get('segundo') or (atual or {}).get('segundo') or [],
+            'complemento': imp.get('complemento'),
+            'trevos': imp.get('trevos') or [],
+            'segundo': imp.get('segundo') or [],
         }
-        if atual is None:
-            adicionados += 1
-        elif atual != novo:
-            alterados += 1
-        else:
-            continue
-        por_numero[imp['concurso']] = novo
+        adicionados += 1
     if adicionados or alterados:
         _gravar_concursos(loteria_type, por_numero)
     return {'adicionados': adicionados, 'alterados': alterados}
 
 
+def concursos_existentes(loteria_type: str) -> set:
+    return set(_concursos_por_numero(loteria_type))
+
+
 def comparar_com_local(loteria_type: str, importados: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Prévia: quantos concursos da planilha são novos, iguais ou divergentes do histórico atual."""
+    """Prévia: quantos concursos da planilha são novos e quantos já existem (serão ignorados)."""
     por_numero = _concursos_por_numero(loteria_type)
     novos = iguais = divergentes = 0
     for imp in importados:
@@ -553,8 +552,121 @@ def comparar_com_local(loteria_type: str, importados: List[Dict[str, Any]]) -> D
             iguais += 1
         else:
             divergentes += 1
-    return {'novos': novos, 'iguais': iguais, 'divergentes': divergentes, 'total_local': len(por_numero)}
+    return {'novos': novos, 'ja_existentes': iguais + divergentes, 'iguais': iguais,
+            'divergentes': divergentes, 'total_local': len(por_numero)}
 
+
+
+def _item_da_api(loteria_type: str, dados: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Converte um resultado da API (Caixa ou loteriascaixa-api) no formato de importação,
+    já validado pelas regras da loteria."""
+    import importador
+    slug = LOTERIAS_SLUGS[loteria_type]
+    numero = dados.get('numero') or dados.get('concurso')
+    if not numero:
+        return None
+    if 'listaDezenas' not in dados and 'dezenas' in dados:
+        # Formato da loteriascaixa-api (lista completa)
+        dezenas = [int(n) for n in dados.get('dezenasOrdemSorteio') or dados.get('dezenas') or []]
+        if slug != 'supersete':
+            dezenas = [int(n) for n in dados.get('dezenas') or []]
+        segundo = []
+        if slug == 'duplasena' and len(dezenas) == 12:
+            dezenas, segundo = dezenas[:6], dezenas[6:]
+        item = {
+            'concurso': int(numero), 'data': dados.get('data'), 'dezenas': dezenas, 'segundo': segundo,
+            'trevos': [int(t) for t in dados.get('trevos') or []],
+            'complemento': dados.get('timeCoracao') or dados.get('mesSorte'),
+        }
+    else:
+        item = {
+            'concurso': int(numero), 'data': dados.get('dataApuracao'),
+            'dezenas': extrair_dezenas(dados, slug),
+            'segundo': extrair_segundo_sorteio(dados) if slug == 'duplasena' else [],
+            'trevos': extrair_trevos(dados) if slug == 'maismilionaria' else [],
+            'complemento': extrair_time_coracao(dados),
+        }
+    cfg = importador._config(loteria_type)
+    if importador._validar(loteria_type, cfg, item):
+        return None
+    return item
+
+
+def _baixar_lista_completa(slug: str) -> Optional[List[Dict[str, Any]]]:
+    """Todos os concursos de uma loteria numa única chamada (loteriascaixa-api)."""
+    try:
+        resp = _get_session().get(f'https://loteriascaixa-api.herokuapp.com/api/{slug}', timeout=25)
+        if resp.status_code == 200:
+            dados = resp.json()
+            if isinstance(dados, list) and dados:
+                return dados
+    except Exception as e:
+        print(f"[UPDATER] Lista completa indisponível para {slug}: {e}")
+    return None
+
+
+def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
+                              usar_lista_completa: bool = True) -> Dict[str, Any]:
+    """Baixa da API todos os concursos da loteria que ainda não temos (os existentes são
+    ignorados), grava no banco e mescla ao histórico. Primeiro tenta a lista completa numa
+    única chamada; se não der, busca concurso a concurso até o limite de tempo — basta
+    chamar de novo enquanto 'faltam' for maior que zero."""
+    from concurrent.futures import ThreadPoolExecutor
+    slug = LOTERIAS_SLUGS.get(loteria_type)
+    if not slug:
+        return {'sucesso': False, 'erro': 'Loteria inválida'}
+    inicio = time.time()
+    existentes = concursos_existentes(loteria_type)
+    novos: List[Dict[str, Any]] = []
+    falhas: List[int] = []
+    fonte = 'lista completa'
+
+    lista = _baixar_lista_completa(slug) if usar_lista_completa else None
+    if lista:
+        for dados in lista:
+            item = _item_da_api(loteria_type, dados)
+            if item and item['concurso'] not in existentes:
+                existentes.add(item['concurso'])
+                novos.append(item)
+        faltam = 0
+    else:
+        fonte = 'concurso a concurso'
+        meta = carregar_meta(loteria_type)
+        ultimo = meta.get('ultimo_concurso')
+        if not ultimo:
+            dados = consultar_caixa(slug)
+            ultimo = dados.get('numero') if dados else None
+        if not ultimo:
+            return {'sucesso': False, 'erro': 'Não foi possível consultar a API da Caixa.'}
+        pendentes = [c for c in range(int(ultimo), 0, -1) if c not in existentes]
+        processados = 0
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for i in range(0, len(pendentes), 30):
+                if i and time.time() - inicio > limite_segundos:
+                    break
+                lote = pendentes[i:i + 30]
+                for c, dados in zip(lote, pool.map(lambda n: consultar_caixa(slug, concurso=n, max_retries=1), lote)):
+                    item = _item_da_api(loteria_type, dados) if dados else None
+                    if item and item['concurso'] == c:
+                        novos.append(item)
+                    else:
+                        falhas.append(c)
+                processados += len(lote)
+        faltam = len(pendentes) - processados
+
+    if novos:
+        database.salvar_concursos_importados(loteria_type, novos)
+        mesclar_importados(loteria_type, novos)
+        database.log_sync(loteria_type, max(c['concurso'] for c in novos), None, 'SUCESSO',
+                          f'Histórico completo ({fonte}): {len(novos)} concursos adicionados.')
+    return {
+        'sucesso': True,
+        'fonte': fonte,
+        'novos': len(novos),
+        'falhas': len(falhas),
+        'faltam': faltam,
+        'total_local': len(concursos_existentes(loteria_type)),
+    }
 
 def remover_importados(loteria_type: str, concursos_mantidos_da_caixa: int = 50) -> int:
     """Apaga os concursos importados e tira do histórico local os que só existiam por causa
