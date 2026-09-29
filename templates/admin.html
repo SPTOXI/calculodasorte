@@ -1164,7 +1164,7 @@
                 const dados = await f.arrayBuffer();
                 arquivoImportacao = { nome: f.name, blob: new Blob([dados], { type: f.type || 'application/octet-stream' }) };
             } catch (e) {
-                showToast('Não foi possível ler o arquivo. Salve-o no computador/celular e escolha de novo.', 'error');
+                showToast('O navegador não conseguiu ler o arquivo. Feche-o no Excel (o Excel trava o arquivo aberto), ou, se estiver no OneDrive/Drive, marque "manter neste dispositivo" ou copie para a Área de Trabalho, e escolha de novo.', 'error');
                 ev.target.value = '';
             }
         });
