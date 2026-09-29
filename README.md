@@ -168,16 +168,18 @@ jogo = response.json()['jogo']
 - **Score_i = ILLA_i + γ · IMC_i(norm)** - Score final
 
 ### Classificação ICT
-- **Classe A**: ICT ≤ 0.25 (mais estável)
-- **Classe B**: 0.25 < ICT ≤ 0.50
-- **Classe C**: 0.50 < ICT ≤ 0.75
-- **Classe D**: ICT > 0.75 (menos estável)
+- **Classe A**: até o primeiro quartil do ICT (estabilidade relativa maior)
+- **Classe B**: entre o primeiro e o segundo quartil
+- **Classe C**: entre o segundo e o terceiro quartil
+- **Classe D**: acima do terceiro quartil (estabilidade relativa menor)
+
+Os quartis são recalculados para cada histórico. As classes são descritores relativos e não representam frequência, atraso ou probabilidade de acerto. A fórmula operacional do ICT e as aproximações usadas nos componentes sem fórmula documental estão expostas na resposta da API e na página de metodologia.
 
 ---
 
 ## 🔬 Validação Científica
 
-O MCP-MD somente é considerado válido quando satisfaz **simultaneamente**:
+O MCP-MD só fica disponível com pelo menos 150 concursos, necessários para completar as janelas formais de 100 e 150. Sua validação usa blocos cronológicos fora da amostra e somente é considerada atendida quando satisfaz **simultaneamente**:
 
 1. Z acumulado > 2
 2. Bayes Factor > 10
@@ -185,7 +187,7 @@ O MCP-MD somente é considerado válido quando satisfaz **simultaneamente**:
 4. Persistência em múltiplos blocos independentes
 5. Robustez em walk-forward progressivo
 
-Caso contrário, a hipótese de microestrutura deve ser **rejeitada**.
+Com dados insuficientes, o resultado é **inconclusivo**. Quando os critérios não são atendidos, a microestrutura fica **não validada nesse recorte**; isso não prova ruído puro nem vantagem futura. As escolhas operacionais do walk-forward e do prior bayesiano são apresentadas junto ao resultado.
 
 ---
 

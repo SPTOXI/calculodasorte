@@ -5,6 +5,7 @@ Com Painel Administrativo, Gestão de Usuários e Atualizador Diário Caixa
 """
 
 from functools import wraps
+import hashlib
 import json
 import os
 import uuid
@@ -557,7 +558,10 @@ def modelo_canonico(loteria_type: str):
     historico = carregar_historico_analise(loteria_type)
     if len(historico) < 10:
         return None
-    chave = (len(historico), tuple(historico[-1]))
+    # Uma correção em qualquer concurso também invalida as métricas memoizadas.
+    chave = hashlib.sha256(json.dumps(
+        historico, sort_keys=True, separators=(',', ':')
+    ).encode('utf-8')).hexdigest()
     em_cache = _MODELOS_CACHE.get(loteria_type)
     if em_cache and em_cache[0] == chave:
         return em_cache[1]
@@ -1513,10 +1517,13 @@ def api_analise(loteria_type: str):
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    modelo = modelo_canonico(loteria_type)
+    try:
+        modelo = modelo_canonico(loteria_type)
+    except ValueError as exc:
+        return jsonify({'erro': f'Histórico inválido para análise: {exc}'}), 400
     if modelo is None:
         return jsonify({
-            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para cálculo estatístico completo.'
+            'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para a análise descritiva.'
         }), 400
 
     resumo = dict(modelo.obter_resumo_analise())

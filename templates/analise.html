@@ -303,7 +303,7 @@ Exemplo para {{ config.nome }}:
                         <span style="font-size: 1.5rem;">🔮</span>
                         <strong>Modo 1: Baseado nos Últimos Sorteios da Caixa</strong>
                     </div>
-                    <p>O gerador inteligente cruza o histórico oficial de sorteios da Caixa para criar combinações balanceadas e otimizadas para seus jogos.</p>
+                    <p>O gerador usa descritores do histórico oficial para organizar combinações. As métricas não aumentam a chance de uma combinação específica.</p>
                 </div>
 
                 <div class="modo-card" id="modo-card-manual" onclick="alternarModoGeracao('manual_pool')">
@@ -550,7 +550,7 @@ Exemplo para {{ config.nome }}:
                 <div>
                     <h2>Estatísticas Históricas Oficiais</h2>
                     <p style="color: #5B6B82; font-size: 0.95rem; margin-top: 4px;">
-                        Panorama consolidado com base em todos os concursos realizados pela Caixa Econômica Federal.
+                        Panorama descritivo dos concursos disponíveis na base histórica da Caixa Econômica Federal.
                     </p>
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -561,8 +561,18 @@ Exemplo para {{ config.nome }}:
             <div id="analise-loading" class="loading" style="display: none;">
                 Processando estatísticas históricas... Aguarde.
             </div>
+            <p id="analise-erro" role="alert" style="display: none; color: #b91c1c;"></p>
 
             <div id="analise-resultado" style="display: none;">
+                <div class="resultado-section" style="margin-bottom: 20px;">
+                    <h3>Como interpretar a análise</h3>
+                    <p style="color: #5B6B82;">FR compara a frequência observada com a frequência teórica. As classes de ICT indicam estabilidade temporal relativa; elas não representam chance de acerto. Todas as combinações válidas de mesmo tamanho mantêm a mesma probabilidade em um sistema equiprovável.</p>
+                    <p id="analise-mcp" style="margin-top: 10px;"></p>
+                    <p id="analise-validacao" style="margin-top: 10px;"></p>
+                    <p id="analise-evidencias" style="color: #5B6B82; margin-top: 8px;"></p>
+                    <p id="analise-limites" style="color: #5B6B82; margin-top: 8px;"></p>
+                    <p style="margin-top: 10px;"><a href="/metodologia">Consultar fórmulas e limites da metodologia</a></p>
+                </div>
                 <div id="indicadores-classicos-box" style="margin-bottom: 20px;"></div>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -576,39 +586,40 @@ Exemplo para {{ config.nome }}:
                         <div class="label">Total de números possíveis</div>
                     </div>
                     <div class="stat-card">
-                        <h4>Sorteados por Concurso</h4>
+                        <h4>{% if config.colunas %}Posições por Concurso{% else %}Dezenas por Sorteio{% endif %}</h4>
                         <div class="value" id="stat-sorteados">{{ config.sorteados }}</div>
                         <div class="label">Dezenas por sorteio</div>
                     </div>
                     <div class="stat-card">
                         <h4>Base de Dados</h4>
                         <div class="value" style="color: #0046AD; font-size: 1.4rem;">Oficial Caixa</div>
-                        <div class="label">100% Sincronizada</div>
+                        <div class="label">Histórico disponível para análise</div>
                     </div>
                 </div>
 
                 <div class="resultado-section">
-                    <h3>Distribuição de Frequência das Dezenas</h3>
+                    <h3>Classes de Estabilidade Temporal Relativa</h3>
+                    <p style="color: #5B6B82; margin: 8px 0;">As classes seguem os quartis de ICT: A reúne os menores valores e D os maiores. Uma classe não indica maior frequência, atraso ou probabilidade. Valores empatados podem compartilhar a mesma classe.{% if config.colunas %} Este resumo agrega os dígitos entre as posições; a tabela individual mostra cada coluna separadamente.{% endif %}</p>
                     <div class="stats-grid">
                         <div class="stat-card classe-A">
-                            <h4>Alta Frequência</h4>
+                            <h4>Classe A</h4>
                             <div class="value" id="classe-a">-</div>
-                            <div class="label">Dezenas mais frequentes</div>
+                            <div class="label">Menor ICT relativo</div>
                         </div>
                         <div class="stat-card classe-B">
-                            <h4>Boa Frequência</h4>
+                            <h4>Classe B</h4>
                             <div class="value" id="classe-b">-</div>
-                            <div class="label">Frequência acima da média</div>
+                            <div class="label">ICT intermediário inferior</div>
                         </div>
                         <div class="stat-card classe-C">
-                            <h4>Frequência Regular</h4>
+                            <h4>Classe C</h4>
                             <div class="value" id="classe-c">-</div>
-                            <div class="label">Frequência equilibrada</div>
+                            <div class="label">ICT intermediário superior</div>
                         </div>
                         <div class="stat-card classe-D">
-                            <h4>Menor Frequência</h4>
+                            <h4>Classe D</h4>
                             <div class="value" id="classe-d">-</div>
-                            <div class="label">Dezenas em atraso / menor saída</div>
+                            <div class="label">Maior ICT relativo</div>
                         </div>
                     </div>
                 </div>
@@ -633,7 +644,7 @@ Exemplo para {{ config.nome }}:
         <div id="numeros" class="tab-content">
             <h2>Frequência Individual das Dezenas</h2>
             <p style="color: #5B6B82; font-size: 0.95rem; margin-top: 4px; margin-bottom: 15px;">
-                Histórico completo de saídas e percentual de ocorrência de cada número nos sorteios oficiais.
+                Contagens e frequências dos concursos analisados.{% if config.colunas %} Cada linha descreve um dígito em uma coluna específica.{% else %} As classes indicam estabilidade relativa pelo ICT.{% endif %}
             </p>
             <input type="text" id="filtro-numero" placeholder="Filtrar por dezena..." 
                    onkeyup="filtrarTabela()" style="padding: 10px; width: 100%; margin-bottom: 15px; border: 2px solid rgba(10,26,63,0.16); border-radius: 8px;">
@@ -642,10 +653,11 @@ Exemplo para {{ config.nome }}:
                 <table id="tabela-numeros">
                     <thead>
                         <tr>
+                            {% if config.colunas %}<th>Coluna</th>{% endif %}
                             <th>Dezena</th>
                             <th>Total de Saídas</th>
-                            <th>Frequência Real</th>
-                            <th>Nível de Ocorrência</th>
+                            <th>{% if config.colunas %}Frequência na Coluna{% elif config.sorteios_por_concurso > 1 %}Ocorrências por Concurso{% else %}Frequência Observada{% endif %}</th>
+                            <th>Classe de ICT</th>
                             <th>Status Histórico</th>
                         </tr>
                     </thead>
@@ -1293,7 +1305,7 @@ Exemplo para {{ config.nome }}:
             numerosBaseSelecionados.clear();
             const qtd = Math.min(CONFIG_LOTERIA.minimo_aposta + 6, CONFIG_LOTERIA.universo);
             if (analiseAtual && analiseAtual.analises_individuais) {
-                const sorted = [...analiseAtual.analises_individuais].sort((a,b) => b.score_mcp - a.score_mcp);
+                const sorted = [...analiseAtual.analises_individuais].sort((a,b) => b.frequencia - a.frequencia || a.numero - b.numero);
                 sorted.slice(0, qtd).forEach(item => {
                     numerosBaseSelecionados.add(item.numero);
                 });
@@ -1564,6 +1576,8 @@ Exemplo para {{ config.nome }}:
         async function realizarAnalise() {
             document.getElementById('analise-loading').style.display = 'block';
             document.getElementById('analise-resultado').style.display = 'none';
+            const erro = document.getElementById('analise-erro');
+            erro.style.display = 'none';
 
             try {
                 const response = await fetch(`/api/analise/${loteriaType}`, {
@@ -1576,6 +1590,8 @@ Exemplo para {{ config.nome }}:
                 document.getElementById('analise-loading').style.display = 'none';
 
                 if (result.erro) {
+                    erro.textContent = result.erro;
+                    erro.style.display = 'block';
                     return;
                 }
 
@@ -1583,6 +1599,8 @@ Exemplo para {{ config.nome }}:
                 exibirAnalise(result);
             } catch (e) {
                 document.getElementById('analise-loading').style.display = 'none';
+                erro.textContent = 'Não foi possível carregar a análise. Tente novamente.';
+                erro.style.display = 'block';
                 console.error("Erro na análise:", e);
             }
         }
@@ -1608,6 +1626,22 @@ Exemplo para {{ config.nome }}:
         function exibirAnalise(result) {
             document.getElementById('analise-resultado').style.display = 'block';
             exibirIndicadoresClassicos(result.indicadores_classicos);
+            const mcp = result.mcp_md || {};
+            document.getElementById('analise-mcp').textContent = mcp.disponivel
+                ? 'MCP-MD: descritor experimental calculado com janelas de 100 e 150 concursos. A disponibilidade do score não significa que a hipótese de microestrutura foi validada.'
+                : `MCP-MD indisponível: ${mcp.motivo || 'não há informação suficiente para calcular a extensão experimental.'} O score usa apenas a base ILLA descritiva.`;
+            const validacao = result.validacao_camada7 || {};
+            document.getElementById('analise-validacao').textContent = validacao.conclusao
+                ? `Validação: ${validacao.conclusao}` : 'Validação estatística não disponível.';
+            const valor = (numero) => typeof numero === 'number' && Number.isFinite(numero)
+                ? numero.toLocaleString('pt-BR', {maximumFractionDigits: 4}) : 'não disponível';
+            const mc = validacao.monte_carlo || {};
+            const cauda = typeof mc.percentil === 'number' ? valor(100 * mc.percentil) + '%' : 'não disponível';
+            document.getElementById('analise-evidencias').textContent =
+                `Z acumulado: ${valor(validacao.backtest?.z_acumulado)} · Fator de Bayes: ${valor(validacao.bayesiana?.bayes_factor)} · Cauda Monte Carlo: ${cauda}`;
+            const limites = validacao.limites;
+            document.getElementById('analise-limites').textContent = Array.isArray(limites)
+                ? limites.join(' ') : (typeof limites === 'string' ? limites : '');
             
             document.getElementById('stat-concursos').textContent = result.total_concursos;
             
@@ -1620,21 +1654,27 @@ Exemplo para {{ config.nome }}:
             const tbody = document.getElementById('tabela-numeros-body');
             tbody.innerHTML = '';
             
-            result.analises_individuais.forEach(a => {
+            const linhas = CONFIG_LOTERIA.por_coluna
+                ? (result.analise_por_coluna || []).flatMap(c => c.digitos.map(a => ({...a, coluna: c.coluna})))
+                : result.analises_individuais;
+            linhas.forEach(a => {
                 const tr = document.createElement('tr');
-                const freqPct = (a.frequencia * 100).toFixed(2) + '%';
+                const freqPct = !CONFIG_LOTERIA.por_coluna && result.unidade_frequencia === 'ocorrencias_por_concurso'
+                    ? a.frequencia.toLocaleString('pt-BR', {maximumFractionDigits: 4}) + ' por concurso'
+                    : (a.frequencia * 100).toFixed(2) + '%';
                 let classeBadge = '';
                 if (a.classe === 'A') {
-                    classeBadge = '<span style="background: rgba(0,70,173,0.18); color: #0046AD; border: 1px solid rgba(0,70,173,0.4); padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Alta Frequência</span>';
+                    classeBadge = '<span class="classe-A" style="padding: 4px 10px; border-radius: 12px;">A · Menor ICT</span>';
                 } else if (a.classe === 'B') {
-                    classeBadge = '<span style="background: rgba(59,130,246,0.18); color: #1D4ED8; border: 1px solid rgba(59,130,246,0.4); padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Boa Frequência</span>';
+                    classeBadge = '<span class="classe-B" style="padding: 4px 10px; border-radius: 12px;">B · ICT interm. inferior</span>';
                 } else if (a.classe === 'C') {
-                    classeBadge = '<span style="background: rgba(243,146,0,0.18); color: #C97400; border: 1px solid rgba(243,146,0,0.4); padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Frequência Média</span>';
+                    classeBadge = '<span class="classe-C" style="padding: 4px 10px; border-radius: 12px;">C · ICT interm. superior</span>';
                 } else {
-                    classeBadge = '<span style="background: rgba(100,116,139,0.15); color: #5B6B82; border: 1px solid #5B6B82; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">Menor Frequência</span>';
+                    classeBadge = '<span class="classe-D" style="padding: 4px 10px; border-radius: 12px;">D · Maior ICT</span>';
                 }
-                const maturidadeLegivel = (a.maturidade || 'Equilibrado').replace('_', ' ');
+                const maturidadeLegivel = (a.maturidade || '—').replaceAll('_', ' ');
                 tr.innerHTML = `
+                    ${CONFIG_LOTERIA.por_coluna ? `<td>${a.coluna}</td>` : ''}
                     <td><span class="bola-numero" style="display: inline-flex; width: 32px; height: 32px; font-size: 0.95rem; font-weight: 800;">${String(a.numero).padStart(2, '0')}</span></td>
                     <td><strong style="color: #0A1A3F; font-size: 1.05rem;">${a.contagem}</strong> saídas</td>
                     <td><span style="font-weight: 600; color: #0046AD;">${freqPct}</span></td>
