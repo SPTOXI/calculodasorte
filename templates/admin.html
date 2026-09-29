@@ -288,6 +288,11 @@
                         <small style="color:#64748b;font-size:0.8rem;">Compartilhe como "Qualquer pessoa com o link pode ver".</small>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="imp-colar">ou cole aqui as linhas copiadas do Excel (com o cabeçalho)</label>
+                    <textarea id="imp-colar" rows="4" placeholder="No Excel: selecione as colunas (Concurso, Data, Bola1...Bola6) incluindo o cabeçalho, Ctrl+C, e cole aqui com Ctrl+V" style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font-family:monospace;font-size:0.85rem;"></textarea>
+                    <small style="color:#64748b;font-size:0.8rem;">Use quando o navegador não conseguir ler o arquivo. Dica: selecione a coluna inteira clicando nas letras A:H.</small>
+                </div>
                 <p style="color:#64748b;font-size:0.85rem;margin-bottom:14px;">Colunas reconhecidas: <strong>Concurso</strong>, Data, Bola1…BolaN (ou Dezena1…, ou uma coluna "Dezenas" com os números juntos). Dupla Sena: 2º sorteio em colunas "Bola1 2º Sorteio"… ou as 12 dezenas em sequência. +Milionária: Trevo1, Trevo2. Timemania: Time do Coração. Dia de Sorte: Mês da Sorte. Colunas extras (ganhadores, rateio, cidades) são ignoradas, então a planilha oficial da Caixa funciona direto.</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
                     <button class="btn-primary" id="btn-hist-todas" onclick="baixarHistoricoTodas()">⬇️ Baixar histórico das 9 loterias pela API</button>
@@ -1152,9 +1157,9 @@
         // O arquivo é lido para a memória assim que é escolhido: se o original mudar ou ficar
         // indisponível (Downloads/Drive/celular), o envio não falha com "Failed to fetch"
         let arquivoImportacao = null;
-        ['imp-arquivo', 'imp-url'].forEach(id => {
+        ['imp-arquivo', 'imp-url', 'imp-colar'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => { document.getElementById('btn-imp-confirmar').disabled = true; });
+            if (el) el.addEventListener(id === 'imp-colar' ? 'input' : 'change', () => { document.getElementById('btn-imp-confirmar').disabled = true; });
         });
         document.getElementById('imp-arquivo').addEventListener('change', async (ev) => {
             arquivoImportacao = null;
@@ -1171,10 +1176,12 @@
 
         async function importarResultados(confirmar) {
             const loteria = document.getElementById('imp-loteria').value;
-            const arquivo = arquivoImportacao;
+            const colado = document.getElementById('imp-colar').value.trim();
+            // Texto colado do Excel vira um CSV separado por tabulação
+            const arquivo = colado ? { nome: 'colado.csv', blob: new Blob([colado], { type: 'text/csv' }) } : arquivoImportacao;
             const url = document.getElementById('imp-url').value.trim();
             const saida = document.getElementById('imp-resultado');
-            if (!arquivo && !url) { showToast('Escolha um arquivo ou informe o link do Google Sheets.', 'warning'); return; }
+            if (!arquivo && !url) { showToast('Escolha um arquivo, cole as linhas do Excel ou informe o link do Google Sheets.', 'warning'); return; }
             if (confirmar && !confirm('Importar os concursos validados para o histórico desta loteria?')) return;
 
             const fd = new FormData();
