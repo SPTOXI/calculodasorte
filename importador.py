@@ -78,6 +78,9 @@ def ler_xlsx(conteudo: bytes) -> List[List[Any]]:
     except Exception:
         raise ErroImportacao('Arquivo Excel inválido. Use o formato .xlsx.')
     ws = wb.worksheets[0]
+    # A planilha oficial da Caixa grava a dimensão errada (só a linha 1); sem isto,
+    # o modo read_only não enxerga os concursos
+    ws.reset_dimensions()
     linhas = []
     for linha in ws.iter_rows(values_only=True):
         linhas.append(list(linha))

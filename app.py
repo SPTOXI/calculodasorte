@@ -1506,6 +1506,14 @@ def api_admin_sincronizar_todas():
     return jsonify(res)
 
 
+def _ultimos_concursos(valor, padrao: int = 200) -> int:
+    """Quantos dos concursos mais recentes importar (0 = todos)."""
+    try:
+        return max(0, int(valor))
+    except (TypeError, ValueError):
+        return padrao
+
+
 @app.route('/api/admin/importar-resultados', methods=['POST'])
 @admin_required
 def api_admin_importar_resultados():
@@ -1529,6 +1537,9 @@ def api_admin_importar_resultados():
         return jsonify({'sucesso': False, 'erro': str(e)}), 400
 
     concursos = res['concursos']
+    ultimos = _ultimos_concursos(request.form.get('ultimos'))
+    if ultimos:
+        concursos = concursos[-ultimos:]
     resposta = {
         'sucesso': True,
         'loteria': loteria_type,
@@ -1569,7 +1580,8 @@ def api_admin_historico_completo(loteria_type: str):
     if loteria_type not in updater.LOTERIAS_SLUGS:
         return jsonify({'sucesso': False, 'erro': 'Loteria inválida.'}), 400
     usar_lista = request.args.get('lista', '1') != '0'
-    return jsonify(updater.baixar_historico_completo(loteria_type, usar_lista_completa=usar_lista))
+    return jsonify(updater.baixar_historico_completo(
+        loteria_type, usar_lista_completa=usar_lista, ultimos=_ultimos_concursos(request.args.get('ultimos'))))
 
 
 @app.route('/api/admin/importar-resultados/resumo', methods=['GET'])

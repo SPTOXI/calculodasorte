@@ -497,26 +497,27 @@ def salvar_concursos_importados(loteria_type: str, concursos: List[Dict[str, Any
     """Grava (ou substitui) concursos importados por planilha. Retorna quantos foram gravados."""
     if not concursos:
         return 0
+    from psycopg2.extras import execute_values
+    linhas = [(
+        loteria_type, c['concurso'], c.get('data'), json.dumps(c['dezenas']),
+        json.dumps(c['segundo']) if c.get('segundo') else None,
+        json.dumps(c['trevos']) if c.get('trevos') else None,
+        c.get('complemento'),
+    ) for c in concursos]
     with get_db_connection() as conn:
         cur = conn.cursor()
-        for c in concursos:
-            cur.execute('''
-                INSERT INTO concursos_importados
-                    (loteria_type, concurso, data_sorteio, dezenas_json, segundo_json, trevos_json, complemento, importado_em)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (loteria_type, concurso) DO UPDATE SET
-                    data_sorteio = EXCLUDED.data_sorteio,
-                    dezenas_json = EXCLUDED.dezenas_json,
-                    segundo_json = EXCLUDED.segundo_json,
-                    trevos_json = EXCLUDED.trevos_json,
-                    complemento = EXCLUDED.complemento,
-                    importado_em = CURRENT_TIMESTAMP
-            ''', (
-                loteria_type, c['concurso'], c.get('data'), json.dumps(c['dezenas']),
-                json.dumps(c['segundo']) if c.get('segundo') else None,
-                json.dumps(c['trevos']) if c.get('trevos') else None,
-                c.get('complemento'),
-            ))
+        execute_values(cur, '''
+            INSERT INTO concursos_importados
+                (loteria_type, concurso, data_sorteio, dezenas_json, segundo_json, trevos_json, complemento)
+            VALUES %s
+            ON CONFLICT (loteria_type, concurso) DO UPDATE SET
+                data_sorteio = EXCLUDED.data_sorteio,
+                dezenas_json = EXCLUDED.dezenas_json,
+                segundo_json = EXCLUDED.segundo_json,
+                trevos_json = EXCLUDED.trevos_json,
+                complemento = EXCLUDED.complemento,
+                importado_em = CURRENT_TIMESTAMP
+        ''', linhas, page_size=500)
         conn.commit()
     return len(concursos)
 

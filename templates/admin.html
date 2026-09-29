@@ -274,6 +274,11 @@
                         <a id="imp-modelo" href="/api/admin/importar-resultados/modelo/mega_sena" style="display:inline-block;margin-top:6px;font-size:0.85rem;color:#0046AD;">⬇️ Baixar planilha modelo (CSV)</a>
                     </div>
                     <div class="form-group">
+                        <label for="imp-ultimos">Quantidade (concursos mais recentes)</label>
+                        <input type="number" id="imp-ultimos" value="200" min="0" step="50" style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;">
+                        <small style="color:#64748b;font-size:0.8rem;">Importa só os últimos N concursos. Use 0 para todos.</small>
+                    </div>
+                    <div class="form-group">
                         <label for="imp-arquivo">Arquivo (.xlsx ou .csv)</label>
                         <input type="file" id="imp-arquivo" accept=".xlsx,.xlsm,.csv,.txt" style="width:100%;padding:8px;border:2px dashed #cbd5e1;border-radius:8px;background:#f8fafc;">
                     </div>
@@ -285,7 +290,7 @@
                 </div>
                 <p style="color:#64748b;font-size:0.85rem;margin-bottom:14px;">Colunas reconhecidas: <strong>Concurso</strong>, Data, Bola1…BolaN (ou Dezena1…, ou uma coluna "Dezenas" com os números juntos). Dupla Sena: 2º sorteio em colunas "Bola1 2º Sorteio"… ou as 12 dezenas em sequência. +Milionária: Trevo1, Trevo2. Timemania: Time do Coração. Dia de Sorte: Mês da Sorte. Colunas extras (ganhadores, rateio, cidades) são ignoradas, então a planilha oficial da Caixa funciona direto.</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-                    <button class="btn-primary" id="btn-hist-todas" onclick="baixarHistoricoTodas()">⬇️ Baixar histórico completo das 9 loterias pela API</button>
+                    <button class="btn-primary" id="btn-hist-todas" onclick="baixarHistoricoTodas()">⬇️ Baixar histórico das 9 loterias pela API</button>
                 </div>
                 <p style="color:#64748b;font-size:0.85rem;margin-bottom:14px;">A API é a primeira opção: busca todos os concursos e <strong>ignora os que já temos</strong>. Use a planilha só para o que a API não conseguir trazer (na planilha, concursos já existentes também são ignorados).</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1161,6 +1166,7 @@
             fd.append('loteria', loteria);
             if (arquivo) fd.append('arquivo', arquivo); else fd.append('url', url);
             fd.append('confirmar', confirmar ? '1' : '0');
+            fd.append('ultimos', document.getElementById('imp-ultimos').value || '0');
 
             showLoading(confirmar ? 'Importando concursos...' : 'Lendo e validando a planilha...');
             try {
@@ -1232,7 +1238,7 @@
                 while (rodada < 400) {
                     rodada++;
                     showLoading(`${nome}: baixando histórico da API... ${totalNovos} concursos novos até agora` + (ultimo && ultimo.faltam ? ` (faltam ~${ultimo.faltam})` : ''));
-                    const res = await fetch(`/api/admin/historico-completo/${loteria}?lista=${usarLista}`, { method: 'POST' });
+                    const res = await fetch(`/api/admin/historico-completo/${loteria}?lista=${usarLista}&ultimos=${encodeURIComponent(document.getElementById('imp-ultimos').value || '0')}`, { method: 'POST' });
                     const data = await res.json();
                     if (!data.sucesso) { showToast(`${nome}: ${data.erro || 'erro na API'}`, 'error'); return totalNovos; }
                     ultimo = data;
@@ -1253,7 +1259,7 @@
         }
 
         async function baixarHistoricoTodas() {
-            if (!confirm('Baixar da API todos os concursos das 9 loterias? Os que já temos são ignorados. Pode levar alguns minutos; mantenha a página aberta.')) return;
+            if (!confirm('Baixar da API os últimos ' + (document.getElementById('imp-ultimos').value || 'todos') + ' concursos das 9 loterias? Os que já temos são ignorados. Pode levar alguns minutos; mantenha a página aberta.')) return;
             const opcoes = Array.from(document.getElementById('imp-loteria').options);
             let total = 0;
             try {
