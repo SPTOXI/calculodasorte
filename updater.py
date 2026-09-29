@@ -67,6 +67,7 @@ def _get_session() -> requests.Session:
 
 _RESULTADO_COMPLETO_CACHE = {}
 _RESULTADO_COMPLETO_TIME = {}
+_FONTE_OK: Dict[str, str] = {}
 
 
 def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int = 2) -> Optional[Dict[str, Any]]:
@@ -98,13 +99,21 @@ def consultar_caixa(slug: str, concurso: Optional[int] = None, max_retries: int 
     urls_para_tentar.append(('caixa', url_caixa))
         
     timeout_req = 4
-        
+
+    # A última fonte que respondeu para esta loteria é tentada primeiro (evita esperar
+    # timeouts de fontes fora do ar a cada concurso)
+    preferida = _FONTE_OK.get(slug)
+    if preferida:
+        urls_para_tentar.sort(key=lambda par: par[0] != preferida)
+
     for source, url in urls_para_tentar:
         for tentativa in range(1, max_retries + 1):
             try:
                 response = session.get(url, timeout=timeout_req)
                 if response.status_code == 200:
                     dados = response.json()
+                    if isinstance(dados, dict) and (dados.get('concurso') or dados.get('numero')):
+                        _FONTE_OK[slug] = source
                     if source == 'heroku' and isinstance(dados, dict) and dados.get('concurso'):
                         dezenas_heroku = [f"{int(n):02d}" for n in dados.get('dezenas', [])]
                         segundo_sorteio = None
@@ -600,7 +609,7 @@ def _item_da_api(loteria_type: str, dados: Dict[str, Any]) -> Optional[Dict[str,
 def _baixar_lista_completa(slug: str) -> Optional[List[Dict[str, Any]]]:
     """Todos os concursos de uma loteria numa única chamada (loteriascaixa-api)."""
     try:
-        resp = _get_session().get(f'https://loteriascaixa-api.herokuapp.com/api/{slug}', timeout=25)
+        resp = _get_session().get(f'https://loteriascaixa-api.herokuapp.com/api/{slug}', timeout=7)
         if resp.status_code == 200:
             dados = resp.json()
             if isinstance(dados, list) and dados:
@@ -610,8 +619,9 @@ def _baixar_lista_completa(slug: str) -> Optional[List[Dict[str, Any]]]:
     return None
 
 
-def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
-                              usar_lista_completa: bool = True, ultimos: int = 200) -> Dict[str, Any]:
+def baixar_historico_completo(loteria_type: str, limite_segundos: float = 6,
+                              usar_lista_completa: bool = True, ultimos: int = 200,
+                              abaixo_de: Optional[int] = None) -> Dict[str, Any]:
     """Baixa da API todos os concursos da loteria que ainda não temos (os existentes são
     ignorados), grava no banco e mescla ao histórico. Primeiro tenta a lista completa numa
     única chamada; se não der, busca concurso a concurso até o limite de tempo — basta
@@ -626,7 +636,8 @@ def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
     falhas: List[int] = []
     fonte = 'lista completa'
 
-    lista = _baixar_lista_completa(slug) if usar_lista_completa else None
+    # Para poucos concursos, buscar um a um é mais rápido que baixar a lista inteira
+    lista = _baixar_lista_completa(slug) if usar_lista_completa and not (0 < ultimos <= 300) else None
     if lista:
         if ultimos:
             numeros = sorted(int(d.get('concurso') or d.get('numero') or 0) for d in lista)
@@ -638,6 +649,7 @@ def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
                 existentes.add(item['concurso'])
                 novos.append(item)
         faltam = 0
+        proximo = None
     else:
         fonte = 'concurso a concurso'
         meta = carregar_meta(loteria_type)
@@ -648,13 +660,14 @@ def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
         if not ultimo:
             return {'sucesso': False, 'erro': 'Não foi possível consultar a API da Caixa.'}
         primeiro = max(1, int(ultimo) - ultimos + 1) if ultimos else 1
-        pendentes = [c for c in range(int(ultimo), primeiro - 1, -1) if c not in existentes]
+        topo = min(int(ultimo), abaixo_de - 1) if abaixo_de else int(ultimo)
+        pendentes = [c for c in range(topo, primeiro - 1, -1) if c not in existentes]
         processados = 0
-        with ThreadPoolExecutor(max_workers=6) as pool:
-            for i in range(0, len(pendentes), 30):
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            for i in range(0, len(pendentes), 20):
                 if i and time.time() - inicio > limite_segundos:
                     break
-                lote = pendentes[i:i + 30]
+                lote = pendentes[i:i + 20]
                 for c, dados in zip(lote, pool.map(lambda n: consultar_caixa(slug, concurso=n, max_retries=1), lote)):
                     item = _item_da_api(loteria_type, dados) if dados else None
                     if item and item['concurso'] == c:
@@ -663,6 +676,7 @@ def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
                         falhas.append(c)
                 processados += len(lote)
         faltam = len(pendentes) - processados
+        proximo = pendentes[processados - 1] if processados else None
 
     if novos:
         database.salvar_concursos_importados(loteria_type, novos)
@@ -675,6 +689,7 @@ def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
         'novos': len(novos),
         'falhas': len(falhas),
         'faltam': faltam,
+        'proximo': proximo,  # próxima rodada continua abaixo deste concurso
         'total_local': len(concursos_existentes(loteria_type)),
     }
 

@@ -1232,22 +1232,35 @@
         }
 
         async function baixarHistoricoCompleto(loteria, nome, silencioso = false) {
-            // Chama o servidor em rodadas: cada chamada baixa o que der em ~20s
-            let totalNovos = 0, rodada = 0, usarLista = 1, ultimo = null;
+            // Chama o servidor em rodadas: cada chamada baixa o que der em ~6s
+            let totalNovos = 0, rodada = 0, usarLista = 1, ultimo = null, abaixoDe = '', errosSeguidos = 0, totalFalhas = 0;
+            const qtd = encodeURIComponent(document.getElementById('imp-ultimos').value || '0');
             try {
-                while (rodada < 400) {
+                while (rodada < 600) {
                     rodada++;
-                    showLoading(`${nome}: baixando histórico da API... ${totalNovos} concursos novos até agora` + (ultimo && ultimo.faltam ? ` (faltam ~${ultimo.faltam})` : ''));
-                    const res = await fetch(`/api/admin/historico-completo/${loteria}?lista=${usarLista}&ultimos=${encodeURIComponent(document.getElementById('imp-ultimos').value || '0')}`, { method: 'POST' });
-                    const data = await res.json();
-                    if (!data.sucesso) { showToast(`${nome}: ${data.erro || 'erro na API'}`, 'error'); return totalNovos; }
+                    showLoading(`${nome}: baixando da API... ${totalNovos} concursos novos` + (ultimo && ultimo.faltam ? ` (faltam ~${ultimo.faltam})` : ''));
+                    let data;
+                    try {
+                        const res = await fetch(`/api/admin/historico-completo/${loteria}?lista=${usarLista}&ultimos=${qtd}&abaixo_de=${abaixoDe}`, { method: 'POST' });
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        data = await res.json();
+                    } catch (e) {
+                        // Servidor demorou demais (timeout) ou falha de rede: tenta de novo algumas vezes
+                        if (++errosSeguidos >= 4) { showToast(`${nome}: a API não respondeu (${e.message}). Tente de novo mais tarde ou use a planilha.`, 'error'); break; }
+                        usarLista = 0;
+                        continue;
+                    }
+                    errosSeguidos = 0;
+                    if (!data.sucesso) { showToast(`${nome}: ${data.erro || 'erro na API'}`, 'error'); break; }
                     ultimo = data;
                     totalNovos += data.novos;
-                    usarLista = 0;  // lista completa só na primeira rodada; depois, concurso a concurso
-                    if (!data.faltam || (data.novos === 0 && data.falhas > 0 && rodada > 3)) break;
+                    totalFalhas += data.falhas || 0;
+                    usarLista = 0;
+                    abaixoDe = data.proximo || '';
+                    if (!data.faltam || !data.proximo) break;
                 }
                 if (!silencioso) {
-                    showToast(`${nome}: ${totalNovos} concursos novos. Histórico com ${ultimo ? ultimo.total_local : '?'} concursos.` + (ultimo && ultimo.faltam ? ` A API não trouxe ${ultimo.faltam}; use a planilha para eles.` : ''), totalNovos ? 'success' : 'info');
+                    showToast(`${nome}: ${totalNovos} concursos novos. Histórico com ${ultimo ? ultimo.total_local : '?'} concursos.` + (totalFalhas ? ` ${totalFalhas} não vieram da API; use a planilha para eles.` : ''), totalNovos ? 'success' : 'info');
                 }
                 return totalNovos;
             } catch (e) {

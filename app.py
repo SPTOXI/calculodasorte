@@ -1581,7 +1581,8 @@ def api_admin_historico_completo(loteria_type: str):
         return jsonify({'sucesso': False, 'erro': 'Loteria inválida.'}), 400
     usar_lista = request.args.get('lista', '1') != '0'
     return jsonify(updater.baixar_historico_completo(
-        loteria_type, usar_lista_completa=usar_lista, ultimos=_ultimos_concursos(request.args.get('ultimos'))))
+        loteria_type, usar_lista_completa=usar_lista, ultimos=_ultimos_concursos(request.args.get('ultimos')),
+        abaixo_de=request.args.get('abaixo_de', type=int)))
 
 
 @app.route('/api/admin/importar-resultados/resumo', methods=['GET'])
