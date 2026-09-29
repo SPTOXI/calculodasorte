@@ -283,6 +283,7 @@ def salvar_meta(loteria_type: str, meta: Dict[str, Any]):
 
 def carregar_historico_local(loteria_type: str) -> List[List[int]]:
     """Carrega lista de listas de números do arquivo JSON"""
+    _garantir_mesclado(loteria_type)
     now = time.time()
     if loteria_type in _HISTORICO_CACHE and (now - _HISTORICO_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
         return _HISTORICO_CACHE[loteria_type]
@@ -319,6 +320,7 @@ _TIMES_CACHE_TIME = {}
 def carregar_times_local(loteria_type: str) -> List[Optional[str]]:
     """Carrega a lista do 'Time do Coração' sorteado em cada concurso (exclusivo da Timemania),
     alinhada por posição com o histórico de dezenas da mesma loteria."""
+    _garantir_mesclado(loteria_type)
     now = time.time()
     if loteria_type in _TIMES_CACHE and (now - _TIMES_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
         return _TIMES_CACHE[loteria_type]
@@ -355,6 +357,7 @@ _TREVOS_CACHE_TIME = {}
 def carregar_trevos_local(loteria_type: str) -> List[List[int]]:
     """Carrega a lista de trevos sorteados em cada concurso (exclusivo da +Milionária),
     alinhada por posição com o histórico de dezenas da mesma loteria."""
+    _garantir_mesclado(loteria_type)
     now = time.time()
     if loteria_type in _TREVOS_CACHE and (now - _TREVOS_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
         return _TREVOS_CACHE[loteria_type]
@@ -391,6 +394,7 @@ _SEGUNDO_SORTEIO_CACHE_TIME = {}
 def carregar_segundo_sorteio_local(loteria_type: str) -> List[List[int]]:
     """Carrega as dezenas do 2º sorteio de cada concurso (exclusivo da Dupla Sena),
     alinhadas por posição com o histórico do 1º sorteio."""
+    _garantir_mesclado(loteria_type)
     now = time.time()
     if loteria_type in _SEGUNDO_SORTEIO_CACHE and (now - _SEGUNDO_SORTEIO_CACHE_TIME.get(loteria_type, 0)) < _CACHE_TTL:
         return _SEGUNDO_SORTEIO_CACHE[loteria_type]
@@ -422,6 +426,7 @@ def salvar_segundo_sorteio_local(loteria_type: str, sorteios: List[List[int]]):
 
 def carregar_concursos_local(loteria_type: str) -> List[int]:
     """Número de cada concurso do histórico, na mesma ordem (vazio em históricos antigos)."""
+    _garantir_mesclado(loteria_type)
     nome = f'{loteria_type}_concursos.json'
     for pasta in (DATA_DIR, ORIGINAL_DATA_DIR):
         path = os.path.join(pasta, nome)
@@ -440,6 +445,242 @@ def salvar_concursos_local(loteria_type: str, concursos: List[int]):
     with open(os.path.join(DATA_DIR, f'{loteria_type}_concursos.json'), 'w', encoding='utf-8') as f:
         json.dump(concursos, f)
 
+
+
+# ---------------------------------------------------------------------------
+# Concursos importados por planilha (admin)
+# ---------------------------------------------------------------------------
+# Ficam no PostgreSQL (persistente) e são mesclados aos arquivos locais, que no
+# Vercel vivem em /tmp e voltam aos ~50 concursos do repositório a cada instância nova.
+
+_IMPORTADOS_MESCLADOS = set()
+
+
+def _garantir_mesclado(loteria_type: str):
+    if loteria_type in _IMPORTADOS_MESCLADOS or loteria_type not in LOTERIAS_SLUGS:
+        return
+    _IMPORTADOS_MESCLADOS.add(loteria_type)
+    try:
+        mesclar_importados(loteria_type)
+    except Exception as e:
+        print(f"[UPDATER] Não foi possível mesclar concursos importados de {loteria_type}: {e}")
+
+
+def _alinhar_pelo_fim(lista: List[Any], tamanho: int, vazio: Any) -> List[Any]:
+    """Listas auxiliares (times, trevos, 2º sorteio) são alinhadas ao final do histórico."""
+    lista = list(lista)[-tamanho:] if tamanho else []
+    return [vazio] * (tamanho - len(lista)) + lista
+
+
+def _concursos_por_numero(loteria_type: str) -> Dict[int, Dict[str, Any]]:
+    """Histórico local indexado pelo número do concurso."""
+    historico = carregar_historico_local(loteria_type)
+    if not historico:
+        return {}
+    numeros = carregar_concursos_local(loteria_type)
+    if len(numeros) != len(historico):
+        ultimo = carregar_meta(loteria_type).get('ultimo_concurso')
+        if not ultimo:
+            return {}
+        # Sem numeração salva: o histórico é contínuo e termina no último concurso
+        numeros = list(range(ultimo - len(historico) + 1, ultimo + 1))
+    n = len(historico)
+    times = _alinhar_pelo_fim(carregar_times_local(loteria_type), n, None) if loteria_type == 'timemania' else [None] * n
+    trevos = _alinhar_pelo_fim(carregar_trevos_local(loteria_type), n, []) if loteria_type == 'mais_milionaria' else [[]] * n
+    segundos = _alinhar_pelo_fim(carregar_segundo_sorteio_local(loteria_type), n, []) if loteria_type == 'dupla_sena' else [[]] * n
+    return {
+        c: {'dezenas': historico[i], 'complemento': times[i], 'trevos': trevos[i], 'segundo': segundos[i]}
+        for i, c in enumerate(numeros) if c and c > 0
+    }
+
+
+def _gravar_concursos(loteria_type: str, por_numero: Dict[int, Dict[str, Any]]):
+    numeros = sorted(por_numero)
+    salvar_historico_local(loteria_type, [por_numero[c]['dezenas'] for c in numeros])
+    salvar_concursos_local(loteria_type, numeros)
+    if loteria_type == 'timemania':
+        salvar_times_local(loteria_type, [por_numero[c].get('complemento') for c in numeros])
+    if loteria_type == 'mais_milionaria':
+        salvar_trevos_local(loteria_type, [por_numero[c].get('trevos') or [] for c in numeros])
+    if loteria_type == 'dupla_sena':
+        salvar_segundo_sorteio_local(loteria_type, [por_numero[c].get('segundo') or [] for c in numeros])
+    meta = carregar_meta(loteria_type)
+    meta['total_concursos'] = len(numeros)
+    if numeros and not meta.get('ultimo_concurso'):
+        meta['ultimo_concurso'] = numeros[-1]
+    salvar_meta(loteria_type, meta)
+
+
+def mesclar_importados(loteria_type: str, importados: Optional[List[Dict[str, Any]]] = None) -> Dict[str, int]:
+    """Junta ao histórico local os concursos importados que ainda não existem nele.
+    Concursos que já temos são ignorados. Retorna quantos foram adicionados."""
+    _IMPORTADOS_MESCLADOS.add(loteria_type)
+    if importados is None:
+        importados = database.listar_concursos_importados(loteria_type)
+    if not importados:
+        return {'adicionados': 0, 'alterados': 0}
+    por_numero = _concursos_por_numero(loteria_type)
+    adicionados = alterados = 0
+    for imp in importados:
+        if imp['concurso'] in por_numero:
+            continue  # já temos este concurso: ignora
+        por_numero[imp['concurso']] = {
+            'dezenas': imp['dezenas'],
+            'complemento': imp.get('complemento'),
+            'trevos': imp.get('trevos') or [],
+            'segundo': imp.get('segundo') or [],
+        }
+        adicionados += 1
+    if adicionados or alterados:
+        _gravar_concursos(loteria_type, por_numero)
+    return {'adicionados': adicionados, 'alterados': alterados}
+
+
+def concursos_existentes(loteria_type: str) -> set:
+    return set(_concursos_por_numero(loteria_type))
+
+
+def comparar_com_local(loteria_type: str, importados: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Prévia: quantos concursos da planilha são novos e quantos já existem (serão ignorados)."""
+    por_numero = _concursos_por_numero(loteria_type)
+    novos = iguais = divergentes = 0
+    for imp in importados:
+        atual = por_numero.get(imp['concurso'])
+        if atual is None:
+            novos += 1
+        elif atual['dezenas'] == imp['dezenas']:
+            iguais += 1
+        else:
+            divergentes += 1
+    return {'novos': novos, 'ja_existentes': iguais + divergentes, 'iguais': iguais,
+            'divergentes': divergentes, 'total_local': len(por_numero)}
+
+
+
+def _item_da_api(loteria_type: str, dados: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Converte um resultado da API (Caixa ou loteriascaixa-api) no formato de importação,
+    já validado pelas regras da loteria."""
+    import importador
+    slug = LOTERIAS_SLUGS[loteria_type]
+    numero = dados.get('numero') or dados.get('concurso')
+    if not numero:
+        return None
+    if 'listaDezenas' not in dados and 'dezenas' in dados:
+        # Formato da loteriascaixa-api (lista completa)
+        dezenas = [int(n) for n in dados.get('dezenasOrdemSorteio') or dados.get('dezenas') or []]
+        if slug != 'supersete':
+            dezenas = [int(n) for n in dados.get('dezenas') or []]
+        segundo = []
+        if slug == 'duplasena' and len(dezenas) == 12:
+            dezenas, segundo = dezenas[:6], dezenas[6:]
+        item = {
+            'concurso': int(numero), 'data': dados.get('data'), 'dezenas': dezenas, 'segundo': segundo,
+            'trevos': [int(t) for t in dados.get('trevos') or []],
+            'complemento': dados.get('timeCoracao') or dados.get('mesSorte'),
+        }
+    else:
+        item = {
+            'concurso': int(numero), 'data': dados.get('dataApuracao'),
+            'dezenas': extrair_dezenas(dados, slug),
+            'segundo': extrair_segundo_sorteio(dados) if slug == 'duplasena' else [],
+            'trevos': extrair_trevos(dados) if slug == 'maismilionaria' else [],
+            'complemento': extrair_time_coracao(dados),
+        }
+    cfg = importador._config(loteria_type)
+    if importador._validar(loteria_type, cfg, item):
+        return None
+    return item
+
+
+def _baixar_lista_completa(slug: str) -> Optional[List[Dict[str, Any]]]:
+    """Todos os concursos de uma loteria numa única chamada (loteriascaixa-api)."""
+    try:
+        resp = _get_session().get(f'https://loteriascaixa-api.herokuapp.com/api/{slug}', timeout=25)
+        if resp.status_code == 200:
+            dados = resp.json()
+            if isinstance(dados, list) and dados:
+                return dados
+    except Exception as e:
+        print(f"[UPDATER] Lista completa indisponível para {slug}: {e}")
+    return None
+
+
+def baixar_historico_completo(loteria_type: str, limite_segundos: float = 20,
+                              usar_lista_completa: bool = True) -> Dict[str, Any]:
+    """Baixa da API todos os concursos da loteria que ainda não temos (os existentes são
+    ignorados), grava no banco e mescla ao histórico. Primeiro tenta a lista completa numa
+    única chamada; se não der, busca concurso a concurso até o limite de tempo — basta
+    chamar de novo enquanto 'faltam' for maior que zero."""
+    from concurrent.futures import ThreadPoolExecutor
+    slug = LOTERIAS_SLUGS.get(loteria_type)
+    if not slug:
+        return {'sucesso': False, 'erro': 'Loteria inválida'}
+    inicio = time.time()
+    existentes = concursos_existentes(loteria_type)
+    novos: List[Dict[str, Any]] = []
+    falhas: List[int] = []
+    fonte = 'lista completa'
+
+    lista = _baixar_lista_completa(slug) if usar_lista_completa else None
+    if lista:
+        for dados in lista:
+            item = _item_da_api(loteria_type, dados)
+            if item and item['concurso'] not in existentes:
+                existentes.add(item['concurso'])
+                novos.append(item)
+        faltam = 0
+    else:
+        fonte = 'concurso a concurso'
+        meta = carregar_meta(loteria_type)
+        ultimo = meta.get('ultimo_concurso')
+        if not ultimo:
+            dados = consultar_caixa(slug)
+            ultimo = dados.get('numero') if dados else None
+        if not ultimo:
+            return {'sucesso': False, 'erro': 'Não foi possível consultar a API da Caixa.'}
+        pendentes = [c for c in range(int(ultimo), 0, -1) if c not in existentes]
+        processados = 0
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for i in range(0, len(pendentes), 30):
+                if i and time.time() - inicio > limite_segundos:
+                    break
+                lote = pendentes[i:i + 30]
+                for c, dados in zip(lote, pool.map(lambda n: consultar_caixa(slug, concurso=n, max_retries=1), lote)):
+                    item = _item_da_api(loteria_type, dados) if dados else None
+                    if item and item['concurso'] == c:
+                        novos.append(item)
+                    else:
+                        falhas.append(c)
+                processados += len(lote)
+        faltam = len(pendentes) - processados
+
+    if novos:
+        database.salvar_concursos_importados(loteria_type, novos)
+        mesclar_importados(loteria_type, novos)
+        database.log_sync(loteria_type, max(c['concurso'] for c in novos), None, 'SUCESSO',
+                          f'Histórico completo ({fonte}): {len(novos)} concursos adicionados.')
+    return {
+        'sucesso': True,
+        'fonte': fonte,
+        'novos': len(novos),
+        'falhas': len(falhas),
+        'faltam': faltam,
+        'total_local': len(concursos_existentes(loteria_type)),
+    }
+
+def remover_importados(loteria_type: str, concursos_mantidos_da_caixa: int = 50) -> int:
+    """Apaga os concursos importados e tira do histórico local os que só existiam por causa
+    da importação (preserva os últimos concursos, que vêm da sincronização com a Caixa)."""
+    importados = {c['concurso'] for c in database.listar_concursos_importados(loteria_type)}
+    database.excluir_concursos_importados(loteria_type)
+    por_numero = _concursos_por_numero(loteria_type)
+    ultimo = max(por_numero) if por_numero else 0
+    removidos = [c for c in list(por_numero) if c in importados and c <= ultimo - concursos_mantidos_da_caixa]
+    for c in removidos:
+        del por_numero[c]
+    if removidos:
+        _gravar_concursos(loteria_type, por_numero)
+    return len(removidos)
 
 def historico_consistente(loteria_type: str, historico: List[List[int]], ultimo_local: Optional[int],
                           dados_ultimo_local: Optional[Dict[str, Any]]) -> bool:
@@ -570,6 +811,21 @@ def obter_status_loterias(consultar_online: bool = True) -> List[Dict[str, Any]]
 
 
 def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, Any]:
+    """Sincroniza com a Caixa e reaplica os concursos importados por planilha
+    (a carga inicial reescreve o histórico só com os últimos concursos)."""
+    _garantir_mesclado(loteria_type)
+    res = _sincronizar_loteria_caixa(loteria_type, n_historico)
+    if res.get('sucesso'):
+        try:
+            mesclados = mesclar_importados(loteria_type)
+            if mesclados['adicionados'] or mesclados['alterados']:
+                res['total_local'] = carregar_meta(loteria_type).get('total_concursos', res.get('total_local'))
+        except Exception as e:
+            print(f"[UPDATER] Aviso ao reaplicar importados de {loteria_type}: {e}")
+    return res
+
+
+def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict[str, Any]:
     """
     Sincroniza uma loteria específica buscando os últimos sorteios da Caixa.
     Se o histórico tiver menos de n_historico sorteios, faz carga retroativa.

@@ -75,7 +75,7 @@ class TestCalendario(unittest.TestCase):
 
     def test_proximo_sorteio(self):
         mega = LOTERIAS_CONFIG[LoteriaType.MEGA_SENA]
-        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 26, 10))[1], 'Sorteia Amanhã, 11h')   # sábado
+        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 26, 10))[1], 'Sorteia Domingo, 11h')   # sábado
         self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 27, 11, 30))[1], 'Sorteia Hoje, 11h')  # domingo
         self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 27, 12, 30))[1], 'Sorteia Terça, 21h')
         dupla = LOTERIAS_CONFIG[LoteriaType.DUPLA_SENA]

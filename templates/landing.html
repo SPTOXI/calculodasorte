@@ -8,12 +8,21 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'AW-18453066810');
-      window.addEventListener('load', function() {
-        var s = document.createElement('script');
-        s.async = true;
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18453066810';
-        document.head.appendChild(s);
-      });
+      (function(){
+        var carregado = false;
+        function carregarGtag(){
+          if (carregado) return;
+          carregado = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18453066810';
+          document.head.appendChild(s);
+        }
+        ['scroll','pointerdown','keydown','touchstart'].forEach(function(ev){
+          window.addEventListener(ev, carregarGtag, {once: true, passive: true});
+        });
+        window.addEventListener('load', function(){ setTimeout(carregarGtag, 5000); });
+      })();
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
