@@ -171,40 +171,71 @@ class ModeloCanonico30:
     def __init__(self, historico: List, loteria_type: LoteriaType, config_override: Optional[LoteriaConfig] = None):
         self.loteria_type = loteria_type
         self.config = config_override or LOTERIAS_CONFIG[loteria_type]
-
-        # Normalizar histórico: aceita tanto lista de listas quanto lista de dicts
-        self.historico = []
-        for item in historico:
-            if isinstance(item, dict):
-                # Formato: {'concurso': 1, 'numeros': [1, 2, 3, ...]}
-                numeros = item.get('numeros', item.get('dezenas', []))
-                # Converter para inteiros
-                numeros = [int(n) for n in numeros]
-                self.historico.append(numeros)
-            else:
-                # Formato: lista de inteiros
-                self.historico.append([int(n) for n in item])
-        
-        self.T = len(self.historico)  # Total de concursos observados
         self.N = self.config.universo  # Tamanho do universo
         self.numeros = self.config.numeros
-        self.k = self.config.sorteados  # Números sorteados por concurso
-        # Dupla Sena: quando cada concurso traz os 2 sorteios juntos (12 dezenas), k dobra
-        por_sorteio = self.config.sorteados
-        if (self.config.sorteios_por_concurso > 1 and self.historico
-                and all(len(c) > por_sorteio for c in self.historico)):
-            self.k = por_sorteio * self.config.sorteios_por_concurso
-        
-        # Frequência teórica por elemento
+        if self.N < 2 or not 1 <= self.config.sorteados <= self.N:
+            raise ValueError("Configuração inválida de universo ou quantidade sorteada")
+        self.historico = self._normalizar_historico(historico)
+        self.T = len(self.historico)
+        self.k = len(self.historico[0])  # Inclui ambos os sorteios quando fornecidos
         self.mu = self.k / self.N
-        
-        # Janelas MCP-MD
-        self.W1 = min(100, self.T)  # Janela curta
-        self.W2 = min(150, self.T)  # Janela média
-        
-        # Pré-calcular contagens
-        self._calcular_contagens()
+        self.W1 = min(100, self.T)
+        self.W2 = min(150, self.T)
         self._memo: Dict = {}
+        self._calcular_contagens()
+
+    @staticmethod
+    def _inteiro(valor, campo: str) -> int:
+        """Aceitar inteiros e sua representação textual sem truncar valores."""
+        if isinstance(valor, bool) or not isinstance(valor, (str, int, float)):
+            raise ValueError(f"{campo} deve ser inteiro")
+        try:
+            convertido = int(valor)
+        except (ValueError, OverflowError):
+            raise ValueError(f"{campo} deve ser inteiro") from None
+        if isinstance(valor, float) and valor != convertido:
+            raise ValueError(f"{campo} deve ser inteiro")
+        return convertido
+
+    def _normalizar_historico(self, historico: List) -> List[List[int]]:
+        """Validar concursos antes de calcular; listas seguem a ordem cronológica recebida."""
+        if not isinstance(historico, (list, tuple)) or not historico:
+            raise ValueError("Histórico vazio ou inválido")
+        itens = list(historico)
+        identificados = [isinstance(item, dict) and 'concurso' in item for item in itens]
+        if any(identificados):
+            if not all(identificados):
+                raise ValueError("Informe o número do concurso em todos os registros ou em nenhum")
+            ids = [self._inteiro(item['concurso'], "Número do concurso") for item in itens]
+            if any(i <= 0 for i in ids) or len(set(ids)) != len(ids):
+                raise ValueError("Números de concurso devem ser positivos e únicos")
+            itens = [item for _, item in sorted(zip(ids, itens), key=lambda par: par[0])]
+
+        resultado = []
+        tamanhos = set()
+        por_sorteio = self.config.sorteados
+        tamanhos_permitidos = {por_sorteio}
+        if self.config.sorteios_por_concurso > 1:
+            tamanhos_permitidos.add(por_sorteio * self.config.sorteios_por_concurso)
+        if self.config.colunas:
+            tamanhos_permitidos = {self.config.colunas}
+        for indice, item in enumerate(itens, 1):
+            valores = item.get('numeros', item.get('dezenas')) if isinstance(item, dict) else item
+            if not isinstance(valores, (list, tuple)) or len(valores) not in tamanhos_permitidos:
+                raise ValueError(f"Concurso {indice}: quantidade de números inválida")
+            numeros = [self._inteiro(n, f"Concurso {indice}: número") for n in valores]
+            if any(n < self.config.numero_inicial or n > self.config.numero_final for n in numeros):
+                raise ValueError(f"Concurso {indice}: número fora do universo da loteria")
+            if not self.config.colunas:
+                for inicio in range(0, len(numeros), por_sorteio):
+                    sorteio = numeros[inicio:inicio + por_sorteio]
+                    if len(set(sorteio)) != por_sorteio:
+                        raise ValueError(f"Concurso {indice}: números repetidos no mesmo sorteio")
+            tamanhos.add(len(numeros))
+            resultado.append(numeros)
+        if len(tamanhos) != 1:
+            raise ValueError("Histórico não pode misturar concursos com um e dois sorteios")
+        return resultado
     
     def _calcular_contagens(self):
         """Calcular contagens históricas para cada número"""
@@ -246,53 +277,41 @@ class ModeloCanonico30:
     
     def calcular_ict(self, numero: int) -> float:
         """
-        Calcular Índice de Convergência Temporal (ICT)
-        Mede a estabilidade/convergência temporal do comportamento observado
-        ICT mais baixo = mais estável/convergente
+        Estimador operacional de estabilidade das frequências acumuladas.
+
+        O documento não define a fórmula do ICT. Aqui, usa-se o desvio padrão
+        populacional de f_i(t), ceil(T/2) <= t <= T, dividido por mu e limitado
+        a 1. Frequências acumuladas permitem redução da variabilidade com T;
+        blocos fixos de 10 concursos não possuem essa propriedade.
         """
-        if self.T < 10:
-            return 1.0  # Poucos dados para análise
-        
-        # Calcular desvio padrão da frequência ao longo do tempo
-        frequencias_janela = []
-        janela = 10
-        
-        for i in range(0, self.T, janela):
-            fim = min(i + janela, self.T)
-            contagem_janela = sum(
-                1 for concurso in self.historico[i:fim] 
-                if numero in concurso
-            )
-            freq = contagem_janela / (fim - i) if (fim - i) > 0 else 0
-            frequencias_janela.append(freq)
-        
-        if len(frequencias_janela) < 2:
+        if self.T < 20:
             return 1.0
-        
-        # ICT baseado na variabilidade da frequência
-        desvio_padrao = statistics.stdev(frequencias_janela) if len(frequencias_janela) > 1 else 0
-        media = statistics.mean(frequencias_janela)
-        
-        # Normalizar ICT entre 0 e 1
-        if media > 0:
-            cv = desvio_padrao / media  # Coeficiente de variação
-            ict = min(cv * 2, 1.0)  # Normalizar
-        else:
-            ict = 1.0
-        
-        return ict
-    
-    def calcular_iseg(self, numero: int) -> float:
+        if 'icts' not in self._memo:
+            acumuladas = dict.fromkeys(self.numeros, 0)
+            trajetorias = {n: [] for n in self.numeros}
+            inicio = math.ceil(self.T / 2)
+            for t, concurso in enumerate(self.historico, 1):
+                for n in concurso:
+                    acumuladas[n] += 1
+                if t >= inicio:
+                    for n in self.numeros:
+                        trajetorias[n].append(acumuladas[n] / t)
+            self._memo['icts'] = {
+                n: min(statistics.pstdev(trajetorias[n]) / self.mu, 1.0)
+                for n in self.numeros
+            }
+        return self._memo['icts'][numero]
+
+    def calcular_iseg(self, numero: Optional[int] = None) -> float:
         """
         Calcular Índice de Saturação Estatística Global (ISEG)
         Avalia maturidade e compressão da dispersão estrutural
         """
-        fr = self.calcular_fr(numero)
-        hi = self.calcular_hi(numero)
-        
-        # ISEG baseado na proximidade de FR com 1 e baixa variabilidade
-        saturacao = 1.0 / (1.0 + hi)
-        return saturacao
+        # Aproximação operacional global; a fonte não fornece fórmula de ISEG.
+        if 'iseg' not in self._memo:
+            hi_medio = statistics.mean(self.calcular_hi(n) for n in self.numeros)
+            self._memo['iseg'] = 1.0 / (1.0 + hi_medio)
+        return self._memo['iseg']
     
     def calcular_illa(self, numero: int) -> float:
         """
@@ -329,6 +348,8 @@ class ModeloCanonico30:
         Δ1 = f_i(W1) - f_i(W2)
         Δ2 = f_i(W1) - f_i(T)
         """
+        if self.T < 150:
+            return 0.0  # Janelas canônicas incompletas: sem contribuição MCP
         fi_w1 = self.contagens_W1[numero] / self.W1 if self.W1 > 0 else 0
         fi_w2 = self.contagens_W2[numero] / self.W2 if self.W2 > 0 else 0
         fi_t = self.calcular_frequencia(numero)
@@ -340,33 +361,33 @@ class ModeloCanonico30:
         return imc
     
     def calcular_gamma(self) -> float:
-        """
-        Calcular fator adaptativo γ = (σ_W1 / σ_hist)^2
-        """
-        if self.T < 10 or self.W1 < 10:
-            return 1.0
-        if 'gamma' in self._memo:
-            return self._memo['gamma']
-        
-        # Variância histórica
-        variancias = []
-        for numero in self.numeros:
-            fi = self.calcular_frequencia(numero)
-            variancias.append(fi)
-        
-        sigma_hist = statistics.variance(variancias) if len(variancias) > 1 else 1
-        
-        # Variância W1
-        variancias_w1 = []
-        for numero in self.numeros:
-            fi_w1 = self.contagens_W1[numero] / self.W1 if self.W1 > 0 else 0
-            variancias_w1.append(fi_w1)
-        
-        sigma_w1 = statistics.variance(variancias_w1) if len(variancias_w1) > 1 else 1
-        
-        gamma = (sigma_w1 / sigma_hist) ** 2 if sigma_hist > 0 else 1.0
-        self._memo['gamma'] = gamma
-        return gamma
+        """γ = (σ_W1/σ_hist)² = Var(W1)/Var(hist), sem novo quadrado."""
+        status = self.obter_status_mcp()
+        return status['gamma'] if status['disponivel'] else 0.0
+
+    def obter_status_mcp(self) -> Dict:
+        """Distinguir extensão calculável de ausência/degeneração dos dados."""
+        if 'status_mcp' not in self._memo:
+            motivo = None
+            gamma = None
+            if self.T < 150:
+                motivo = "MCP-MD requer pelo menos 150 concursos para completar as janelas de 100 e 150."
+            else:
+                var_hist = statistics.pvariance(self.calcular_frequencia(n) for n in self.numeros)
+                if var_hist == 0:
+                    motivo = "Dispersão histórica nula: o denominador de gamma é zero."
+                else:
+                    var_w1 = statistics.pvariance(self.contagens_W1[n] / 100 for n in self.numeros)
+                    gamma = var_w1 / var_hist
+            self._memo['status_mcp'] = {
+                'disponivel': motivo is None,
+                'status': 'disponivel' if motivo is None else 'indisponivel',
+                'motivo': motivo,
+                'janela_curta': 100,
+                'janela_media': 150,
+                'gamma': gamma,
+            }
+        return dict(self._memo['status_mcp'])
     
     def calcular_score_mcp(self, numero: int) -> float:
         """
@@ -374,6 +395,8 @@ class ModeloCanonico30:
         Score_i(MCP) = ILLA_i + γ · IMC_i(norm)
         """
         illa = self.calcular_illa(numero)
+        if not self.obter_status_mcp()['disponivel']:
+            return illa
         imc = self.calcular_imc(numero)
         gamma = self.calcular_gamma()
         
@@ -382,7 +405,7 @@ class ModeloCanonico30:
             imcs = [self.calcular_imc(n) for n in self.numeros]
             self._memo['imc_stats'] = (
                 statistics.mean(imcs) if imcs else 0,
-                statistics.stdev(imcs) if len(imcs) > 1 else 1,
+                statistics.pstdev(imcs),
             )
         media_imc, std_imc = self._memo['imc_stats']
         
@@ -392,15 +415,23 @@ class ModeloCanonico30:
         return score_mcp
     
     def classificar_elemento(self, ict: float) -> str:
-        """Classificar elemento por quartis de ICT"""
-        if ict <= 0.25:
+        """Quartis empíricos inclusivos; valores empatados recebem a mesma classe."""
+        q1, q2, q3 = self.obter_quartis_ict()
+        if ict <= q1:
             return "A"  # Menor ICT - mais estável
-        elif ict <= 0.50:
+        elif ict <= q2:
             return "B"  # Intermediária inferior
-        elif ict <= 0.75:
+        elif ict <= q3:
             return "C"  # Intermediária superior
         else:
             return "D"  # Maior ICT - menos estável
+
+    def obter_quartis_ict(self) -> List[float]:
+        if 'quartis_ict' not in self._memo:
+            self._memo['quartis_ict'] = statistics.quantiles(
+                [self.calcular_ict(n) for n in self.numeros], n=4, method='inclusive'
+            )
+        return list(self._memo['quartis_ict'])
     
     def classificar_maturidade(self, fr: float, hi: float, ict: float) -> str:
         """Classificar maturidade estatística do elemento"""
@@ -410,10 +441,8 @@ class ModeloCanonico30:
             return "Em Saturação"
         elif hi < 0.5:
             return "Convergente"
-        elif ict < 0.7:
-            return "Imaturo"
         else:
-            return "Ruído Estatístico Puro"
+            return "Imaturo"  # Ruído não pode ser diagnosticado por um único descritor
     
     def analisar_elemento(self, numero: int) -> ElementoAnalise:
         """Realizar análise completa de um elemento"""
@@ -451,12 +480,9 @@ class ModeloCanonico30:
         Camada 5 - Informacional
         Calcular entropia do sistema
         """
-        entropia = 0
-        for numero in self.numeros:
-            p = self.calcular_frequencia(numero)
-            if p > 0:
-                entropia -= p * math.log2(p)
-        return entropia
+        total = sum(self.contagens_total.values())
+        probabilidades = [c / total for c in self.contagens_total.values() if c]
+        return min(math.log2(self.N), -sum(p * math.log2(p) for p in probabilidades))
     
     def calcular_complexidade(self) -> float:
         """
@@ -473,7 +499,7 @@ class ModeloCanonico30:
         """
         entropia_max = math.log2(self.N)
         entropia_atual = self.calcular_entropia()
-        return 1 - (entropia_atual / entropia_max) if entropia_max > 0 else 0
+        return max(0.0, min(1.0, 1 - entropia_atual / entropia_max))
     
     def obter_resumo_analise(self) -> Dict:
         """Obter resumo completo da análise"""
@@ -503,17 +529,52 @@ class ModeloCanonico30:
             "universo": self.N,
             "sorteados_por_concurso": self.k,
             "frequencia_teorica": self.mu,
+            "unidade_frequencia": (
+                "ocorrencias_por_concurso" if self.config.colunas or self.k > self.config.sorteados
+                else "proporcao_de_concursos"
+            ),
+            "escopo_analise": (
+                "digitos_agregados_entre_colunas" if self.config.colunas else "numeros_principais"
+            ),
+            "mcp_md": self.obter_status_mcp(),
+            "quartis_ict": self.obter_quartis_ict(),
+            "metodologia": {
+                "modelo": "Canônico 3.0 — MCSCE",
+                "extensao": "MCP-MD 1.0 (experimental)",
+                "implementacao": "operacional-2026-09",
+                "ict": "min(1, pstdev(f_i(t), ceil(T/2) <= t <= T) / mu); mínimo de 20 concursos",
+                "ict_disponivel": self.T >= 20,
+                "classes": "Quartis empíricos inclusivos de ICT; empates na mesma classe. Classes são relativas.",
+                "iseg": "1 / (1 + média de H_i); aproximação global",
+                "pesos_illa": [0.25, 0.25, 0.20, 0.15, 0.15],
+                "convergencia_incremental": "C_i = 1 / (1 + abs(f_i(T) - f_i(W1)))",
+                "persistencia": "P_i = min(c_i / max(T * mu, 1), 1)",
+                "normalizacao_imc": "Desvio padrão populacional entre todos os elementos; IMC uniforme contribui zero",
+                "entropia": "Shannon marginal: p_i = c_i / soma(c); não mede dependência temporal",
+                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade"],
+                "componentes_nao_implementados": [
+                    "IIE", "FCT", "ILLA Dinâmico", "AE", "complexidade algorítmica",
+                    "compressão efetiva de sequências", "fractal", "multifractal", "caos"
+                ],
+                "limite": "A fonte não especifica fórmulas para todas as camadas. Descritores e classes não comprovam vantagem ou equiprobabilidade.",
+            },
             "estatisticas_gerais": {
                 "ict_medio": statistics.mean(icts),
                 "ict_desvio": statistics.stdev(icts) if len(icts) > 1 else 0,
                 "fr_medio": statistics.mean(frs),
                 "hi_medio": statistics.mean(his),
-                "score_mcp_medio": statistics.mean(scores_mcp)
+                "score_mcp_medio": statistics.mean(scores_mcp),
+                "iseg_global": self.calcular_iseg(),
             },
             "distribuicao_classes": classes,
             "distribuicao_maturidade": maturidades,
             "camada_informacional": {
                 "entropia": self.calcular_entropia(),
+                "entropia_maxima": math.log2(self.N),
+                "entropia_normalizada": self.calcular_entropia() / math.log2(self.N),
+                "dispersao_frequencias": self.calcular_complexidade(),
+                "deficit_entropia": self.calcular_compressibilidade(),
+                "observacao": "complexidade e compressibilidade são aliases legados de dispersão e déficit de entropia; não são testes algorítmicos.",
                 "complexidade": self.calcular_complexidade(),
                 "compressibilidade": self.calcular_compressibilidade()
             },
@@ -538,133 +599,8 @@ class ModeloCanonico30:
         return self._memo['resumo']
 
 
-class ValidaçãoCamada7:
-    """
-    Camada 7 - Falsificação e Validação
-    Implementa testes de Monte Carlo, análise Bayesiana e backtest
-    """
-    
-    def __init__(self, modelo: ModeloCanonico30):
-        self.modelo = modelo
-    
-    def teste_monte_carlo(self, simulacoes: int = 10000) -> Dict:
-        """
-        Executar simulação de Monte Carlo para validar resultados
-        """
-        import random
-        
-        # Pré-calcular scores de cada elemento para evitar recálculos desnecessários
-        analises_atuais = self.modelo.analisar_todos_elementos()
-        scores_map = {a.numero: a.score_mcp for a in analises_atuais}
-        score_atual = statistics.mean([a.score_mcp for a in analises_atuais])
-        
-        resultados_simulados = []
-        universo = list(self.modelo.numeros)
-        k = self.modelo.k
-        
-        for _ in range(simulacoes):
-            # Simular sorteio aleatório
-            sorteio = random.sample(universo, k)
-            resultados_simulados.append(sum(scores_map[numero] for numero in sorteio) / k)
-        
-        percentil = sum(1 for s in resultados_simulados if s >= score_atual) / simulacoes
-        
-        return {
-            "simulacoes": simulacoes,
-            "score_medio_simulado": statistics.mean(resultados_simulados),
-            "score_atual": score_atual,
-            "percentil": percentil,
-            "significativo": percentil < 0.01  # Percentil < 1%
-        }
-    
-    def analise_bayesiana(self) -> Dict:
-        """
-        Análise Bayesiana simplificada para avaliar evidência de padrões
-        """
-        # Hipótese nula: distribuição uniforme (equiprovável)
-        # Hipótese alternativa: existe padrão detectável
-        
-        # Calcular chi-quadrado observado
-        chi_quadrado = 0
-        esperado = self.modelo.T * self.modelo.mu
-        
-        for numero in self.modelo.numeros:
-            observado = self.modelo.contagens_total[numero]
-            chi_quadrado += ((observado - esperado) ** 2) / esperado if esperado > 0 else 0
-        
-        # Fator de Bayes aproximado (simplificado)
-        gl = self.modelo.N - 1  # Graus de liberdade
-        bayes_factor = math.exp(-chi_quadrado / 2) / math.sqrt(2 * math.pi * gl)
-        
-        return {
-            "chi_quadrado": chi_quadrado,
-            "graus_liberdade": gl,
-            "bayes_factor": bayes_factor,
-            "evidencia_forte": bayes_factor > 10
-        }
-    
-    def backtest(self, janela_teste: int = 50) -> Dict:
-        """
-        Realizar backtest usando janela de teste
-        """
-        if self.modelo.T < janela_teste + 50:
-            return {"erro": "Histórico insuficiente para backtest"}
-        
-        # Dividir histórico em treino e teste
-        historico_treino = self.modelo.historico[:-janela_teste]
-        historico_teste = self.modelo.historico[-janela_teste:]
-        
-        # Criar modelo apenas com dados de treino
-        modelo_treino = ModeloCanonico30(historico_treino, self.modelo.loteria_type, config_override=self.modelo.config)
-        
-        # Selecionar top 10 números por score MCP
-        analises = modelo_treino.analisar_todos_elementos()
-        top_numeros = sorted(analises, key=lambda x: x.score_mcp, reverse=True)[:10]
-        top_numeros_set = {a.numero for a in top_numeros}
-        
-        # Testar no período de teste
-        acertos = 0
-        total_sorteados = 0
-        
-        for concurso in historico_teste:
-            for numero in concurso:
-                total_sorteados += 1
-                if numero in top_numeros_set:
-                    acertos += 1
-        
-        taxa_acerto = acertos / total_sorteados if total_sorteados > 0 else 0
-        taxa_esperada = len(top_numeros_set) / self.modelo.N
-        
-        return {
-            "janela_teste": janela_teste,
-            "concursos_teste": len(historico_teste),
-            "acertos": acertos,
-            "total_sorteados": total_sorteados,
-            "taxa_acerto": taxa_acerto,
-            "taxa_esperada": taxa_esperada,
-            "performance_relativa": taxa_acerto / taxa_esperada if taxa_esperada > 0 else 0
-        }
-    
-    def validacao_completa(self) -> Dict:
-        """Executar todas as validaçōes da Camada 7"""
-        monte_carlo = self.teste_monte_carlo()
-        bayesiana = self.analise_bayesiana()
-        backtest = self.backtest()
-        
-        # Critérios de validação MCP-MD
-        validacao_mcp_md = (
-            monte_carlo["percentil"] < 0.01 and
-            bayesiana["bayes_factor"] > 10 and
-            backtest.get("performance_relativa", 0) > 1.2
-        )
-        
-        return {
-            "monte_carlo": monte_carlo,
-            "bayesiana": bayesiana,
-            "backtest": backtest,
-            "validacao_mcp_md": validacao_mcp_md,
-            "conclusao": "MCP-MD válido" if validacao_mcp_md else "MCP-MD não válido - ruído estatístico"
-        }
+# Reexporta a camada 7 para preservar os imports existentes.
+from validacao import ValidaçãoCamada7
 
 
 def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> List[int]:

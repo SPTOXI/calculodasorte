@@ -11,6 +11,7 @@ Integração com APIs de IA:
 import os
 import re
 import json
+import math
 import requests
 from typing import Dict, List, Optional, Any
 
@@ -79,17 +80,16 @@ def _get_claude_key() -> Optional[str]:
     return _get_api_key('claude', ['ANTHROPIC_API_KEY'])
 
 PROMPT_SISTEMA_PARECER = """
-Você é o Agente de Inteligência Artificial Especialista em Análise Estatística e Estratégia do Cálculo da Sorte.
-Sua missão é ler o cenário do sorteio e os dados matemáticos fornecidos (base histórica oficial da Caixa Econômica Federal, ICT - Índice de Convergência Temporal, Entropia de Shannon, Distribuição de Classes A/B/C/D, Score MCP e jogos gerados) e gerar um parecer didático, profissional, motivador e estratégico em português claro do Brasil.
+Você explica os dados estatísticos do Cálculo da Sorte em português claro do Brasil.
+O Modelo Canônico 3.0 descreve o histórico; o MCP-MD 1.0 é uma extensão experimental.
 
 DIRETRIZES ESSENCIAIS:
-1. Explique a estratégia estatística de forma simples, elegante e transparente, traduzindo métricas matemáticas em conceitos fáceis de entender pelo apostador comum.
-2. Destaque por que as combinações são equilibradas (equilíbrio par/ímpar, dispersão de quadrantes/moldura, eliminação de sequências consecutivas improváveis).
-3. Seja responsável e ético: não faça promessas mágicas de enriquecimento fácil ou garantia de 100% de acertos máximos. Destaque que a matemática atua como otimização probabilística contra erros ingênuos.
-4. Estruture seu parecer de forma clara e visual com emojis:
-   - 📊 Diagnóstico do Cenário Atual (análise do ICT, Entropia e maturidade das dezenas)
-   - 🎯 Avaliação da Estratégia dos Jogos Gerados
-   - 💡 3 Recomendações Práticas para a Rodada
+1. Use somente valores e resultados presentes nos dados fornecidos. Se uma métrica, teste ou janela não estiver disponível, informe essa limitação. Não invente números, percentuais, repetições esperadas ou características dos jogos.
+2. FR compara frequência observada com frequência teórica. As classes A/B/C/D ordenam estabilidade temporal RELATIVA pelos quartis de ICT: A tem menor ICT, D tem maior ICT. Elas não representam frequência, atraso ou chance de acerto.
+3. Entropia marginal alta não demonstra independência temporal nem previsibilidade. ICT, ILLA e Score MCP são descritores históricos, não probabilidades. Não anuncie validação do MCP-MD quando os critérios estiverem ausentes, inconclusivos ou não atendidos.
+4. Em sorteios independentes e equiprováveis, todas as combinações válidas de mesmo tamanho têm a mesma chance. A análise não cria vantagem estatística; sequências específicas não são menos prováveis que outras combinações específicas. Mais apostas distintas ampliam cobertura e custo, sem alterar a chance de cada combinação.
+5. Descreva o equilíbrio dos jogos somente quando os indicadores forem fornecidos. Não atribua garantias a filtros, classes ou rankings. Explique as condições de qualquer garantia combinatória documentada.
+6. Organize o parecer em: 📊 Dados observados; 🎯 Descrição dos jogos; 💡 Limitações e uso responsável.
 """
 
 PROMPT_SISTEMA_SUPORTE = """
@@ -238,64 +238,63 @@ def _chamar_claude(prompt: str, system_prompt: str = PROMPT_SISTEMA_PARECER) -> 
 
 
 def _gerar_parecer_heuristico_canonico(loteria_nome: str, dados_analise: Dict[str, Any], jogos_gerados: Optional[List[List[int]]] = None) -> Dict[str, Any]:
-    """
-    Motor Heurístico de IA Nativo do Sistema (Fallback inteligente sem depender de chaves de API).
-    Analisa os dados estatísticos reais e sintetiza um relatório humanizado.
-    """
+    """Parecer descritivo local, limitado às métricas efetivamente fornecidas."""
     classes = dados_analise.get('distribuicao_classes', {})
     estatisticas = dados_analise.get('estatisticas_gerais', {})
     camada_inf = dados_analise.get('camada_informacional', {})
+    resumo_anterior = dados_analise.get('resumo_geral', {})
 
-    concursos = dados_analise.get('total_concursos') or dados_analise.get('resumo_geral', {}).get('total_concursos', 50)
-    ict_medio = estatisticas.get('ict_medio') or dados_analise.get('resumo_geral', {}).get('ict_medio', 0.5)
-    entropia = camada_inf.get('entropia') or dados_analise.get('resumo_geral', {}).get('entropia', 0.8)
+    def valor_atual_ou_anterior(origem, chave):
+        valor = origem.get(chave)
+        return resumo_anterior.get(chave) if valor is None else valor
 
-    classe_a = classes.get('A', 0)
-    classe_b = classes.get('B', 0)
-    classe_c = classes.get('C', 0)
-    classe_d = classes.get('D', 0)
+    def formatar_metrica(valor):
+        if isinstance(valor, (int, float)) and not isinstance(valor, bool) and math.isfinite(valor):
+            return f'{valor:.3f}'
+        return 'não informado'
 
-    # Identificar dezenas mais promissoras
-    analises_ind = dados_analise.get('analises_individuais', [])
-    top_dezenas = sorted(analises_ind, key=lambda x: x.get('score_mcp', 0), reverse=True)[:6]
-    top_nums_str = ', '.join([f"{d.get('numero'):02d}" for d in top_dezenas]) if top_dezenas else "04, 11, 23, 38, 45, 52"
+    concursos = valor_atual_ou_anterior(dados_analise, 'total_concursos')
+    ict = formatar_metrica(valor_atual_ou_anterior(estatisticas, 'ict_medio'))
+    entropia = formatar_metrica(valor_atual_ou_anterior(camada_inf, 'entropia'))
+    linhas = [f"📊 **Análise Canônica para {loteria_nome}**"]
+    if isinstance(concursos, int) and concursos >= 0:
+        linhas.append(f"Base analisada: **{concursos} concursos**.")
+    else:
+        linhas.append("Quantidade de concursos não informada.")
+    linhas.append(f"ICT médio: **{ict}**. Entropia marginal (bits): **{entropia}**.")
+    linhas.append("Essas métricas descrevem o histórico; não demonstram previsibilidade nem independência entre concursos.")
+    if classes:
+        linhas.append("Classes de estabilidade temporal relativa: " + ", ".join(
+            f"{classe}: {classes[classe]}" for classe in 'ABCD' if classe in classes
+        ) + ". A corresponde ao menor ICT e D ao maior ICT.")
 
-    parecer_texto = (
-        f"📊 **Análise Canônica para {loteria_nome}**\n\n"
-        f"Processamos a base histórica de **{concursos} concursos oficiais da Caixa Econômica Federal**. "
-        f"O ecossistema numérico apresenta um **ICT Médio de {ict_medio:.3f}** e **Entropia de {entropia:.3f}**, "
-        f"indicando uma distribuição de alta previsibilidade estocástica e baixa dispersão caótica.\n\n"
-        f"🔍 **Destaques do Cenário Atual:**\n"
-        f"• **Números de Alta Estabilidade (Classe A):** {classe_a} dezenas concentram a maior regularidade nos sorteios recentes.\n"
-        f"• **Zona de Equilíbrio (Classes B e C):** {classe_b + classe_c} dezenas oferecem excelente cobertura para fechamentos intermediários.\n"
-        f"• **Radar Microdinâmico (Score MCP):** As dezenas em maior evidência por aceleração harmônica no momento são: **{top_nums_str}**.\n\n"
-    )
+    mcp = dados_analise.get('mcp_md', {})
+    if mcp.get('disponivel'):
+        linhas.append("O Score MCP está disponível como descritor experimental, sem interpretação de probabilidade de acerto.")
+    else:
+        linhas.append("MCP-MD indisponível: " + (mcp.get('motivo') or "disponibilidade não informada nos dados.") + " O ranking não comprova uma microestrutura.")
+    validacao = dados_analise.get('validacao_camada7', {})
+    if validacao.get('conclusao'):
+        linhas.append("Validação: " + str(validacao['conclusao']))
+    else:
+        linhas.append("Resultado da validação estatística não informado.")
+    if jogos_gerados:
+        linhas.append(f"🎯 **Jogos fornecidos:** {len(jogos_gerados)}. Os indicadores de cada jogo devem ser consultados na avaliação específica.")
 
-    if jogos_gerados and len(jogos_gerados) > 0:
-        total_jogos = len(jogos_gerados)
-        parecer_texto += (
-            f"🎯 **Avaliação dos {total_jogos} Jogos Gerados:**\n"
-            f"As combinações selecionadas respeitaram a proporção canônica de dezenas pares e ímpares, "
-            f"eliminando vícios de sorteio e sequências consecutivas improváveis. "
-            f"Essas apostas otimizam matematicamente a cobertura estatística dentro das faixas oficiais de premiação da Caixa."
-        )
-
+    parecer_texto = "\n\n".join(linhas)
     recomendacoes = [
-        f"Priorize mesclar dezenas das Classes A e B para compor a espinha dorsal de suas apostas na {loteria_nome}.",
-        f"Evite preencher o volante com mais de 3 números consecutivos (ex: 21, 22, 23, 24), padrão que ocorre em menos de 0.8% dos sorteios históricos.",
-        f"Para bolões ou fechamentos, utilize no mínimo {total_jogos if jogos_gerados else 5} jogos balanceados para maximizar a matriz de cobertura."
+        "Em um sistema equiprovável, combinações válidas de mesmo tamanho têm a mesma chance de acerto. O histórico não cria vantagem estatística.",
+        "Use as classes e os scores para descrever o histórico, sem tratá-los como indicação de números mais prováveis.",
+        "Consulte o custo e as probabilidades combinatórias de cada jogo e defina um orçamento fixo."
     ]
-
-    radar_concurso = f"A {loteria_nome} está em ciclo de convergência favorável para dezenas medianas. O padrão de repetição do último sorteio aponta para 1 a 2 dezenas coincidentes."
-
     return {
         'sucesso': True,
-        'provedor': 'Motor Estatístico Canônico 3.0 (IA Heurística)',
-        'provedor_ia': 'Motor Estatístico Canônico 3.0 (IA Heurística)',
+        'provedor': 'Modelo Canônico 3.0 (parecer descritivo local)',
+        'provedor_ia': 'Modelo Canônico 3.0 (parecer descritivo local)',
         'parecer': parecer_texto,
         'parecer_texto': parecer_texto,
         'recomendacoes': recomendacoes,
-        'radar_concurso': radar_concurso
+        'radar_concurso': 'A análise histórica não prevê o próximo concurso.'
     }
 
 

@@ -12,7 +12,7 @@
     <div class="card" style="padding: 30px; line-height: 1.7; color: #334155;">
         <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Como Calculamos Nossas Probabilidades?</h2>
         <p style="margin-bottom: 20px;">
-            Todas as tabelas de probabilidade presentes no <strong>Cálculo da Sorte</strong> utilizam a fórmula clássica de análise combinatória para calcular Combinações Simples:
+            Nos sorteios de dezenas sem reposição, o <strong>Cálculo da Sorte</strong> usa combinações simples para contar os resultados possíveis:
         </p>
         
         <div style="background: #f1f5f9; padding: 15px; text-align: center; font-family: monospace; font-size: 1.2em; border-radius: 8px; margin-bottom: 20px;">
@@ -20,14 +20,32 @@
         </div>
         
         <p style="margin-bottom: 20px;">
-            Onde <strong>n</strong> é o número total de elementos (ex: 60 na Mega-Sena) e <strong>p</strong> é o número de elementos escolhidos por combinação (ex: 6 na aposta simples). 
-            Cruzamos esse valor com o número de apostas geradas pelo desdobramento escolhido pelo usuário para fornecer a probabilidade exata (1 em X).
+            Onde <strong>n</strong> é o número total de elementos (ex.: 60 na Mega-Sena) e <strong>p</strong> é o número de elementos por combinação (ex.: 6). Para uma aposta de <strong>m</strong> dezenas em um sorteio de <strong>k</strong> elementos de um universo de <strong>N</strong>, a chance de exatamente <strong>j</strong> acertos é C(m,j) × C(N−m,k−j) / C(N,k). No Super Sete, com um dígito em cada coluna, os acertos seguem a distribuição binomial de 7 colunas com chance 1/10 por coluna. Probabilidades de vários bilhetes dependem da sobreposição entre eles; não se obtêm somando indiscriminadamente as chances individuais.
+        </p>
+
+        <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Modelo Canônico 3.0: Descrição do Histórico</h2>
+        <p style="margin-bottom: 20px;">
+            A referência documental é o <strong>Modelo Canônico 3.0 — MCSCE</strong>, acompanhado da extensão experimental <strong>MCP-MD 1.0</strong>. Para T concursos, a frequência observada de um elemento é f = contagem/T e sua frequência teórica é μ = k/N. O fator de recorrência é FR = f/μ e o desvio harmônico é |FR−1|. FR igual a 1 indica igualdade com a frequência teórica; não prevê o próximo sorteio.
+        </p>
+        <p style="margin-bottom: 20px;">
+            O ICT descreve estabilidade temporal. As classes A, B, C e D seguem seus quartis, do menor para o maior ICT, e comparam os elementos dentro do histórico analisado. Elas não medem chance de acerto ou frequência alta/baixa. No Super Sete, as análises individuais separam as colunas; o resumo agregado conta ocorrências de dígitos entre posições. Na Dupla Sena com os dois sorteios, uma dezena pode ocorrer duas vezes no mesmo concurso.
+        </p>
+        <p style="margin-bottom: 20px;">
+            O documento consolidado não fixa todas as fórmulas e pesos das sete camadas. ICT, ISEG e componentes do ILLA usam definições operacionais declaradas pelo sistema. A dispersão das frequências e o complemento da entropia normalizada são aproximações descritivas: não constituem testes de complexidade algorítmica, compressão de sequências, fractais ou caos. Entropia marginal alta, isoladamente, não prova independência temporal. A implementação não equivale à validação integral das sete camadas.
+        </p>
+
+        <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">MCP-MD e Validação Experimental</h2>
+        <p style="margin-bottom: 20px;">
+            O MCP-MD compara janelas de 100 e 150 concursos com o histórico total. Seu índice de microcompressão é IMC = (f100−f150) + (f100−fT); após normalização entre os elementos, o score é ILLA + γ × IMC normalizado, com γ = (σ100/σhist)². Sem as duas janelas completas ou com dispersão histórica nula, a extensão é indisponível e o score conserva apenas a base ILLA. Essa base e o score são descritores, não probabilidades.
+        </p>
+        <p style="margin-bottom: 20px;">
+            Os critérios documentados exigem simultaneamente Z acumulado maior que 2, fator de Bayes maior que 10, cauda Monte Carlo menor que 1%, persistência em blocos independentes e robustez em avaliações progressivas fora da amostra (walk-forward). O resultado deve ser lido junto às hipóteses e limitações dos testes. Dados insuficientes produzem uma conclusão inconclusiva. Um ranking ou uma métrica isolada não comprova microestrutura, vantagem estatística ou capacidade de previsão.
         </p>
 
         <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Fonte dos Dados (Histórico de Sorteios)</h2>
         <p style="margin-bottom: 20px;">
             A confiabilidade dos nossos simuladores depende da precisão do banco de dados. 
-            Sincronizamos nossos registros diariamente às 23:59 via API de Dados Abertos e através dos arquivos ZIP oficiais disponibilizados pela Caixa Econômica Federal em seu site público de Loterias.
+            A sincronização consulta resultados públicos da Caixa Econômica Federal. Cada análise informa a quantidade de concursos efetivamente carregados; atrasos na fonte ou no carregamento podem limitar essa base.
         </p>
 
         <h2 style="font-size: 1.4em; color: var(--primary); margin-bottom: 15px;">Matrizes de Fechamento</h2>

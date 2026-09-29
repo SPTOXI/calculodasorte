@@ -381,7 +381,7 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
         fr_medio = sum(analises[n].fr for n in escolhidos) / len(escolhidos)
         classes = Counter(analises[n].classe for n in distintos)
         linhas.append(f"Os jogos cobrem {len(distintos)} dos {config.universo} números do volante.")
-        linhas.append(f"Fator de recorrência médio dos números escolhidos: {fr_medio:.2f} (1,00 = exatamente a média histórica).".replace('.', ',', 1))
+        linhas.append(f"Fator de recorrência médio dos números escolhidos: {fr_medio:.2f} (1,00 = frequência teórica de sorteio).".replace('.', ',', 1))
         linhas.append("Classes canônicas dos números usados: " + ", ".join(f"{c}: {classes.get(c, 0)}" for c in "ABCD") + ".")
     linhas.append(
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')
