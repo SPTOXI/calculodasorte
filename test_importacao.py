@@ -1,6 +1,7 @@
 """Importação de resultados anteriores por planilha (admin)."""
 
 import io
+import json
 import os
 import shutil
 import tempfile
@@ -70,6 +71,26 @@ class TestInterpretacao(unittest.TestCase):
         res = importador.interpretar('quina', importador.ler_arquivo('quina.xlsx', buf.getvalue()))
         self.assertEqual(res['concursos'][0]['dezenas'], [25, 45, 60, 76, 79])
 
+    def test_xlsx_da_caixa_com_dimensao_errada(self):
+        # A planilha oficial da Caixa declara <dimension ref="A1:T1"> mesmo tendo milhares de linhas
+        import re, zipfile
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['Concurso', 'Data do Sorteio', 'Bola1', 'Bola2', 'Bola3', 'Bola4', 'Bola5', 'Bola6', 'Cidade / UF'])
+        ws.append([1, '11/03/1996', 41, 5, 4, 52, 30, 33, None])
+        ws.append([2, '18/03/1996', 9, 39, 37, 49, 43, 41, 'PARANA'])
+        buf = io.BytesIO()
+        wb.save(buf)
+        entrada, saida = zipfile.ZipFile(io.BytesIO(buf.getvalue())), io.BytesIO()
+        with zipfile.ZipFile(saida, 'w') as z:
+            for item in entrada.infolist():
+                dados = entrada.read(item.filename)
+                if item.filename.endswith('sheet1.xml'):
+                    dados = re.sub(rb'<dimension ref="[^"]+"', b'<dimension ref="A1:I1"', dados)
+                z.writestr(item, dados)
+        res = importador.interpretar('mega_sena', importador.ler_arquivo('Mega-Sena.xlsx', saida.getvalue()))
+        self.assertEqual([c['concurso'] for c in res['concursos']], [1, 2])
+
     def test_link_google_sheets(self):
         self.assertEqual(
             importador.url_exportacao_google_sheets('https://docs.google.com/spreadsheets/d/abc_123/edit#gid=77'),
@@ -102,6 +123,13 @@ class TestImportacaoAdmin(unittest.TestCase):
         for arq in os.listdir(origem):
             if arq.startswith('quina_'):
                 shutil.copy(os.path.join(origem, arq), self.tmp)
+        # Estado de produção: a sincronização salva o número de cada concurso do histórico
+        with open(os.path.join(self.tmp, 'quina_historico.json')) as f:
+            n = len(json.load(f))
+        with open(os.path.join(self.tmp, 'quina_meta.json')) as f:
+            ultimo = json.load(f)['ultimo_concurso']
+        with open(os.path.join(self.tmp, 'quina_concursos.json'), 'w') as f:
+            json.dump(list(range(ultimo - n + 1, ultimo + 1)), f)
 
     def tearDown(self):
         database.excluir_concursos_importados('quina')
@@ -133,10 +161,6 @@ class TestImportacaoAdmin(unittest.TestCase):
 
         # Instância nova (cold start no Vercel): os importados voltam do banco
         self.copiar_dados_originais(self.origem)
-        for arq in ('quina_concursos.json',):
-            caminho = os.path.join(self.tmp, arq)
-            if not os.path.exists(os.path.join(self.origem, arq)) and os.path.exists(caminho):
-                os.remove(caminho)
         updater._IMPORTADOS_MESCLADOS.discard('quina')
         updater._HISTORICO_CACHE.pop('quina', None)
         self.assertEqual(len(updater.carregar_historico_local('quina')), antes + 2)
@@ -173,7 +197,7 @@ class TestImportacaoAdmin(unittest.TestCase):
                  for n in range(1, ultimo + 1)]
         antes = len(updater.carregar_historico_local('quina'))
         with patch.object(updater, '_baixar_lista_completa', return_value=lista):
-            res = self.client.post('/api/admin/historico-completo/quina').get_json()
+            res = self.client.post('/api/admin/historico-completo/quina?ultimos=0').get_json()
         self.assertEqual(res['novos'], ultimo - antes)
         self.assertEqual(res['faltam'], 0)
         self.assertEqual(len(updater.carregar_historico_local('quina')), ultimo)
@@ -187,10 +211,51 @@ class TestImportacaoAdmin(unittest.TestCase):
             return {'numero': concurso, 'dataApuracao': '01/01/2000', 'listaDezenas': ['01', '02', '03', '04', '05']}
         with patch.object(updater, '_baixar_lista_completa', return_value=None), \
                 patch.object(updater, 'consultar_caixa', side_effect=falso):
-            res = updater.baixar_historico_completo('quina', limite_segundos=0)
+            res = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0)
         self.assertEqual(res['fonte'], 'concurso a concurso')
-        self.assertEqual(res['novos'], 30)
+        self.assertEqual(res['novos'], 20)
         self.assertEqual(res['faltam'], ultimo - len(updater.carregar_historico_local('quina')))
+
+    def test_somente_os_ultimos_200(self):
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        existentes = updater.concursos_existentes('quina')
+        linhas = ['Concurso;Bola1;Bola2;Bola3;Bola4;Bola5'] + [f'{n};1;2;3;4;{n % 70 + 5}' for n in range(1, ultimo + 1)]
+        res = self.client.post('/api/admin/importar-resultados', data={
+            'loteria': 'quina', 'confirmar': '1',
+            'arquivo': (io.BytesIO('\n'.join(linhas).encode()), 'q.csv')}, content_type='multipart/form-data').get_json()
+        self.assertEqual(res['validos'], 200)
+        self.assertEqual(res['primeiro'], ultimo - 199)
+        self.assertEqual(res['adicionados'], len(set(range(ultimo - 199, ultimo + 1)) - existentes))
+
+        lista = [{'concurso': n, 'dezenas': ['01', '02', '03', '04', f'{n % 70 + 5:02d}']} for n in range(1, ultimo + 1)]
+        with patch.object(updater, '_baixar_lista_completa', return_value=lista):
+            self.assertEqual(self.client.post('/api/admin/historico-completo/quina').get_json()['novos'], 0)
+
+    def test_historico_defasado_sem_numeracao(self):
+        # Histórico sem numeração cujo último sorteio não é o do último concurso: a numeração
+        # não pode ser deduzida, então os concursos numerados da planilha prevalecem
+        os.remove(os.path.join(self.tmp, 'quina_concursos.json'))
+        with open(os.path.join(self.tmp, 'quina_ultimo_resultado.json'), 'w') as f:
+            json.dump({'numero': updater.carregar_meta('quina')['ultimo_concurso'],
+                       'listaDezenas': ['01', '02', '03', '04', '05']}, f)
+        updater._HISTORICO_CACHE.pop('quina', None)
+        self.assertEqual(updater.concursos_existentes('quina'), set())
+        self.assertEqual(self._enviar(True).get_json()['adicionados'], 2)
+        self.assertEqual(updater.carregar_concursos_local('quina'), [1, 2])
+
+    def test_rodadas_continuam_de_onde_pararam(self):
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        pedidos = []
+        def falso(slug, concurso=None, max_retries=2):
+            pedidos.append(concurso)
+            return None  # API fora do ar
+        with patch.object(updater, 'consultar_caixa', side_effect=falso):
+            r1 = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0, abaixo_de=ultimo - 50)
+            r2 = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0, abaixo_de=r1['proximo'])
+        self.assertEqual(r1['falhas'], 20)
+        self.assertEqual(max(pedidos), ultimo - 51)
+        self.assertLess(max(p for p in pedidos[20:]), min(pedidos[:20]))  # não repete os que falharam
+        self.assertEqual(r2['faltam'], r1['faltam'] - 20)
 
     def test_somente_admin(self):
         cliente = app.test_client()
