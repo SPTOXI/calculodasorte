@@ -221,7 +221,7 @@ class TestImportacaoAdmin(unittest.TestCase):
         existentes = updater.concursos_existentes('quina')
         linhas = ['Concurso;Bola1;Bola2;Bola3;Bola4;Bola5'] + [f'{n};1;2;3;4;{n % 70 + 5}' for n in range(1, ultimo + 1)]
         res = self.client.post('/api/admin/importar-resultados', data={
-            'loteria': 'quina', 'confirmar': '1',
+            'loteria': 'quina', 'confirmar': '1', 'ultimos': '200',
             'arquivo': (io.BytesIO('\n'.join(linhas).encode()), 'q.csv')}, content_type='multipart/form-data').get_json()
         self.assertEqual(res['validos'], 200)
         self.assertEqual(res['primeiro'], ultimo - 199)
@@ -229,7 +229,15 @@ class TestImportacaoAdmin(unittest.TestCase):
 
         lista = [{'concurso': n, 'dezenas': ['01', '02', '03', '04', f'{n % 70 + 5:02d}']} for n in range(1, ultimo + 1)]
         with patch.object(updater, '_baixar_lista_completa', return_value=lista):
-            self.assertEqual(self.client.post('/api/admin/historico-completo/quina').get_json()['novos'], 0)
+            self.assertEqual(self.client.post('/api/admin/historico-completo/quina?ultimos=200').get_json()['novos'], 0)
+
+    def test_padrao_sao_os_ultimos_300(self):
+        ultimo = updater.carregar_meta('quina')['ultimo_concurso'] + 400
+        linhas = ['Concurso;Bola1;Bola2;Bola3;Bola4;Bola5'] + [f'{n};1;2;3;4;{n % 70 + 5}' for n in range(1, ultimo + 1)]
+        res = self.client.post('/api/admin/importar-resultados', data={
+            'loteria': 'quina', 'confirmar': '0',
+            'arquivo': (io.BytesIO('\n'.join(linhas).encode()), 'q.csv')}, content_type='multipart/form-data').get_json()
+        self.assertEqual((res['validos'], res['primeiro'], res['ultimo']), (300, ultimo - 299, ultimo))
 
     def test_historico_defasado_sem_numeracao(self):
         # Histórico sem numeração cujo último sorteio não é o do último concurso: a numeração

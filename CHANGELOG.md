@@ -5,6 +5,25 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 
 ---
 
+### [v1.8.0] - 2026-09-29 — Alinhamento do Modelo Canônico ao documento (janelas de 100/150 concursos) & Importação de resultados anteriores
+#### 🔬 Modelo Canônico 3.0 / MCP-MD (`core.py`, `validacao.py`) — commit `399f42c`
+- **MCP-MD só com histórico completo:** o IMC, o γ e o score MCP exigem **pelo menos 150 concursos**, para completar as janelas formais **W1 = 100** e **W2 = 150** (antes eram calculados com janelas truncadas). Abaixo disso, o modelo informa `MCP-MD indisponível` e o motivo em `obter_status_mcp()`, sem contribuição do MCP no score.
+- **γ = Var(W1) / Var(histórico)**, sem elevar ao quadrado uma segunda vez; indefinido quando a dispersão histórica é nula.
+- **Classes do ICT por quartis** do próprio histórico (empates na mesma classe), no lugar dos limites fixos 0,25 / 0,50 / 0,75. As classes A–D são descritores relativos, não probabilidade de acerto.
+- **Aproximações operacionais declaradas:** ICT, ISEG, C_i, P_i, pesos do ILLA e limiares de maturidade não têm fórmula no documento canônico; agora aparecem como aproximações na resposta da API e na página de metodologia.
+- **Validação estatística em módulo próprio (`validacao.py`):** Monte Carlo reprodutível (semente fixa), Bayes Factor, correção de população finita e backtest walk-forward em blocos cronológicos disjuntos. **Todos os critérios** são obrigatórios: Z acumulado > 2, Bayes Factor > 10, percentil Monte Carlo < 1%, persistência em múltiplos blocos independentes e robustez no walk-forward. Com dados insuficientes o resultado é **inconclusivo**; critérios não atendidos significam "não validado nesse recorte" (não prova ruído nem vantagem futura).
+- **Validação dos dados de entrada:** o histórico é conferido (inteiros, sem repetição, faixa da loteria) antes do cálculo; Dupla Sena conta os dois sorteios e Super Sete trata as colunas.
+- Testes novos: `test_modelo_canonico.py` e `test_validacao_canonica.py`. README e página `/metodologia` atualizados.
+
+#### 📥 Importação de resultados anteriores (Admin → Loterias)
+- Por loteria, a partir de **planilha Excel (.xlsx)**, **CSV**, **link do Google Sheets** ou **texto colado do Excel**; a planilha oficial da Caixa é aceita sem edição (colunas extras são ignoradas).
+- **Botão "Baixar tudo da API":** busca os concursos em rodadas curtas, compatíveis com o limite de tempo do Vercel.
+- **Só os últimos N concursos** (padrão **300**; 0 = todos) e **concursos que já existem são ignorados**; a prévia mostra novos × existentes antes de gravar.
+- Os dados ficam no PostgreSQL (`concursos_importados`) e são reaplicados após cada sincronização e a cada instância nova do Vercel.
+- **Efeito sobre o modelo:** o histórico do repositório tem só 27–50 concursos por loteria, então o MCP-MD ficava indisponível. Com **150 ou mais** concursos o MCP-MD passa a ser calculado; a validação walk-forward usa blocos de 50 concursos e precisa de **300** (150 de treino + 3 × 50) para completar os 3 blocos, por isso o padrão de importação é 300. Com 200 ela fica inconclusiva (1 bloco). Nenhuma linha do modelo (`core.py`, `validacao.py`) foi alterada; a validação com 300 concursos leva cerca de 0,25 s.
+
+---
+
 ### [v1.7.0] - 2026-09-08 — Preço Único de R$ 5,00 para Análise Avulsa & Padrões de Privacidade LGPD (Lei nº 13.709/2018)
 #### 🚀 Novas Funcionalidades
 - **Preço Único de R$ 5,00 para Análise Avulsa:**

@@ -620,7 +620,7 @@ def _baixar_lista_completa(slug: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def baixar_historico_completo(loteria_type: str, limite_segundos: float = 6,
-                              usar_lista_completa: bool = True, ultimos: int = 200,
+                              usar_lista_completa: bool = True, ultimos: int = 300,
                               abaixo_de: Optional[int] = None) -> Dict[str, Any]:
     """Baixa da API todos os concursos da loteria que ainda não temos (os existentes são
     ignorados), grava no banco e mescla ao histórico. Primeiro tenta a lista completa numa
