@@ -1,7 +1,6 @@
 {% extends "dashboard_base.html" %}
 {% block head_extra %}
-<link rel="alternate" type="text/markdown" href="https://www.calculodasorte.com.br/{{ request.path.lstrip('/') }}.md">
-<link rel="canonical" href="https://www.calculodasorte.com.br/{{ request.path.lstrip('/') }}">
+<link rel="alternate" type="text/markdown" href="https://www.calculodasorte.com.br/{{ request.path.lstrip('/').replace('_', '-') }}.md">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

@@ -1,24 +1,24 @@
 {
   "trevosSorteados": null,
   "acumulado": false,
-  "dataApuracao": "22/09/2026",
-  "dataProximoConcurso": "23/09/2026",
+  "dataApuracao": "27/09/2026",
+  "dataProximoConcurso": "28/09/2026",
   "dezenasSorteadasOrdemSorteio": [
-    "06",
-    "03",
-    "13",
-    "12",
-    "24",
-    "16",
-    "08",
-    "21",
-    "09",
-    "23",
-    "07",
-    "01",
     "25",
+    "20",
+    "07",
+    "06",
     "14",
-    "18"
+    "16",
+    "04",
+    "21",
+    "01",
+    "17",
+    "15",
+    "05",
+    "03",
+    "09",
+    "11"
   ],
   "exibirDetalhamentoPorCidade": false,
   "id": null,
@@ -26,29 +26,29 @@
   "listaDezenas": [
     "01",
     "03",
+    "04",
+    "05",
     "06",
     "07",
-    "08",
     "09",
-    "12",
-    "13",
+    "11",
     "14",
+    "15",
     "16",
-    "18",
+    "17",
+    "20",
     "21",
-    "23",
-    "24",
     "25"
   ],
   "listaDezenasSegundoSorteio": null,
   "listaMunicipioUFGanhadores": [
     {
       "ganhadores": 1,
-      "municipio": "FORTALEZA",
+      "municipio": "CAPIM BRANCO",
       "nomeFatansiaUL": "",
       "posicao": 1,
       "serie": "",
-      "uf": "CE"
+      "uf": "MG"
     }
   ],
   "listaRateioPremio": [
@@ -56,30 +56,30 @@
       "descricaoFaixa": "15 acertos",
       "faixa": 1,
       "numeroDeGanhadores": 1,
-      "valorPremio": 1490773.81
+      "valorPremio": 6473807.39
     },
     {
       "descricaoFaixa": "14 acertos",
       "faixa": 2,
-      "numeroDeGanhadores": 191,
-      "valorPremio": 2337.93
+      "numeroDeGanhadores": 423,
+      "valorPremio": 2094.06
     },
     {
       "descricaoFaixa": "13 acertos",
       "faixa": 3,
-      "numeroDeGanhadores": 7356,
+      "numeroDeGanhadores": 14642,
       "valorPremio": 35
     },
     {
       "descricaoFaixa": "12 acertos",
       "faixa": 4,
-      "numeroDeGanhadores": 85249,
+      "numeroDeGanhadores": 176691,
       "valorPremio": 14
     },
     {
       "descricaoFaixa": "11 acertos",
       "faixa": 5,
-      "numeroDeGanhadores": 451418,
+      "numeroDeGanhadores": 928640,
       "valorPremio": 7
     }
   ],
@@ -87,19 +87,19 @@
   "localSorteio": "ESPAÇO DA SORTE",
   "nomeMunicipioUFSorteio": "SÃO PAULO, SP",
   "nomeTimeCoracaoMesSorte": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
-  "numero": 3786,
-  "numeroConcursoAnterior": 3785,
-  "numeroConcursoFinal_0_5": 3790,
-  "numeroConcursoProximo": 3787,
+  "numero": 3790,
+  "numeroConcursoAnterior": 3789,
+  "numeroConcursoFinal_0_5": 3800,
+  "numeroConcursoProximo": 3791,
   "numeroJogo": 8,
   "observacao": "",
   "premiacaoContingencia": null,
   "tipoJogo": "LOTOFACIL",
   "tipoPublicacao": 3,
   "ultimoConcurso": true,
-  "valorArrecadado": 18373680.5,
-  "valorAcumuladoConcurso_0_5": 1740436.21,
-  "valorAcumuladoConcursoEspecial": 2610654.43,
+  "valorArrecadado": 37224019,
+  "valorAcumuladoConcurso_0_5": 0,
+  "valorAcumuladoConcursoEspecial": 5274944.43,
   "valorAcumuladoProximoConcurso": 0,
   "valorEstimadoProximoConcurso": 2000000,
   "valorSaldoReservaGarantidora": 0,

@@ -28,14 +28,14 @@
     <title>{{ post.title }} — Cálculo da Sorte</title>
     <meta name="description" content="{{ post.description }}">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://www.calculodasorte.com.br/blog/{{ slug }}">
+    <link rel="canonical" href="https://www.calculodasorte.com.br/blog/{{ post.get('canonical_slug', slug) }}">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 
     <!-- Open Graph / Redes Sociais e WhatsApp -->
     <meta property="og:type" content="article">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:site_name" content="Cálculo da Sorte">
-    <meta property="og:url" content="https://www.calculodasorte.com.br/blog/{{ slug }}">
+    <meta property="og:url" content="https://www.calculodasorte.com.br/blog/{{ post.get('canonical_slug', slug) }}">
     <meta property="og:title" content="{{ post.title }}">
     <meta property="og:description" content="{{ post.description }}">
     <meta property="og:image" content="https://www.calculodasorte.com.br/static/og-banner.png">

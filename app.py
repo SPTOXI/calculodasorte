@@ -89,16 +89,15 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 @app.before_request
 def enforce_canonical_domain():
-    # Only redirect in production if the host is calculodasorte.com.br
+    # Only redirect in production if the host is calculodasorte.com.br or calculadoradasorte.com.br
     # Avoid breaking localhost, 127.0.0.1 or Vercel preview domains
-    host = request.headers.get('Host', '')
-    if host == 'calculodasorte.com.br':
-        url = request.url.replace('http://', 'https://', 1).replace('calculodasorte.com.br', 'www.calculodasorte.com.br', 1)
-        return redirect(url, code=301)
+    host = request.headers.get('Host', '').split(':')[0].lower()
+    if host in ('calculodasorte.com.br', 'calculadoradasorte.com.br', 'www.calculadoradasorte.com.br'):
+        return redirect(f"https://www.calculodasorte.com.br{request.full_path.rstrip('?')}", code=301)
     # Redirect http to https for www.calculodasorte.com.br if behind proxy (X-Forwarded-Proto)
     proto = request.headers.get('X-Forwarded-Proto', 'http')
     if host == 'www.calculodasorte.com.br' and proto == 'http':
-        return redirect(request.url.replace('http://', 'https://', 1), code=301)
+        return redirect(f"https://www.calculodasorte.com.br{request.full_path.rstrip('?')}", code=301)
 
 @app.route('/robots.txt')
 def robots_txt():
@@ -170,7 +169,7 @@ def sitemap_paginas():
     host = "https://www.calculodasorte.com.br"
     hoje = datetime.now().strftime('%Y-%m-%d')
     urls = [
-        '/', '/sobre', '/metodologia', '/autor/silvio-morais', '/planos'
+        '/', '/resultados', '/sobre', '/metodologia', '/autor/silvio-morais', '/planos', '/privacidade', '/termos'
     ]
     
     parts = [
@@ -282,10 +281,20 @@ def sitemap_blog():
     parts.append(f'    <lastmod>{hoje}</lastmod>')
     parts.append('  </url>')
     for slug, post in BLOG_POSTS.items():
+        if post.get('redirect_only') or post.get('canonical_slug'):
+            continue
         parts.append('  <url>')
         parts.append(f'    <loc>{host}/blog/{slug}</loc>')
         parts.append(f'    <lastmod>{post.get("date", hoje)}</lastmod>')
         parts.append('  </url>')
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        slug_canonico = loteria_enum.value.replace('_', '-')
+        post = _gerar_post_acumulado(slug_canonico)
+        if post:
+            parts.append('  <url>')
+            parts.append(f'    <loc>{host}/blog/concurso-acumulado-{slug_canonico}</loc>')
+            parts.append(f'    <lastmod>{hoje}</lastmod>')
+            parts.append('  </url>')
 
     parts.append('</urlset>')
     xml = "\n".join(parts)
@@ -367,11 +376,14 @@ Este serviço organiza dados matemáticos e oficiais. NÃO fazemos apostas, NÃO
 - [Lotofácil](/lotofacil): Fechamentos e análises da Lotofácil.
 - [Quina](/quina): Ferramentas gratuitas para Quina.
 - [Lotomania](/lotomania): Ferramentas gratuitas para Lotomania.
-- [Super Sete](/super_sete): Ferramentas gratuitas para Super Sete.
-- [Dupla Sena](/dupla_sena): Ferramentas gratuitas para Dupla Sena.
+- [Super Sete](/super-sete): Ferramentas gratuitas para Super Sete.
+- [Dupla Sena](/dupla-sena): Ferramentas gratuitas para Dupla Sena.
 - [Timemania](/timemania): Ferramentas gratuitas para Timemania.
-- [Dia de Sorte](/dia_de_sorte): Ferramentas gratuitas para Dia de Sorte.
-- [+Milionária](/mais_milionaria): Ferramentas gratuitas para +Milionária.
+- [Dia de Sorte](/dia-de-sorte): Ferramentas gratuitas para Dia de Sorte.
+- [+Milionária](/mais-milionaria): Ferramentas gratuitas para +Milionária.
+
+## Resultados Oficiais
+- [Central de Resultados](/resultados): Resultados mais recentes das 9 loterias da Caixa.
 
 ## Estatísticas
 - [/lotofacil/numeros-mais-sorteados](/lotofacil/numeros-mais-sorteados): Números que mais saem na Lotofácil.
@@ -985,7 +997,8 @@ BLOG_POSTS = {
         'date': '2026-09-13',
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Analisamos todos os sorteios da história para descobrir quais as dezenas mais sorteadas na Lotofácil e como usar isso a seu favor com um gerador inteligente.',
-        'template': 'blog/artigo_11.html'
+        'template': 'blog/artigo_11.html',
+        'redirect_only': True
     },
     'frequencia-estatistica-de-dezenas': {
         'title': 'Frequência Estatística de Dezenas: Estudo Histórico de Sorteios',
@@ -999,7 +1012,8 @@ BLOG_POSTS = {
         'date': '2026-09-13',
         'author': 'Equipe Cálculo da Sorte',
         'description': 'Existe método 100% garantido? Desmistificamos falsas promessas e ensinamos como simuladores de fechamento da Lotofácil aumentam sua eficiência.',
-        'template': 'blog/artigo_12.html'
+        'template': 'blog/artigo_12.html',
+        'canonical_slug': 'probabilidade-matematica-e-estatistica'
     },
     'probabilidade-matematica-e-estatistica': {
         'title': 'Probabilidade Matemática e Estatística: O Fim do Mito e a Ciência dos Sorteios',
@@ -1148,7 +1162,10 @@ def _gerar_post_acumulado(loteria_slug):
 
 @app.route('/blog')
 def blog_index():
-    posts = dict(BLOG_POSTS)
+    posts = {
+        s: p for s, p in BLOG_POSTS.items()
+        if not p.get('redirect_only') and not p.get('canonical_slug')
+    }
     for loteria_enum in LOTERIAS_CONFIG.keys():
         slug_canonico = loteria_enum.value.replace('_', '-')
         post = _gerar_post_acumulado(slug_canonico)

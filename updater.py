@@ -184,12 +184,11 @@ def invalidar_cache_resultado(loteria_type: Optional[str] = None):
 
 def obter_ultimo_resultado_completo(loteria_type: str, forcar_online: bool = False) -> Optional[Dict[str, Any]]:
     """
-    Obtém o resultado mais recente para a loteria com garantia de entrega:
+    Obtém o resultado mais recente para a loteria com garantia de entrega e baixa latência (< 5ms):
     1. Cache em memória recente (120 segundos)
-    2. Consulta online resiliente (Guidi, Caixa, Heroku)
-    3. Fallback para banco persistente PostgreSQL (database.obter_ultimo_resultado_db)
-    4. Fallback para arquivo _ultimo_resultado.json atualizado
-    5. Fallback sintético baseado no histórico/meta
+    2. Quando forcar_online=False, usa o resultado local sincronizado (_ultimo_resultado.json / DB)
+    3. Consulta online resiliente (Guidi, Caixa, Heroku) quando forcar_online=True ou sem cache local
+    4. Fallback sintético baseado no histórico/meta
     """
     now = time.time()
     
@@ -200,8 +199,25 @@ def obter_ultimo_resultado_completo(loteria_type: str, forcar_online: bool = Fal
     slug = LOTERIAS_SLUGS.get(loteria_type)
     if not slug:
         return None
+
+    # 2. Para leitura rápida em páginas públicas (SEO/Blog), usar o resultado sincronizado localmente ou no DB
+    if not forcar_online:
+        dados_local = carregar_ultimo_resultado_local(loteria_type)
+        if dados_local and dados_local.get('numero'):
+            _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_local
+            _RESULTADO_COMPLETO_TIME[loteria_type] = now
+            return dados_local
+        try:
+            dados_db = database.obter_ultimo_resultado_db(loteria_type)
+            if dados_db and dados_db.get('numero'):
+                _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_db
+                _RESULTADO_COMPLETO_TIME[loteria_type] = now
+                salvar_ultimo_resultado_local(loteria_type, dados_db)
+                return dados_db
+        except Exception:
+            pass
         
-    # 2. Tentar consulta online
+    # 3. Consulta online (quando forcar_online=True ou quando não há cache local/DB)
     dados = consultar_caixa(slug)
     if dados and dados.get('numero'):
         _RESULTADO_COMPLETO_CACHE[loteria_type] = dados
@@ -213,7 +229,7 @@ def obter_ultimo_resultado_completo(loteria_type: str, forcar_online: bool = Fal
             pass
         return dados
         
-    # 3. Fallback para banco de dados persistente PostgreSQL (Supabase)
+    # 4. Fallback para banco de dados persistente PostgreSQL (Supabase) e disco local
     try:
         dados_db = database.obter_ultimo_resultado_db(loteria_type)
         if dados_db and dados_db.get('numero'):
@@ -224,7 +240,6 @@ def obter_ultimo_resultado_completo(loteria_type: str, forcar_online: bool = Fal
     except Exception:
         pass
 
-    # 4. Fallback para cache local em disco (_ultimo_resultado.json)
     dados_local = carregar_ultimo_resultado_local(loteria_type)
     if dados_local and dados_local.get('numero'):
         _RESULTADO_COMPLETO_CACHE[loteria_type] = dados_local

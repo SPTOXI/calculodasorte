@@ -53,7 +53,7 @@
         {
           "@type": "WebPage",
           "name": {{ loteria.nome|tojson }},
-          "url": "https://www.calculodasorte.com.br/resultados/{{ loteria.id }}"
+          "url": "https://www.calculodasorte.com.br/resultados/{{ loteria.id.replace('_', '-') }}"
         }{% if not loop.last %},{% endif %}
         {% endfor %}
       ]
@@ -121,7 +121,7 @@
 
         <div class="resultados-grid">
             {% for loteria in loterias %}
-            <a href="/resultados/{{ loteria.id }}" class="resultado-card">
+            <a href="/resultados/{{ loteria.id.replace('_', '-') }}" class="resultado-card">
                 <div class="resultado-icon" style="background:{{ loteria.theme.cor_gradiente }};">{{ loteria.theme.icone }}</div>
                 <div>
                     <div class="resultado-nome">{{ loteria.nome }}</div>

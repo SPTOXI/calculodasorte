@@ -1,81 +1,19 @@
 {
-  "acumulado": true,
-  "dataApuracao": "21/09/2026",
-  "dataProximoConcurso": "23/09/2026",
-  "dezenasSorteadasOrdemSorteio": [
-    "5",
-    "2",
-    "6",
-    "7",
-    "2",
-    "4",
-    "5"
-  ],
-  "exibirDetalhamentoPorCidade": false,
-  "id": null,
-  "indicadorConcursoEspecial": 1,
+  "numero": 904,
+  "dataApuracao": "28/09/2026",
   "listaDezenas": [
-    "5",
-    "2",
-    "6",
-    "7",
-    "2",
-    "4",
-    "5"
+    "03",
+    "08",
+    "01",
+    "00",
+    "03",
+    "04",
+    "06"
   ],
   "listaDezenasSegundoSorteio": null,
-  "listaMunicipioUFGanhadores": [],
-  "listaRateioPremio": [
-    {
-      "descricaoFaixa": "7 acertos",
-      "faixa": 1,
-      "numeroDeGanhadores": 0,
-      "valorPremio": 0.0
-    },
-    {
-      "descricaoFaixa": "6 acertos",
-      "faixa": 2,
-      "numeroDeGanhadores": 8,
-      "valorPremio": 9379.53
-    },
-    {
-      "descricaoFaixa": "5 acertos",
-      "faixa": 3,
-      "numeroDeGanhadores": 108,
-      "valorPremio": 992.54
-    },
-    {
-      "descricaoFaixa": "4 acertos",
-      "faixa": 4,
-      "numeroDeGanhadores": 1531,
-      "valorPremio": 70.01
-    },
-    {
-      "descricaoFaixa": "3 acertos",
-      "faixa": 5,
-      "numeroDeGanhadores": 14438,
-      "valorPremio": 6.0
-    }
-  ],
-  "listaResultadoEquipeEsportiva": null,
-  "localSorteio": "Espaço da Sorte",
-  "nomeMunicipioUFSorteio": "SAO PAULO, SP",
-  "nomeTimeCoracaoMesSorte": null,
-  "numero": 901,
-  "numeroConcursoAnterior": 900,
-  "numeroConcursoFinal_0_5": 0,
-  "numeroConcursoProximo": 902,
-  "numeroJogo": 7,
-  "observacao": "",
-  "premiacaoContingencia": null,
-  "tipoJogo": "SUPER_SETE",
-  "tipoPublicacao": 3,
-  "ultimoConcurso": true,
-  "valorArrecadado": 1829775.0,
-  "valorAcumuladoConcurso_0_5": 0.0,
-  "valorAcumuladoConcursoEspecial": 0.0,
-  "valorAcumuladoProximoConcurso": 8598320.39,
-  "valorEstimadoProximoConcurso": 8800000.0,
-  "valorSaldoReservaGarantidora": 0.0,
-  "valorTotalPremioFaixaUm": 275139.4
+  "acumulado": true,
+  "valorEstimadoProximoConcurso": 9700000.0,
+  "dataProximoConcurso": "30/09/2026",
+  "listaTrevos": [],
+  "nomeTimeCoracaoMesSorte": null
 }
