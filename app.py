@@ -1506,7 +1506,7 @@ def api_admin_sincronizar_todas():
     return jsonify(res)
 
 
-def _ultimos_concursos(valor, padrao: int = 200) -> int:
+def _ultimos_concursos(valor, padrao: int = 300) -> int:
     """Quantos dos concursos mais recentes importar (0 = todos)."""
     try:
         return max(0, int(valor))

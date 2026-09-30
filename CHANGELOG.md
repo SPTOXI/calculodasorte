@@ -18,9 +18,9 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 #### 📥 Importação de resultados anteriores (Admin → Loterias)
 - Por loteria, a partir de **planilha Excel (.xlsx)**, **CSV**, **link do Google Sheets** ou **texto colado do Excel**; a planilha oficial da Caixa é aceita sem edição (colunas extras são ignoradas).
 - **Botão "Baixar tudo da API":** busca os concursos em rodadas curtas, compatíveis com o limite de tempo do Vercel.
-- **Só os últimos N concursos** (padrão **200**; 0 = todos) e **concursos que já existem são ignorados**; a prévia mostra novos × existentes antes de gravar.
+- **Só os últimos N concursos** (padrão **300**; 0 = todos) e **concursos que já existem são ignorados**; a prévia mostra novos × existentes antes de gravar.
 - Os dados ficam no PostgreSQL (`concursos_importados`) e são reaplicados após cada sincronização e a cada instância nova do Vercel.
-- **Efeito sobre o modelo:** o histórico do repositório tem só 27–50 concursos por loteria, então o MCP-MD ficava indisponível. Com **150 ou mais** concursos o MCP-MD passa a ser calculado; a validação walk-forward usa blocos de 50 concursos e precisa de **300** (150 de treino + 3 × 50) para completar os 3 blocos. Com 200 ela fica inconclusiva (1 bloco).
+- **Efeito sobre o modelo:** o histórico do repositório tem só 27–50 concursos por loteria, então o MCP-MD ficava indisponível. Com **150 ou mais** concursos o MCP-MD passa a ser calculado; a validação walk-forward usa blocos de 50 concursos e precisa de **300** (150 de treino + 3 × 50) para completar os 3 blocos, por isso o padrão de importação é 300. Com 200 ela fica inconclusiva (1 bloco). Nenhuma linha do modelo (`core.py`, `validacao.py`) foi alterada; a validação com 300 concursos leva cerca de 0,25 s.
 
 ---
 
