@@ -35,7 +35,7 @@
                 {% if access and access.is_vip %}
                     <span class="badge-plan badge-vip">{{ '⏱️ ACESSO 24 HORAS' if access.plan == 'vip_24h' else '👑 PLANO VIP MENSAL' }}</span>
                 {% elif access and access.credits > 0 %}
-                    <span class="badge-plan badge-free">🪙 {{ access.credits }} CRÉDITO(S) DE CORTESIA</span>
+                    <span class="badge-plan badge-free">🪙 {{ access.credits }} CRÉDITO(S) DISPONÍVEIS</span>
                 {% else %}
                     <span class="badge-plan" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3);">⚠️ SEM CRÉDITOS</span>
                 {% endif %}
@@ -90,7 +90,7 @@
                         {% if access and access.is_vip %}
                             <strong style="color: #C97400;">{{ 'Acesso 24 Horas ativo' if access.plan == 'vip_24h' else 'VIP Mensal ativo (Acesso Total)' }}</strong>
                         {% else %}
-                            <strong style="color: #0046AD;">Plano Gratuito / Degustação</strong>
+                            <strong style="color: #0046AD;">Conta Padrão / Avulso</strong>
                         {% endif %}
                     </span>
                 </div>
@@ -113,7 +113,7 @@
 
                 <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 10px;">
                     <a href="/planos" class="btn-submit" style="text-align: center; text-decoration: none; display: block;">
-                        🚀 Fazer Recarga de R$ 5,00 ou Assinar VIP
+                        🚀 Comprar Análises ou Assinar VIP
                     </a>
                 </div>
             </div>

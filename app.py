@@ -61,6 +61,7 @@ from collections import defaultdict
 app = Flask(__name__)
 
 # Configuração Criptográfica de Sessão (Proteção contra falsificação de cookies)
+PRECO_ANALISE = 1.00
 PRECO_AVULSO = 5.00
 PRECO_MENSAL = 49.90
 secret_from_env = os.getenv('SECRET_KEY')
@@ -796,7 +797,7 @@ def planos_page():
 @app.route('/cadastro', methods=['GET', 'POST'])
 @rate_limit(max_requests=10, window_seconds=60)
 def cadastro():
-    """Auto-cadastro de novos apostadores com 1 crédito grátis de cortesia"""
+    """Auto-cadastro de novos apostadores (oferta de 1 análise por R$ 1,00)"""
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
 
@@ -834,7 +835,7 @@ def cadastro():
                     name=nome,
                     role='user',
                     plan='free',
-                    credits=1, # 1 crédito de degustação gratuito!
+                    credits=0, # Sem análise gratuita; oferta promocional de 1 real no cadastro
                     accepted_terms=True
                 )
                 session.permanent = True
@@ -848,6 +849,8 @@ def cadastro():
                     return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Assine seu Plano VIP abaixo:'))
                 elif plano_desejado == 'avulso':
                     return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Adquira seu Acesso de 24 Horas abaixo:'))
+                elif plano_desejado in ['analise', 'promocional']:
+                    return redirect(url_for('planos_page', sucesso='Conta criada com sucesso! Aproveite o bônus: pague 1 real por análise completa abaixo:'))
                 
                 return redirect(url_for('dashboard'))
             except Exception as e:
@@ -1969,7 +1972,7 @@ def gerar_jogo(loteria_type: str):
     })
 
 
-MSG_ACESSO_EXPIRADO = 'Seu tempo de acesso expirou. Assine o Plano VIP Ilimitado (R$ 49,90/mês) ou adquira um Acesso de 24 Horas para continuar gerando jogos.'
+MSG_ACESSO_EXPIRADO = 'Seu tempo de acesso ou créditos expiraram. Libere 1 análise por R$ 1,00, Acesso 24 Horas por R$ 5,00 ou assine o Plano VIP Ilimitado (R$ 49,90/mês) para continuar gerando jogos.'
 
 
 def _acesso_bloqueado(user_id):
@@ -2188,12 +2191,14 @@ def api_avaliar_jogos(loteria_type: str):
 @app.route('/api/checkout/pix', methods=['POST'])
 @login_required
 def api_checkout_pix():
-    """Gera cobrança PIX para assinatura VIP ou recarga avulsa (Preço Único R$ 5,00)"""
+    """Gera cobrança PIX para assinatura VIP, recarga avulsa (24h) ou 1 análise promocional (R$ 1,00)"""
     try:
         dados = request.get_json(silent=True) or {}
         tipo = dados.get('tipo', 'vip_mensal')
         if tipo == 'vip_mensal':
             valor = PRECO_MENSAL
+        elif tipo in ['analise', 'analise_1', 'credito']:
+            valor = PRECO_ANALISE  # Bônus promocional: R$ 1,00 por análise completa
         else:
             valor = PRECO_AVULSO  # Preço único padronizado de R$ 5,00 para qualquer loteria
         loteria_type = dados.get('loteria_type')
@@ -2278,6 +2283,9 @@ def api_checkout_infinitepay():
         if tipo == 'vip_mensal':
             valor = PRECO_MENSAL
             descricao = "Plano VIP Mensal (30 dias) - Cálculo da Sorte"
+        elif tipo in ['analise', 'analise_1', 'credito']:
+            valor = PRECO_ANALISE
+            descricao = "1 Análise Completa (R$ 1,00) - Cálculo da Sorte"
         else:
             valor = PRECO_AVULSO  # Preço único padronizado de R$ 5,00 para qualquer loteria
             descricao = "Acesso 24 Horas (R$ 5,00) - Cálculo da Sorte"

@@ -156,7 +156,7 @@ def init_db():
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'user',
                 plan TEXT NOT NULL DEFAULT 'free',
-                credits INTEGER NOT NULL DEFAULT 1,
+                credits INTEGER NOT NULL DEFAULT 0,
                 vip_expires_at TIMESTAMP,
                 is_blocked INTEGER NOT NULL DEFAULT 0,
                 must_change_password INTEGER NOT NULL DEFAULT 0,
@@ -336,11 +336,11 @@ def create_user(
     name: str = 'Apostador',
     role: str = 'user', 
     plan: str = 'free',
-    credits: int = 1,
+    credits: int = 0,
     must_change_password: int = 0,
     accepted_terms: bool = True
 ) -> Dict[str, Any]:
-    """Criar novo usuário no sistema com crédito de cortesia e sincronização em nuvem"""
+    """Criar novo usuário no sistema e sincronização em nuvem"""
     email_clean = email.strip().lower()
     if not email_clean or '@' not in email_clean:
         raise ValueError("E-mail inválido")
@@ -1173,6 +1173,8 @@ def approve_payment(payment_id: int) -> bool:
         activate_vip_plan(user_id, days=30, plan_name='vip_mensal')
     elif tipo == 'avulso':
         activate_vip_plan(user_id, days=1, plan_name='vip_24h')
+    elif tipo in ['analise', 'analise_1', 'credito']:
+        add_user_credits(user_id, amount=1)
         
     sync_db_to_cloud()
     return True

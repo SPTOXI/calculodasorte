@@ -2214,33 +2214,50 @@ Exemplo para {{ config.nome }}:
 
     <!-- Modal de Bloqueio / Paywall Persuasivo -->
     <div id="paywall-modal" style="display: none; position: fixed; inset: 0; background: rgba(10,26,63,0.85); z-index: 9999; backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 16px;">
-        <div style="background: #FFFFFF; border: 1px solid rgba(10,26,63,0.15); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px 22px; color: #0A1A3F; box-shadow: 0 25px 50px -12px rgba(10,26,63,0.8); position: relative; text-align: center;">
+        <div style="background: #FFFFFF; border: 1px solid rgba(10,26,63,0.15); border-radius: 20px; max-width: 680px; width: 100%; padding: 28px 22px; color: #0A1A3F; box-shadow: 0 25px 50px -12px rgba(10,26,63,0.8); position: relative; text-align: center;">
             <button onclick="fecharModalPaywall()" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.6rem; color: #5B6B82; cursor: pointer; line-height: 1;">&times;</button>
             <div style="font-size: 2.8rem; margin-bottom: 8px;">🔒</div>
-            <h3 style="font-size: 1.45rem; color: #C97400; margin-bottom: 6px; font-weight: 800;">Acesso de Análise Expirado</h3>
+            <h3 style="font-size: 1.45rem; color: #C97400; margin-bottom: 6px; font-weight: 800;">Acesso de Análise Necessário</h3>
             <p style="color: #5B6B82; font-size: 0.92rem; line-height: 1.5; margin-bottom: 20px;">
                 Para continuar gerando palpites otimizados, simulando fechamentos e consultando o <strong>Agente IA</strong>, escolha uma opção:
             </p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; text-align: left;">
-                <!-- Opção 1: Avulso R$ 5,00 -->
-                <div style="background: linear-gradient(180deg, rgba(0,51,128,0.15) 0%, rgba(242,246,252,0.8) 100%); border: 1px solid rgba(0,70,173,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; text-align: left;">
+                <!-- Opção 1: 1 Análise R$ 1,00 -->
+                <div style="background: linear-gradient(180deg, rgba(0,70,173,0.12) 0%, rgba(242,246,252,0.8) 100%); border: 1px solid rgba(0,70,173,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
-                        <span style="font-size: 0.7rem; font-weight: 800; background: rgba(0,70,173,0.25); color: #0046AD; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Teste Hoje</span>
-                        <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin: 6px 0 2px;">🪙 Acesso 24 Horas</div>
-                        <div style="font-size: 1.4rem; font-weight: 900; color: #0046AD; margin-bottom: 8px;">R$ 5,00</div>
+                        <span style="font-size: 0.7rem; font-weight: 800; background: rgba(0,70,173,0.25); color: #0046AD; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Bônus Entrada</span>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin: 6px 0 2px;">🪙 1 Análise</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #0046AD; margin-bottom: 8px;">R$ 1,00</div>
                         <ul style="list-style: none; font-size: 0.78rem; color: #5B6B82; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                             <li>✅ 1 análise completa</li>
+                            <li>✅ Palpites IA e filtros</li>
+                            <li>✅ Sem mensalidade</li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('analise', 1.00, '1 Análise Completa (R$ 1,00)')" style="background: linear-gradient(135deg, #0046AD, #003380); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(0,51,128,0.3); cursor: pointer; width: 100%;">
+                        Liberar por R$ 1,00
+                    </button>
+                </div>
+
+                <!-- Opção 2: Avulso R$ 5,00 -->
+                <div style="background: linear-gradient(180deg, rgba(0,51,128,0.15) 0%, rgba(242,246,252,0.8) 100%); border: 1px solid rgba(0,70,173,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <span style="font-size: 0.7rem; font-weight: 800; background: rgba(0,70,173,0.25); color: #0046AD; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Preço Único</span>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin: 6px 0 2px;">⏱️ Acesso 24h</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #0046AD; margin-bottom: 8px;">R$ 5,00</div>
+                        <ul style="list-style: none; font-size: 0.78rem; color: #5B6B82; padding: 0; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+                            <li>✅ Análises 24 horas</li>
                             <li>✅ Até 20 palpites IA</li>
                             <li>✅ Sem mensalidade</li>
                         </ul>
                     </div>
                     <button type="button" onclick="fecharModalPaywall(); abrirModalCompraRapida('avulso', 5.00, 'Acesso 24 Horas (R$ 5,00)')" style="background: linear-gradient(135deg, #0046AD, #003380); color: white; padding: 10px 8px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; border: none; text-align: center; display: block; box-shadow: 0 4px 10px rgba(0,51,128,0.3); cursor: pointer; width: 100%;">
-                        Liberar por R$ 5,00
+                        Liberar 24h (R$ 5,00)
                     </button>
                 </div>
 
-                <!-- Opção 2: VIP R$ 49,90 -->
+                <!-- Opção 3: VIP R$ 49,90 -->
                 <div style="background: linear-gradient(180deg, rgba(243,146,0,0.15) 0%, rgba(242,246,252,0.8) 100%); border: 1px solid rgba(243,146,0,0.4); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; background: rgba(243,146,0,0.25); color: #C97400; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Mais Popular</span>
