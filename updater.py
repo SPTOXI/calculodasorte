@@ -514,7 +514,7 @@ def _concursos_por_numero(loteria_type: str) -> Dict[int, Dict[str, Any]]:
             return {}
         numeros = list(range(ultimo - len(historico) + 1, ultimo + 1))
     n = len(historico)
-    times = _alinhar_pelo_fim(carregar_times_local(loteria_type), n, None) if loteria_type == 'timemania' else [None] * n
+    times = _alinhar_pelo_fim(carregar_times_local(loteria_type), n, None) if loteria_type in ('timemania', 'dia_de_sorte') else [None] * n
     trevos = _alinhar_pelo_fim(carregar_trevos_local(loteria_type), n, []) if loteria_type == 'mais_milionaria' else [[]] * n
     segundos = _alinhar_pelo_fim(carregar_segundo_sorteio_local(loteria_type), n, []) if loteria_type == 'dupla_sena' else [[]] * n
     return {
@@ -527,7 +527,7 @@ def _gravar_concursos(loteria_type: str, por_numero: Dict[int, Dict[str, Any]]):
     numeros = sorted(por_numero)
     salvar_historico_local(loteria_type, [por_numero[c]['dezenas'] for c in numeros])
     salvar_concursos_local(loteria_type, numeros)
-    if loteria_type == 'timemania':
+    if loteria_type in ('timemania', 'dia_de_sorte'):
         salvar_times_local(loteria_type, [por_numero[c].get('complemento') for c in numeros])
     if loteria_type == 'mais_milionaria':
         salvar_trevos_local(loteria_type, [por_numero[c].get('trevos') or [] for c in numeros])
@@ -605,7 +605,7 @@ def _item_da_api(loteria_type: str, dados: Dict[str, Any]) -> Optional[Dict[str,
         item = {
             'concurso': int(numero), 'data': dados.get('data'), 'dezenas': dezenas, 'segundo': segundo,
             'trevos': [int(t) for t in dados.get('trevos') or []],
-            'complemento': dados.get('timeCoracao') or dados.get('mesSorte'),
+            'complemento': dados.get('timeCoracao') or dados.get('mesSorte') or dados.get('nomeTimeCoracaoMesSorte'),
         }
     else:
         item = {
@@ -613,7 +613,7 @@ def _item_da_api(loteria_type: str, dados: Dict[str, Any]) -> Optional[Dict[str,
             'dezenas': extrair_dezenas(dados, slug),
             'segundo': extrair_segundo_sorteio(dados) if slug == 'duplasena' else [],
             'trevos': extrair_trevos(dados) if slug == 'maismilionaria' else [],
-            'complemento': extrair_time_coracao(dados),
+            'complemento': extrair_time_coracao(dados) if loteria_type in ('timemania', 'dia_de_sorte') else None,
         }
     cfg = importador._config(loteria_type)
     if importador._validar(loteria_type, cfg, item):
@@ -767,10 +767,10 @@ def extrair_dezenas(dados_caixa: Dict[str, Any], slug: str) -> List[int]:
 
 
 def extrair_time_coracao(dados_caixa: Dict[str, Any]) -> Optional[str]:
-    """Extrai o nome do 'Time do Coração' sorteado no concurso (exclusivo da Timemania).
+    """Extrai o nome do 'Time do Coração' (Timemania) ou 'Mês da Sorte' (Dia de Sorte).
     A API da Caixa já usou nomes de campo distintos ao longo do tempo, então tenta
     várias chaves conhecidas antes de desistir."""
-    for chave in ('nomeTimeCoracaoMesSorte', 'timeCoracaoMesSorte', 'nomeTimeCoracao', 'timeDoCoracao'):
+    for chave in ('nomeTimeCoracaoMesSorte', 'timeCoracaoMesSorte', 'nomeTimeCoracao', 'timeDoCoracao', 'mesSorte', 'timeCoracao'):
         valor = dados_caixa.get(chave)
         if valor:
             return str(valor).strip()
@@ -912,14 +912,15 @@ def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict
             print(f"[UPDATER] Histórico de {loteria_type} não confere com o concurso {ultimo_local}; recarregando.")
             historico_local, ultimo_local = [], None
 
-    # Backfill específico da Timemania: preenche o "Time do Coração" dos concursos
-    # que já estavam salvos antes desta funcionalidade existir. Não afeta as outras loterias.
-    if loteria_type == 'timemania' and ultimo_local and len(historico_local) >= 20:
+    # Backfill específico da Timemania e Dia de Sorte: preenche o Time do Coração / Mês da Sorte
+    # dos concursos que já estavam salvos antes. Não afeta as outras loterias.
+    if loteria_type in ('timemania', 'dia_de_sorte') and ultimo_local and len(historico_local) >= 20:
         times_local_atual = carregar_times_local(loteria_type)
         deficit = len(historico_local) - len(times_local_atual)
         if deficit > 0:
+            rotulo_comp = 'Time do Coração' if loteria_type == 'timemania' else 'Mês da Sorte'
             concurso_inicial_backfill = ultimo_local - len(historico_local) + 1
-            print(f"[UPDATER] Backfill de 'Time do Coração' para {deficit} concurso(s) da Timemania...")
+            print(f"[UPDATER] Backfill de '{rotulo_comp}' para {deficit} concurso(s) da {loteria_type}...")
             times_backfill = []
             for c in range(concurso_inicial_backfill, concurso_inicial_backfill + deficit):
                 d = consultar_caixa(slug, concurso=c, max_retries=1)
@@ -965,7 +966,7 @@ def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict
         
         historico_acumulado = []
         concursos_acumulado = []
-        times_acumulado = [] if loteria_type == 'timemania' else None
+        times_acumulado = [] if loteria_type in ('timemania', 'dia_de_sorte') else None
         trevos_acumulado = [] if loteria_type == 'mais_milionaria' else None
         segundos_acumulado = [] if loteria_type == 'dupla_sena' else None
         for c in range(inicio, ultimo_numero + 1):
@@ -1026,7 +1027,7 @@ def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict
         print(f"[UPDATER] Baixando {qtd_pendentes} novos concursos de {ultimo_local + 1} a {ultimo_numero}...")
         
         novos_numeros = []
-        novos_times = [] if loteria_type == 'timemania' else None
+        novos_times = [] if loteria_type in ('timemania', 'dia_de_sorte') else None
         novos_trevos = [] if loteria_type == 'mais_milionaria' else None
         novos_segundos = [] if loteria_type == 'dupla_sena' else None
         for c in range(ultimo_local + 1, ultimo_numero + 1):

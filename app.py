@@ -1714,7 +1714,9 @@ def api_salvar_apostas():
 
     # +Milionária: os 2 trevos de cada jogo também definem as faixas de prêmio
     trevos = dados.get('trevos') if loteria == LoteriaType.MAIS_MILIONARIA else None
-    if trevos is not None:
+    if loteria == LoteriaType.MAIS_MILIONARIA and not trevos:
+        trevos = [sorted(secrets.SystemRandom().sample(range(1, 7), 2)) for _ in range(len(jogos))]
+    elif trevos is not None:
         valido = (isinstance(trevos, list) and len(trevos) == len(jogos) and all(
             isinstance(t, list) and 2 <= len(t) <= 6 and len(set(t)) == len(t)
             and all(isinstance(n, int) and not isinstance(n, bool) and 1 <= n <= 6 for n in t)
@@ -1724,7 +1726,12 @@ def api_salvar_apostas():
 
     # Timemania / Dia de Sorte: Time do Coração ou Mês da Sorte de cada jogo
     complementos = dados.get('complementos') if loteria_type in conferencia.ROTULO_COMPLEMENTO else None
-    if complementos is not None:
+    if loteria_type in conferencia.ROTULO_COMPLEMENTO and not complementos:
+        opts = opcoes_complemento(loteria_type)
+        if opts:
+            sorteador = secrets.SystemRandom()
+            complementos = [sorteador.choice(opts) for _ in range(len(jogos))]
+    elif complementos is not None:
         if not (isinstance(complementos, list) and len(complementos) == len(jogos)
                 and all(c is None or (isinstance(c, str) and 0 < len(c) <= 60) for c in complementos)):
             return jsonify({'erro': 'Informe um Time do Coração / Mês da Sorte válido para cada jogo.'}), 400
@@ -1881,6 +1888,17 @@ def api_salvar_historico(loteria_type: str):
     
     user_id, session_id = _obter_identificadores_usuario()
     dezenas_por_jogo = len(historico[0]) if historico else 6
+
+    trevos = dados.get('trevos')
+    complementos = dados.get('complementos')
+    if loteria == LoteriaType.MAIS_MILIONARIA and not trevos:
+        trevos = [[1, 2] for _ in range(len(historico))]
+    if loteria_type in ('dia_de_sorte', 'timemania') and not complementos:
+        opts = opcoes_complemento(loteria_type)
+        if opts:
+            sorteador = secrets.SystemRandom()
+            complementos = [sorteador.choice(opts) for _ in range(len(historico))]
+
     aposta_id = database.salvar_aposta(
         loteria_type=loteria_type,
         modalidade='manual',
@@ -1889,7 +1907,9 @@ def api_salvar_historico(loteria_type: str):
         user_id=user_id,
         session_id=session_id,
         titulo=f"Jogos Digitados ({len(historico)} aposta(s))",
-        concurso_alvo=conferencia.proximo_concurso(loteria_type)
+        concurso_alvo=conferencia.proximo_concurso(loteria_type),
+        trevos=trevos,
+        complementos=complementos
     )
     
     return jsonify({
@@ -1916,8 +1936,10 @@ def api_carregar_historico(loteria_type: str):
         'concursos_count': len(historico),
         'meta': meta
     }
-    if loteria_type == 'timemania':
-        resposta['times_coracao'] = updater.carregar_times_local(loteria_type)
+    if loteria_type in ('timemania', 'dia_de_sorte'):
+        times_ou_meses = updater.carregar_times_local(loteria_type)
+        resposta['times_coracao'] = times_ou_meses
+        resposta['complementos'] = times_ou_meses
     if loteria_type == 'mais_milionaria':
         resposta['trevos'] = updater.carregar_trevos_local(loteria_type)
     concursos = updater.carregar_concursos_local(loteria_type)
@@ -2123,6 +2145,37 @@ def api_fechamento(loteria_type: str):
     except fechamento.FechamentoInviavel as e:
         return jsonify({'erro': str(e)}), 422
 
+    # +Milionária: trevos por jogo (se fornecido pelo usuário ou gerado pelo modelo/sorteador)
+    trevos = None
+    if LoteriaType(loteria_type) == LoteriaType.MAIS_MILIONARIA:
+        trevos_input = dados.get('trevos')
+        if isinstance(trevos_input, list) and len(trevos_input) == len(jogos):
+            trevos = trevos_input
+        elif isinstance(trevos_input, list) and 2 <= len(trevos_input) <= 6:
+            trevos = [sorted(trevos_input) for _ in range(len(jogos))]
+        else:
+            qtd_trevos = max(2, min(6, int(dados.get('trevos_por_jogo', 2) or 2)))
+            trevos_historico = [t for t in updater.carregar_trevos_local('mais_milionaria') if t and len(t) == 2]
+            if len(trevos_historico) >= 10 and qtd_trevos < 6:
+                modelo_trevo = ModeloCanonico30(trevos_historico, LoteriaType(loteria_type), config_override=TREVO_CONFIG)
+                trevos = [sorted(gerar_jogo_sugerido(modelo_trevo, qtd_trevos)) for _ in range(len(jogos))]
+            else:
+                trevos = [sorted(secrets.SystemRandom().sample(range(1, 7), qtd_trevos)) for _ in range(len(jogos))]
+
+    # Timemania e Dia de Sorte: Time do Coração / Mês da Sorte
+    complementos = None
+    if loteria_type in conferencia.ROTULO_COMPLEMENTO:
+        comp_input = dados.get('complementos') or dados.get('complemento')
+        if isinstance(comp_input, list) and len(comp_input) == len(jogos):
+            complementos = comp_input
+        elif isinstance(comp_input, str) and comp_input:
+            complementos = [comp_input for _ in range(len(jogos))]
+        else:
+            opcoes = opcoes_complemento(loteria_type)
+            if opcoes:
+                sorteador = secrets.SystemRandom()
+                complementos = [sorteador.choice(opcoes) for _ in range(len(jogos))]
+
     database.consume_user_credit(user_id)
     aposta_id = database.salvar_aposta(
         loteria_type=loteria_type,
@@ -2132,6 +2185,8 @@ def api_fechamento(loteria_type: str):
         user_id=user_id,
         titulo=f'Fechamento com garantia ({len(grupo)} dezenas, {garantia} acertos) - {len(jogos)} jogo(s)',
         concurso_alvo=conferencia.proximo_concurso(loteria_type),
+        trevos=trevos,
+        complementos=complementos,
     )
     chance = fechamento.chance_condicao(config, len(grupo), condicao)
     custo_jogo = comb(tamanho_jogo, config.minimo_aposta) * config.custo_minimo
@@ -2143,6 +2198,10 @@ def api_fechamento(loteria_type: str):
         'concurso_alvo': conferencia.proximo_concurso(loteria_type),
         'loteria': config.nome,
         'jogos': jogos,
+        'trevos': trevos,
+        'complementos': complementos,
+        'complemento_tipo': {'timemania': 'time', 'dia_de_sorte': 'mes'}.get(loteria_type),
+        'opcoes_complemento': opcoes_complemento(loteria_type),
         'quantidade_jogos': len(jogos),
         'dezenas_por_jogo': tamanho_jogo,
         'garantia_texto': (
@@ -2597,25 +2656,49 @@ def download_jogos(loteria_type: str, formato: str):
 
     dados = request.get_json() or {}
     jogos = dados.get('jogos', [])
+    trevos = dados.get('trevos') or []
+    complementos = dados.get('complementos') or []
 
     if not jogos:
         return jsonify({'erro': 'Nenhum jogo fornecido para download'}), 400
 
+    tem_trevos = bool(trevos and len(trevos) >= len(jogos) and any(t for t in trevos))
+    tem_comp = bool(complementos and len(complementos) >= len(jogos) and any(c for c in complementos))
+    rotulo_comp = "Time do Coração ⚽" if loteria_type == 'timemania' else "Mês da Sorte 📅"
+
     data_hora = datetime.now().strftime('%d/%m/%Y às %H:%M:%S')
 
     if formato == 'md':
+        headers_tab = ["Jogo", "Dezenas Recomendadas"]
+        alinhamentos = [":---:", ":---"]
+        if tem_trevos:
+            headers_tab.append("Trevos da Sorte 🍀")
+            alinhamentos.append(":---:")
+        if tem_comp:
+            headers_tab.append(rotulo_comp)
+            alinhamentos.append(":---:")
+        headers_tab.append("Total Dezenas")
+        alinhamentos.append(":---:")
+
         linhas = [
             f"# Palpites Gerados — {config.nome}",
             "**Metodologia:** Modelo Canônico 3.0 (MCP-MD 1.0)  ",
             f"**Data de Geração:** {data_hora}  ",
             f"**Total de Jogos:** {len(jogos)}  ",
             "",
-            "| Jogo | Dezenas Recomendadas | Total Dezenas |",
-            "| :---: | :--- | :---: |"
+            "| " + " | ".join(headers_tab) + " |",
+            "| " + " | ".join(alinhamentos) + " |"
         ]
         for i, j in enumerate(jogos, 1):
             dezenas_str = ", ".join(f"{n:02d}" for n in j)
-            linhas.append(f"| **Jogo {i:02d}** | {dezenas_str} | {len(j)} |")
+            colunas = [f"**Jogo {i:02d}**", dezenas_str]
+            if tem_trevos:
+                t_str = ", ".join(str(t) for t in (trevos[i - 1] or []))
+                colunas.append(f"🍀 {t_str}")
+            if tem_comp:
+                colunas.append(str(complementos[i - 1] or '-'))
+            colunas.append(str(len(j)))
+            linhas.append("| " + " | ".join(colunas) + " |")
 
         conteudo = "\n".join(linhas)
         mimetype = 'text/markdown; charset=utf-8'
@@ -2632,7 +2715,14 @@ def download_jogos(loteria_type: str, formato: str):
         ]
         for i, j in enumerate(jogos, 1):
             dezenas_str = " ".join(f"{n:02d}" for n in j)
-            linhas.append(f"Jogo {i:02d}: [ {dezenas_str} ] ({len(j)} dezenas)")
+            linha = f"Jogo {i:02d}: [ {dezenas_str} ] ({len(j)} dezenas)"
+            if tem_trevos and i - 1 < len(trevos) and trevos[i - 1]:
+                t_str = " ".join(str(t) for t in trevos[i - 1])
+                linha += f" + Trevos: [ {t_str} ]"
+            if tem_comp and i - 1 < len(complementos) and complementos[i - 1]:
+                r = "Time" if loteria_type == 'timemania' else "Mês"
+                linha += f" + {r}: {complementos[i - 1]}"
+            linhas.append(linha)
         
         linhas.extend([
             "",

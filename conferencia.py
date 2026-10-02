@@ -66,7 +66,8 @@ ROTULO_COMPLEMENTO = {'timemania': '⚽ Time do Coração', 'dia_de_sorte': '�
 
 def normalizar_complemento(valor) -> str:
     """Compara 'VOLTA REDONDA    /RJ' com 'Volta Redonda/RJ' e 'março' com 'Março'."""
-    return ' '.join(str(valor or '').split()).replace(' /', '/').casefold()
+    import re
+    return re.sub(r'\s*/\s*', '/', ' '.join(str(valor or '').split())).casefold()
 
 
 _CONCURSOS_CACHE: Dict[Tuple[str, int], Dict] = {}
@@ -166,7 +167,9 @@ def conferir_jogos(loteria_type: str, jogos: List[List[int]], sorteio: List[int]
             'acertos': acertos,
             'qtd_acertos': len(acertos),
             'acertos_posicoes': acertos_posicoes,
+            'trevos': trevos_jogos[idx - 1] if (trevos_jogos and idx <= len(trevos_jogos)) else [],
             'trevos_acertados': trevos_acertados,
+            'complemento': complementos_jogos[idx - 1] if (complementos_jogos and idx <= len(complementos_jogos)) else None,
             'acertou_complemento': acertou_complemento,
             'rotulo_premio': ' + '.join(rotulos) or None,
         })

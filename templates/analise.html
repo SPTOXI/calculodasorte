@@ -678,6 +678,7 @@ Exemplo para {{ config.nome }}:
         let analiseAtual = null;
         let ultimosJogosGerados = [];
         let ultimosTrevosGerados = null;
+        let ultimosComplementosGerados = null;
         let apostaGeradaId = null;
 
         // Os jogos gerados são salvos pelo servidor na hora da geração
@@ -712,6 +713,7 @@ Exemplo para {{ config.nome }}:
         let historicoCaixaOficial = [];
         let trevosCaixaOficial = [];
         let segundoSorteioCaixa = [];
+        let complementosCaixaOficial = [];
         let modoGeracaoAtual = 'automatico';
         const numerosBaseSelecionados = new Set();
 
@@ -819,6 +821,9 @@ Exemplo para {{ config.nome }}:
                     if (loteriaType === 'timemania') {
                         renderizarRankingTimesCoracao(result.times_coracao || []);
                     }
+                    if (loteriaType === 'timemania' || loteriaType === 'dia_de_sorte') {
+                        complementosCaixaOficial = result.complementos || result.times_coracao || [];
+                    }
                     if (loteriaType === 'mais_milionaria') {
                         trevosCaixaOficial = result.trevos || [];
                     }
@@ -876,6 +881,12 @@ Exemplo para {{ config.nome }}:
                         '<div style="font-size: 0.75rem; font-weight: 700; color: #5B6B82;">2º sorteio</div><div class="bolas-caixa">' +
                         segundo.map(n => `<div class="bola-caixa">${n < 10 ? '0' + n : n}</div>`).join('') + '</div>';
                 }
+                const comp = (loteriaType === 'timemania' || loteriaType === 'dia_de_sorte') ? (complementosCaixaOficial[i] || null) : null;
+                let compHtml = '';
+                if (comp) {
+                    const rotuloComp = loteriaType === 'timemania' ? '⚽ Time do Coração' : '📅 Mês da Sorte';
+                    compHtml = `<div style="margin-top: 6px; font-size: 0.82rem; font-weight: 700; color: #0046AD;">${rotuloComp}: <span style="color: #0A1A3F;">${escaparHtml(comp)}</span></div>`;
+                }
 
                 html += `
                     <div class="concurso-card" data-concurso="${concursoNum}" data-dezenas="${dezenas.join(' ')}">
@@ -884,8 +895,9 @@ Exemplo para {{ config.nome }}:
                             <span class="concurso-data">${concursoNum === ultimoNum && meta && meta.data_apuracao ? 'Apuração: ' + meta.data_apuracao : ''}</span>
                         </div>
                         ${bolasHtml}
+                        ${compHtml}
                         <div style="font-size: 0.85rem; color: #5B6B82; font-weight: 600;">
-                            ${segundo.length > 0 ? '2 sorteios de ' + dezenas.length + ' dezenas' : dezenas.length + ' dezenas'}${trevos.length > 0 ? ' + ' + trevos.length + ' trevos' : ''}
+                            ${segundo.length > 0 ? '2 sorteios de ' + dezenas.length + ' dezenas' : dezenas.length + ' dezenas'}${trevos.length > 0 ? ' + ' + trevos.length + ' trevos' : ''}${comp ? ' + ' + (loteriaType === 'timemania' ? 'Time' : 'Mês') : ''}
                         </div>
                     </div>
                 `;
@@ -1440,6 +1452,7 @@ Exemplo para {{ config.nome }}:
 
                 ultimosJogosGerados = data.jogos;
                 ultimosTrevosGerados = data.trevos || null;
+                ultimosComplementosGerados = data.complementos || null;
                 ultimoFechamento = null;
                 exibirJogosGerados(data);
                 marcarSalvamentoAutomatico(data);
@@ -1541,7 +1554,11 @@ Exemplo para {{ config.nome }}:
                 const res = await fetch(`/download/jogos/${loteriaType}/${formato}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ jogos: ultimosJogosGerados })
+                    body: JSON.stringify({ 
+                        jogos: ultimosJogosGerados,
+                        trevos: ultimosTrevosGerados,
+                        complementos: ultimosComplementosGerados
+                    })
                 });
 
                 if (!res.ok) throw new Error('Erro ao gerar arquivo');
@@ -1783,11 +1800,30 @@ Exemplo para {{ config.nome }}:
                         const nStr = num < 10 ? '0' + num : num;
                         bolas += `<span class="bola-aposta" id="bola-aposta-${aposta.id}-${idx}-${num}">${nStr}</span>`;
                     });
+
+                    // Trevos da Sorte (+Milionária)
+                    const trevosJogo = (aposta.trevos && aposta.trevos[idx]) ? aposta.trevos[idx] : [];
+                    if (trevosJogo.length > 0) {
+                        bolas += `<span style="display: inline-block; width: 1px; height: 18px; background: rgba(22,163,74,0.4); margin: 0 4px; vertical-align: middle;"></span>`;
+                        trevosJogo.forEach(t => {
+                            bolas += `<span class="bola-aposta" style="background: #16a34a; color: white; font-weight: 700;" title="Trevo ${t}">🍀 ${t}</span>`;
+                        });
+                    }
+
+                    // Complemento (Timemania / Dia de Sorte)
+                    const compJogo = (aposta.complementos && aposta.complementos[idx]) ? aposta.complementos[idx] : null;
+                    let compHtml = '';
+                    if (compJogo) {
+                        const icon = CONFIG_LOTERIA.nome.includes('Timemania') ? '⚽ ' : '📅 ';
+                        compHtml = `<span style="font-size: 0.8rem; font-weight: 700; color: #0284c7; background: rgba(2,132,199,0.1); padding: 3px 8px; border-radius: 6px; white-space: nowrap;">${icon}${escaparHtml(compJogo)}</span>`;
+                    }
+
                     jogosHtml += `
                         <div class="aposta-jogo-row" id="linha-aposta-${aposta.id}-${idx}">
-                            <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                 <strong style="font-size: 0.85rem; color: #5B6B82; min-width: 60px;">Jogo #${idx + 1}:</strong>
                                 <div class="aposta-bolas-wrap">${bolas}</div>
+                                ${compHtml}
                             </div>
                             <div id="resultado-jogo-${aposta.id}-${idx}"></div>
                         </div>
@@ -1812,7 +1848,7 @@ Exemplo para {{ config.nome }}:
 
                         <div class="aposta-actions-footer">
                             <div style="font-size: 0.9rem; color: #5B6B82; font-weight: 600;">
-                                Total: ${aposta.quantidade_jogos} jogo(s) de ${aposta.dezenas_por_jogo || (aposta.jogos[0] ? aposta.jogos[0].length : CONFIG_LOTERIA.sorteados)} dezenas
+                                Total: ${aposta.quantidade_jogos} jogo(s) de ${aposta.dezenas_por_jogo || (aposta.jogos[0] ? aposta.jogos[0].length : CONFIG_LOTERIA.sorteados)} dezenas${(aposta.trevos && aposta.trevos[0] && aposta.trevos[0].length) ? ' + ' + aposta.trevos[0].length + ' trevos 🍀' : ''}${(aposta.complementos && aposta.complementos[0]) ? ' + ' + (CONFIG_LOTERIA.nome.includes('Timemania') ? 'Time ⚽' : 'Mês 📅') : ''}
                             </div>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 <button class="btn-aposta-action" onclick="conferirAposta(${aposta.id})" style="background: #0046AD; color: white;">
@@ -1910,15 +1946,37 @@ Exemplo para {{ config.nome }}:
                         bolasJogo += `<span class="bola-aposta ${acertou ? 'acerto' : ''}">${nStr}</span>`;
                     });
 
+                    // Trevos conferidos (+Milionária)
+                    if (item.trevos && item.trevos.length > 0) {
+                        bolasJogo += `<span style="display: inline-block; width: 1px; height: 18px; background: rgba(22,163,74,0.4); margin: 0 4px; vertical-align: middle;"></span>`;
+                        const trevosSort = new Set(data.trevos_sorteados || []);
+                        item.trevos.forEach(t => {
+                            const acertouTrevo = trevosSort.has(t);
+                            bolasJogo += `<span class="bola-aposta ${acertouTrevo ? 'acerto' : ''}" style="${acertouTrevo ? 'background: #16a34a; color: white;' : 'background: rgba(22,163,74,0.15); color: #166534; border: 1px solid #16a34a;'} font-weight: 700;" title="Trevo ${t}${acertouTrevo ? ' (Acertou!)' : ''}">🍀 ${t}</span>`;
+                        });
+                    }
+
+                    // Complemento conferido (Timemania / Dia de Sorte)
+                    let compConferidoHtml = '';
+                    if (item.complemento) {
+                        const icon = loteriaType === 'timemania' ? '⚽ ' : '📅 ';
+                        if (item.acertou_complemento) {
+                            compConferidoHtml = `<span class="badge-premio-linha" style="background: #16a34a; color: white; padding: 3px 8px; font-size: 0.8rem;">✓ ${icon}${escaparHtml(item.complemento)} (Acertou!)</span>`;
+                        } else {
+                            compConferidoHtml = `<span style="font-size: 0.8rem; color: #5B6B82; background: rgba(10,26,63,0.06); padding: 3px 8px; border-radius: 6px; white-space: nowrap;">${icon}${escaparHtml(item.complemento)}</span>`;
+                        }
+                    }
+
                     const premioBadge = item.rotulo_premio 
                         ? `<span class="badge-premio-linha">${item.rotulo_premio}</span>`
-                        : `<span style="font-size: 0.82rem; color: #5B6B82; font-weight: 600;">${item.qtd_acertos} acerto(s)</span>`;
+                        : `<span style="font-size: 0.82rem; color: #5B6B82; font-weight: 600;">${item.qtd_acertos} acerto(s)${item.trevos_acertados ? ' + ' + item.trevos_acertados + ' trevo(s)' : ''}</span>`;
 
                     cartelasHtml += `
                         <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(10,26,63,0.04); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(10,26,63,0.1); flex-wrap: wrap; gap: 8px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                 <strong style="font-size: 0.85rem; color: #0A1A3F;">Jogo #${item.numero}:</strong>
                                 <div class="aposta-bolas-wrap">${bolasJogo}</div>
+                                ${compConferidoHtml}
                             </div>
                             <div>${premioBadge}</div>
                         </div>
@@ -1944,6 +2002,11 @@ Exemplo para {{ config.nome }}:
             }
 
             const jogos = aposta.jogos;
+            const trevos = aposta.trevos || [];
+            const complementos = aposta.complementos || [];
+            const temTrevos = trevos.length >= jogos.length && trevos.some(t => t && t.length);
+            const temComp = complementos.length >= jogos.length && complementos.some(c => c);
+            const rotuloComp = CONFIG_LOTERIA.nome.includes('Timemania') ? 'Time do Coração ⚽' : 'Mês da Sorte 📅';
             let conteudo = '';
             let tipoMime = 'text/plain';
             let extensao = formato;
@@ -1957,7 +2020,14 @@ Exemplo para {{ config.nome }}:
                 conteudo += `-------------------------------------------\n\n`;
                 jogos.forEach((j, idx) => {
                     const dezenas = j.map(n => String(n).padStart(2, '0')).join(' ');
-                    conteudo += `Jogo #${String(idx + 1).padStart(2, '0')}: [ ${dezenas} ]\n`;
+                    let linha = `Jogo #${String(idx + 1).padStart(2, '0')}: [ ${dezenas} ]`;
+                    if (temTrevos && trevos[idx] && trevos[idx].length) {
+                        linha += ` + Trevos: [ ${trevos[idx].join(' ')} ]`;
+                    }
+                    if (temComp && complementos[idx]) {
+                        linha += ` + ${rotuloComp.split(' ')[0]}: ${complementos[idx]}`;
+                    }
+                    conteudo += linha + '\n';
                 });
             } else if (formato === 'md') {
                 conteudo = `# Cálculo da Sorte - Apostas Salvas\n\n`;
@@ -1965,11 +2035,34 @@ Exemplo para {{ config.nome }}:
                 conteudo += `**Título:** ${aposta.titulo || 'Apostas'}  \n`;
                 conteudo += `**Data:** ${aposta.created_at || ''}  \n`;
                 conteudo += `**Total de Jogos:** ${jogos.length}  \n\n`;
-                conteudo += `| Jogo | Dezenas Selecionadas | Qtd Dezenas |\n`;
-                conteudo += `| :---: | :--- | :---: |\n`;
+
+                let headersTab = ['Jogo', 'Dezenas Selecionadas'];
+                let alignTab = [':---:', ':---'];
+                if (temTrevos) {
+                    headersTab.push('Trevos da Sorte 🍀');
+                    alignTab.push(':---:');
+                }
+                if (temComp) {
+                    headersTab.push(rotuloComp);
+                    alignTab.push(':---:');
+                }
+                headersTab.push('Qtd Dezenas');
+                alignTab.push(':---:');
+
+                conteudo += `| ${headersTab.join(' | ')} |\n`;
+                conteudo += `| ${alignTab.join(' | ')} |\n`;
+
                 jogos.forEach((j, idx) => {
                     const dezenas = j.map(n => String(n).padStart(2, '0')).join(' ');
-                    conteudo += `| #${idx + 1} | ${dezenas} | ${j.length} |\n`;
+                    let cols = [`#${idx + 1}`, dezenas];
+                    if (temTrevos) {
+                        cols.push(trevos[idx] ? `🍀 ${trevos[idx].join(', ')}` : '-');
+                    }
+                    if (temComp) {
+                        cols.push(complementos[idx] || '-');
+                    }
+                    cols.push(String(j.length));
+                    conteudo += `| ${cols.join(' | ')} |\n`;
                 });
             }
 
@@ -2081,7 +2174,13 @@ Exemplo para {{ config.nome }}:
                 const res = await fetch(`/api/fechamento/${loteriaType}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ grupo, dezenas_por_jogo: dezenas, condicao, garantia })
+                    body: JSON.stringify({ 
+                        grupo, 
+                        dezenas_por_jogo: dezenas, 
+                        trevos_por_jogo: document.getElementById('trevos-jogo') ? parseInt(document.getElementById('trevos-jogo').value) : undefined,
+                        condicao, 
+                        garantia 
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -2091,7 +2190,8 @@ Exemplo para {{ config.nome }}:
                 }
 
                 ultimosJogosGerados = data.jogos;
-                ultimosTrevosGerados = null;
+                ultimosTrevosGerados = data.trevos || null;
+                ultimosComplementosGerados = data.complementos || null;
                 ultimoFechamento = { grupo: grupo.length, garantia };
                 exibirJogosGerados({ ...data, modo: 'fechamento', filtro_inteligente: false, jogos_aprovados: [] });
                 marcarSalvamentoAutomatico(data);

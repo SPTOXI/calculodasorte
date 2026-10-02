@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from core import LoteriaConfig
 
-LOTERIAS_FECHAMENTO = {'mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania'}
+LOTERIAS_FECHAMENTO = {'mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania', 'mais_milionaria'}
 LIMITE_CONDICOES = 20000
 LIMITE_JOGOS = 500
 TEMPO_MAXIMO = 6.0
