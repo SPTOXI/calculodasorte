@@ -165,7 +165,7 @@
 
         <div class="plans-grid">
             <!-- Opção 1: 1 Análise Completa R$ 1,00 -->
-            <div class="plan-card">
+            <div class="plan-card" id="card-plano-analise">
                 <div class="plan-ribbon" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;">🎁 Bônus de Entrada</div>
                 <div style="display: flex; flex-direction: column; flex-grow: 1;">
                     <div class="plan-header-box">
@@ -185,7 +185,7 @@
                     </ul>
                 </div>
                 <button class="btn-checkout btn-green" id="btn-infinite-analise" onclick="iniciarCheckoutInfinitePay('analise', 1.00, 'btn-infinite-analise')">
-                    🪙 Ativar 1 Análise por R$ 1,00 (InfinitePay PIX / Cartão)
+                    ⚡ Ativar 1 Análise por R$ 1,00 (PIX Instantâneo)
                 </button>
             </div>
 
@@ -432,9 +432,17 @@
             document.getElementById('pix-modal').style.display = 'none';
         }
 
-        // Detecta retorno após pagamento concluído na InfinitePay
+        // Detecta retorno após pagamento concluído na InfinitePay ou seleção de plano
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('plano') === 'analise') {
+                const card = document.getElementById('card-plano-analise');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.style.outline = '3px solid var(--primary)';
+                    card.style.boxShadow = '0 0 25px rgba(0, 70, 173, 0.4)';
+                }
+            }
             if (urlParams.get('checkout') === 'sucesso') {
                 const pId = urlParams.get('payment_id');
                 if (pId) {
