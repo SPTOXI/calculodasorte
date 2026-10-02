@@ -437,7 +437,7 @@
 
         <div class="nav-actions">
             <a href="/login" class="btn-secondary">Entrar</a>
-            <a href="/cadastro" class="btn-primary">Criar Conta Grátis</a>
+            <a href="/cadastro?plano=analise" class="btn-primary" style="background: linear-gradient(135deg, #FFB020 0%, #F39200 50%, #C97400 100%); color: #1a1200; font-weight: 800; border: none; box-shadow: 0 2px 12px rgba(243,146,0,0.45);">⚡ Análise por R$ 1,00</a>
             <button type="button" class="mobile-menu-btn" aria-label="Menu" onclick="document.getElementById('main-nav-links').classList.toggle('open')">☰</button>
         </div>
     </nav>
@@ -453,7 +453,7 @@
 
         <!-- Badge Oficial -->
         <div class="indep-badge">
-            <span>⏰</span> PRÊMIOS ACUMULADOS DA SEMANA
+            <span>⚡</span> PRÊMIOS ACUMULADOS • 1ª ANÁLISE POR APENAS R$ 1,00
         </div>
 
         <h1 class="indep-main-title">
@@ -512,10 +512,16 @@
             </a>
         </div>
 
+        <!-- Chamada Destaque de R$ 1,00 -->
+        <div style="margin: 0 auto 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0, 35, 79, 0.85); border: 2px solid rgba(255, 178, 32, 0.85); color: #FFE3B0; font-weight: 800; font-size: clamp(0.85rem, 2vw, 1.05rem); padding: 10px 22px; border-radius: 999px; box-shadow: 0 4px 20px rgba(255, 178, 32, 0.4); text-transform: uppercase; letter-spacing: 0.5px; position: relative; z-index: 1;">
+            <span style="font-size: 1.25rem;">⚡</span>
+            <span>OFERTA DE ENTRADA: <strong>PAGUE APENAS R$ 1,00</strong> POR ANÁLISE COMPLETA NO PIX!</span>
+        </div>
+
         <!-- Botões de Ação Imediata -->
         <div class="indep-cta-group">
-            <a href="/cadastro" class="btn-indep-gold btn-indep-pulse">
-                🎯 Gerar Análise Combinatória &rarr;
+            <a href="/cadastro?plano=analise" class="btn-indep-gold btn-indep-pulse">
+                ⚡ 1 Análise Completa por apenas R$ 1,00 &rarr;
             </a>
             <a href="/cadastro?plano=avulso" class="btn-indep-green">
                 🪙 Acesso 24 Horas por apenas R$ 5,00
