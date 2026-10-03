@@ -4,10 +4,14 @@ import json
 import unittest
 import uuid
 from datetime import datetime
+import os
 from unittest.mock import patch
 
-import database
-from app import app
+os.environ.setdefault('SECRET_KEY', 'test-secret-key')
+
+with patch('database.init_db'), patch('updater.iniciar_agendador'):
+    import database
+    from app import app
 from core import LOTERIAS_CONFIG, LoteriaType, proximo_sorteio
 
 
@@ -59,25 +63,25 @@ class TestCalendario(unittest.TestCase):
 
     def test_dias_de_sorteio_2026(self):
         esperado = {
-            LoteriaType.MEGA_SENA: {'terça', 'quinta', 'domingo'},
-            LoteriaType.LOTOFACIL: {'domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta'},
-            LoteriaType.QUINA: {'domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta'},
+            LoteriaType.MEGA_SENA: {'terça', 'quinta', 'sábado'},
+            LoteriaType.LOTOFACIL: {'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'},
+            LoteriaType.QUINA: {'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'},
             LoteriaType.LOTOMANIA: {'segunda', 'quarta', 'sexta'},
-            LoteriaType.MAIS_MILIONARIA: {'quarta', 'domingo'},
-            LoteriaType.DIA_DE_SORTE: {'domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta'},
+            LoteriaType.MAIS_MILIONARIA: {'quarta', 'sábado'},
+            LoteriaType.DIA_DE_SORTE: {'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'},
             LoteriaType.SUPER_SETE: {'segunda', 'quarta', 'sexta'},
-            LoteriaType.TIMEMANIA: {'terça', 'quinta', 'domingo'},
+            LoteriaType.TIMEMANIA: {'terça', 'quinta', 'sábado'},
             LoteriaType.DUPLA_SENA: {'segunda', 'quarta', 'sexta'},
         }
         for lt, dias in esperado.items():
             self.assertEqual(set(LOTERIAS_CONFIG[lt].dias_sorteio), dias, lt.value)
-            self.assertNotIn('sábado', LOTERIAS_CONFIG[lt].dias_sorteio)
+            self.assertNotIn('domingo', LOTERIAS_CONFIG[lt].dias_sorteio)
 
     def test_proximo_sorteio(self):
         mega = LOTERIAS_CONFIG[LoteriaType.MEGA_SENA]
-        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 26, 10))[1], 'Sorteia Domingo, 11h')   # sábado
-        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 27, 11, 30))[1], 'Sorteia Hoje, 11h')  # domingo
-        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 27, 12, 30))[1], 'Sorteia Terça, 21h')
+        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 26, 10))[1], 'Sorteia Hoje, 20h')   # sábado
+        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 26, 22))[1], 'Sorteia Terça, 21h')  # sábado pós-sorteio
+        self.assertEqual(proximo_sorteio(mega, datetime(2026, 9, 27, 11, 30))[1], 'Sorteia Terça, 21h')  # domingo
         dupla = LOTERIAS_CONFIG[LoteriaType.DUPLA_SENA]
         self.assertEqual(proximo_sorteio(dupla, datetime(2026, 9, 28, 20))[1], 'Sorteia Hoje, 21h')    # segunda
 

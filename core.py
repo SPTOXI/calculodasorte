@@ -55,7 +55,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=20,
         custo_minimo=6.0,
-        dias_sorteio=["terça", "quinta", "domingo"],
+        dias_sorteio=["terça", "quinta", "sábado"],
         faixas_premiacao=[4, 5, 6]
     ),
     LoteriaType.QUINA: LoteriaConfig(
@@ -65,7 +65,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=5,
         maximo_aposta=15,
         custo_minimo=3.0,
-        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "domingo"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[2, 3, 4, 5]
     ),
     LoteriaType.LOTOFACIL: LoteriaConfig(
@@ -75,7 +75,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=15,
         maximo_aposta=20,
         custo_minimo=3.5,
-        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "domingo"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[11, 12, 13, 14, 15]
     ),
     LoteriaType.LOTOMANIA: LoteriaConfig(
@@ -96,7 +96,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=12,
         custo_minimo=6.0,
-        dias_sorteio=["quarta", "domingo"],
+        dias_sorteio=["quarta", "sábado"],
         faixas_premiacao=list(range(1, 11))
     ),
     LoteriaType.DIA_DE_SORTE: LoteriaConfig(
@@ -106,7 +106,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=7,
         maximo_aposta=15,
         custo_minimo=2.5,
-        dias_sorteio=["domingo", "segunda", "terça", "quarta", "quinta", "sexta"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[4, 5, 6, 7]
     ),
     LoteriaType.SUPER_SETE: LoteriaConfig(
@@ -128,7 +128,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=10,
         maximo_aposta=10,
         custo_minimo=3.5,
-        dias_sorteio=["terça", "quinta", "domingo"],
+        dias_sorteio=["terça", "quinta", "sábado"],
         faixas_premiacao=[3, 4, 5, 6, 7]
     ),
     LoteriaType.DUPLA_SENA: LoteriaConfig(
@@ -827,13 +827,17 @@ if __name__ == "__main__":
     print(f"Entropia: {resumo['camada_informacional']['entropia']:.4f}")
 
 
-# Calendário da Caixa desde 19/07/2026: não há sorteios aos sábados; os de domingo são às 11h
+# Calendário da Caixa: sorteios aos sábados às 20h, domingos às 11h (quando houver)
 # e os dos demais dias às 21h (horário de Brasília).
 DIAS_SEMANA = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
 
 
 def horario_sorteio(dia_semana: int) -> int:
-    return 11 if dia_semana == 6 else 21
+    if dia_semana == 6:  # domingo
+        return 11
+    if dia_semana == 5:  # sábado
+        return 20
+    return 21
 
 
 def proximo_sorteio(config: 'LoteriaConfig', agora) -> Optional[Tuple[object, str]]:
