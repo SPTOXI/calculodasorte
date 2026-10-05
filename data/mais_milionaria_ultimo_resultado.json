@@ -1,20 +1,20 @@
 {
-  "numero": 393,
-  "dataApuracao": "27/09/2026",
+  "numero": 395,
+  "dataApuracao": "03/10/2026",
   "listaDezenas": [
-    "02",
-    "15",
-    "17",
-    "26",
-    "29",
-    "32"
+    "08",
+    "18",
+    "21",
+    "27",
+    "28",
+    "44"
   ],
   "listaDezenasSegundoSorteio": null,
   "acumulado": true,
-  "valorEstimadoProximoConcurso": 99000000.0,
-  "dataProximoConcurso": "30/09/2026",
+  "valorEstimadoProximoConcurso": 102000000.0,
+  "dataProximoConcurso": "07/10/2026",
   "listaTrevos": [
-    "4",
+    "3",
     "5"
   ],
   "nomeTimeCoracaoMesSorte": null

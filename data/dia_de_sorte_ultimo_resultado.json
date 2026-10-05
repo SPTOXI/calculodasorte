@@ -1,19 +1,19 @@
 {
-  "numero": 1310,
-  "dataApuracao": "29/09/2026",
+  "numero": 1314,
+  "dataApuracao": "03/10/2026",
   "listaDezenas": [
     "02",
-    "06",
-    "07",
-    "16",
-    "22",
-    "26",
-    "29"
+    "10",
+    "11",
+    "17",
+    "25",
+    "27",
+    "31"
   ],
   "listaDezenasSegundoSorteio": null,
   "acumulado": true,
-  "valorEstimadoProximoConcurso": 1300000.0,
-  "dataProximoConcurso": "30/09/2026",
+  "valorEstimadoProximoConcurso": 2600000.0,
+  "dataProximoConcurso": "05/10/2026",
   "listaTrevos": [],
-  "nomeTimeCoracaoMesSorte": "Abril"
+  "nomeTimeCoracaoMesSorte": "Junho"
 }
