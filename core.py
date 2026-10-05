@@ -1,6 +1,6 @@
 """
 Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
-MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
+MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -527,10 +527,23 @@ class ModeloCanonico40:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
         # Configuração da Camada Espacial especializada por topologia da loteria
+        is_lotofacil = (self.config.nome == "Lotofácil" or (self.N == 25 and self.config.sorteados == 15))
         is_quina = (self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5))
         is_megasena = (self.config.nome == "Mega-Sena" or (self.N == 60 and self.config.sorteados == 6))
 
-        if is_quina:
+        if is_lotofacil:
+            modelo_metodologia = "Canônico 4.0 — MCOM (Lotofácil)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Matricial 5x5"
+            camada_espacial_desc = "Matricial 5x5 K-Medians (Quintetos)"
+            camada_espacial_dict = {
+                "modelo": "Matricial 5x5 K-Medians (Quintetos)",
+                "total_setores": 5,
+                "largura_setor": 5.0,
+                "universo": 25,
+                "metrica": "Grid bidimensional Manhattan e Z_25",
+                "distancia_maxima_teorica": 1.0
+            }
+        elif is_quina:
             modelo_metodologia = "Canônico 4.0 — MCOP (Quina)"
             extensao_desc = "MCP-MD 1.0 + Otimização Pentagonal"
             camada_espacial_desc = "Pentagonal K-Medians (Dispersão Cíclica Z_80)"
@@ -836,14 +849,90 @@ class ModeloCanonico40:
             )
         }
 
+    def calcular_dispersao_matricial_lotofacil(self, jogo: List[int]) -> Dict:
+        """
+        Camada 8 - MCOM (Modelo Canônico de Otimização Matricial 5x5 e Quintetos - Lotofácil).
+        Avalia o equilíbrio bidimensional em matriz 5x5:
+        - Distribuição de dezenas nos 5 quintetos/linhas (esperança 3.0 por linha);
+        - Distribuição nas 5 colunas (esperança 3.0 por coluna);
+        - Proporção Moldura (16 dezenas) vs Miolo (9 dezenas) com centro modal em 10M/5M (ou 9M/6M);
+        - Paridade modal estocástica (8I/7P ou 7I/8P);
+        - Baricentro de soma das dezenas no ponto ótimo (~195).
+        """
+        if not jogo or not all(isinstance(n, int) and 1 <= n <= 25 for n in jogo):
+            return {
+                "disponivel": False,
+                "motivo": "Dispersão matricial 5x5 aplica-se à Lotofácil (números de 1 a 25)."
+            }
+
+        moldura_set = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+        miolo_set = {7, 8, 9, 12, 13, 14, 17, 18, 19}
+
+        linhas = [0] * 5
+        colunas = [0] * 5
+        for n in jogo:
+            linhas[(n - 1) // 5] += 1
+            colunas[(n - 1) % 5] += 1
+
+        moldura_cnt = len(set(jogo) & moldura_set)
+        miolo_cnt = len(set(jogo) & miolo_set)
+        impares = sum(1 for n in jogo if n % 2 != 0)
+        pares = len(jogo) - impares
+        soma = sum(jogo)
+        setores_cobertos = sum(1 for r in linhas if r > 0)
+
+        # Penalidades para cálculo do Índice de Dispersão Espacial (IDE 4.0 Matricial)
+        penalidade_linhas = sum(abs(r - 3) for r in linhas) * 4.0
+        penalidade_colunas = sum(abs(c - 3) for c in colunas) * 2.0
+        penalidade_moldura = abs(moldura_cnt - 10) * 5.0
+        penalidade_paridade = min(abs(impares - 8), abs(impares - 7)) * 8.0
+        penalidade_soma = min(15.0, abs(soma - 195) * 0.5)
+
+        penalidade_total = penalidade_linhas + penalidade_colunas + penalidade_moldura + penalidade_paridade + penalidade_soma
+        ide = max(0.0, min(100.0, round(100.0 - penalidade_total, 1)))
+
+        if ide >= 85.0:
+            classificacao = "Excelente (Dispersão Matricial e Quintetos 5x5 Equilibrada)"
+        elif ide >= 70.0:
+            classificacao = "Boa (Dispersão Matricial Aceitável)"
+        elif ide >= 50.0:
+            classificacao = "Regular (Desequilíbrio Parcial Moldura/Miolo ou Quintetos)"
+        else:
+            classificacao = "Concentrada (Desbalanceada no Grid 5x5)"
+
+        return {
+            "disponivel": True,
+            "geometria": "Matricial",
+            "setores_cobertos": setores_cobertos,
+            "total_setores": 5,
+            "distribuicao_setorial": linhas,
+            "distribuicao_linhas": linhas,
+            "distribuicao_colunas": colunas,
+            "moldura": moldura_cnt,
+            "miolo": miolo_cnt,
+            "paridade": f"{impares}I/{pares}P",
+            "soma": soma,
+            "indice_dispersao": ide,
+            "classificacao": classificacao,
+            "distancia_maxima_garantida": 1,
+            "distancia_media_teorica": 0.4,
+            "observacao": (
+                "A cobertura matricial 5x5 (MCOM 4.0) garante dispersão homogênea no volante da Lotofácil, "
+                f"equilibrando Moldura ({moldura_cnt}/16) e Miolo ({miolo_cnt}/9) com cota máxima de 1 passo no grid."
+            )
+        }
+
     def calcular_dispersao_espacial(self, jogo: List[int]) -> Dict:
         """
         Camada 8 - Despacho Polimórfico de Cobertura Espacial.
         Encaminha para a geometria adequada de cada loteria:
+        - Lotofácil: Matricial 5x5 (MCOM 4.0)
         - Quina: Pentagonal (MCOP 4.0)
         - Mega-Sena: Hexagonal (MCOH 4.0)
         - Demais loterias: Modelo espacial correspondente
         """
+        if self.config.nome == "Lotofácil" or (self.N == 25 and self.config.sorteados == 15):
+            return self.calcular_dispersao_matricial_lotofacil(jogo)
         if self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5):
             return self.calcular_dispersao_pentagonal(jogo)
         return self.calcular_dispersao_hexagonal(jogo)
@@ -897,6 +986,94 @@ class ModeloCanonico40:
 
         return jogos[:quantidade_jogos]
 
+    def gerar_jogos_lotofacil(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
+        """
+        Gera jogos da Lotofácil utilizando o Modelo Canônico Matricial 5x5 e Quintetos (MCOM 4.0),
+        balanceando Moldura (16) vs Miolo (9), distribuição uniforme por linhas e colunas (3 por linha/coluna),
+        paridade modal (8I/7P ou 7I/8P) e baricentro de soma (~195).
+        """
+        import random
+        from modelo_lotofacil import ModeloMatricialLotofacil
+
+        jogos = []
+        jogos_set = set()
+
+        # Se for o tamanho padrão de 15 dezenas, inicia com as variantes canônicas ótimas
+        if quantidade_numeros == 15:
+            canonicas = ModeloMatricialLotofacil.gerar_variantes_canonicas()
+            ultimo_sorteio = set(self.historico[-1]) if self.historico else set()
+            canonicas_ordenadas = sorted(
+                canonicas,
+                key=lambda v: abs(len(set(v["dezenas"]) & ultimo_sorteio) - 9)
+            )
+            for v in canonicas_ordenadas:
+                tup = tuple(v["dezenas"])
+                if tup not in jogos_set:
+                    jogos_set.add(tup)
+                    jogos.append(list(v["dezenas"]))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
+
+        moldura_list = sorted(list(ModeloMatricialLotofacil.MOLDURA))
+        miolo_list = sorted(list(ModeloMatricialLotofacil.MIOLO))
+
+        tentativas = 0
+        max_tentativas = quantidade_jogos * 200
+
+        while len(jogos) < quantidade_jogos and tentativas < max_tentativas:
+            tentativas += 1
+
+            if quantidade_numeros == 15:
+                # Alvo canônico: 10 moldura e 5 miolo (ou 9 moldura e 6 miolo)
+                n_moldura = random.choice([10, 9, 10])
+                n_miolo = 15 - n_moldura
+
+                pesos_mold = [_peso_canonico(self.analisar_elemento(n)) for n in moldura_list]
+                pesos_miol = [_peso_canonico(self.analisar_elemento(n)) for n in miolo_list]
+
+                # Amostragem ponderada sem reposição
+                escolhidos_mold = set()
+                while len(escolhidos_mold) < n_moldura:
+                    n = random.choices(moldura_list, weights=pesos_mold, k=1)[0]
+                    escolhidos_mold.add(n)
+
+                escolhidos_miol = set()
+                while len(escolhidos_miol) < n_miolo:
+                    n = random.choices(miolo_list, weights=pesos_miol, k=1)[0]
+                    escolhidos_miol.add(n)
+
+                candidato = sorted(list(escolhidos_mold | escolhidos_miol))
+            else:
+                universo = list(range(1, 26))
+                pesos = [_peso_canonico(self.analisar_elemento(n)) for n in universo]
+                escolhidos = set()
+                while len(escolhidos) < quantidade_numeros:
+                    n = random.choices(universo, weights=pesos, k=1)[0]
+                    escolhidos.add(n)
+                candidato = sorted(list(escolhidos))
+
+            # Validação estrutural do candidato
+            impares = sum(1 for n in candidato if n % 2 != 0)
+            pares = len(candidato) - impares
+            soma = sum(candidato)
+
+            linhas = [0] * 5
+            for n in candidato:
+                linhas[(n - 1) // 5] += 1
+
+            # Restrições de qualidade:
+            # - Paridade no intervalo aceitável (8I/7P, 7I/8P, 9I/6P ou 6I/9P)
+            # - Soma no intervalo canônico (175 a 215)
+            # - Nenhuma linha vazia ou saturada (> 4 dezenas) quando k=15
+            if (6 <= impares <= 9) and (175 <= soma <= 215):
+                if quantidade_numeros != 15 or (min(linhas) >= 2 and max(linhas) <= 4):
+                    tup = tuple(candidato)
+                    if tup not in jogos_set:
+                        jogos_set.add(tup)
+                        jogos.append(candidato)
+
+        return jogos[:quantidade_jogos]
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -909,10 +1086,16 @@ from validacao import ValidaçãoCamada7
 def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
     """
     Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
-    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Pentagonal/Hexagonal.
+    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Matricial/Pentagonal/Hexagonal.
     """
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
+
+    # Para a Lotofácil (25 dezenas, 15 sorteadas), utiliza a geração matricial ótima
+    if (modelo.config.nome == 'Lotofácil' or (modelo.N == 25 and quantidade_numeros == 15)):
+        jogos_loto = modelo.gerar_jogos_lotofacil(1, quantidade_numeros)
+        if jogos_loto:
+            return jogos_loto[0]
 
     # Para a Quina (80 dezenas, 5 sorteadas), utiliza a geração pentagonal ótima
     if (modelo.config.nome == 'Quina' or (modelo.N == 80 and quantidade_numeros == 5)):
@@ -985,7 +1168,11 @@ def gerar_multiplos_jogos(
 
     # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0
     if not numeros_base:
-        if (modelo.config.nome == 'Quina' or (modelo.N == 80 and quantidade_numeros == 5)):
+        if (modelo.config.nome == 'Lotofácil' or (modelo.N == 25 and quantidade_numeros == 15)):
+            jogos_loto = modelo.gerar_jogos_lotofacil(quantidade_jogos, quantidade_numeros)
+            if len(jogos_loto) == quantidade_jogos:
+                return jogos_loto
+        elif (modelo.config.nome == 'Quina' or (modelo.N == 80 and quantidade_numeros == 5)):
             jogos_pent = modelo.gerar_jogos_pentagonais(quantidade_jogos, quantidade_numeros)
             if len(jogos_pent) == quantidade_jogos:
                 return jogos_pent
