@@ -1,6 +1,6 @@
 """
 Módulo do Agente de Inteligência Artificial Especialista em Loterias
-Projeto Calculadora da Sorte - Modelo Canônico 3.0 + MCP-MD 1.0
+Projeto Calculadora da Sorte - Modelo Canônico 4.0 + MCP-MD 1.0 (Otimização Hexagonal)
 
 Integração com APIs de IA:
 1. Google Gemini (Gemini 1.5 Flash / Gemini 2.0)
@@ -81,7 +81,7 @@ def _get_claude_key() -> Optional[str]:
 
 PROMPT_SISTEMA_PARECER = """
 Você explica os dados estatísticos do Cálculo da Sorte em português claro do Brasil.
-O Modelo Canônico 3.0 descreve o histórico; o MCP-MD 1.0 é uma extensão experimental.
+O Modelo Canônico 4.0 descreve o histórico e a cobertura espacial hexagonal; o MCP-MD 1.0 é uma extensão experimental.
 
 DIRETRIZES ESSENCIAIS:
 1. Use somente valores e resultados presentes nos dados fornecidos. Se uma métrica, teste ou janela não estiver disponível, informe essa limitação. Não invente números, percentuais, repetições esperadas ou características dos jogos.
@@ -289,8 +289,8 @@ def _gerar_parecer_heuristico_canonico(loteria_nome: str, dados_analise: Dict[st
     ]
     return {
         'sucesso': True,
-        'provedor': 'Modelo Canônico 3.0 (parecer descritivo local)',
-        'provedor_ia': 'Modelo Canônico 3.0 (parecer descritivo local)',
+        'provedor': 'Modelo Canônico 4.0 (parecer descritivo local)',
+        'provedor_ia': 'Modelo Canônico 4.0 (parecer descritivo local)',
         'parecer': parecer_texto,
         'parecer_texto': parecer_texto,
         'recomendacoes': recomendacoes,

@@ -514,7 +514,7 @@ Exemplo para {{ config.nome }}:
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 1.5rem;">📐</span>
-                            <strong style="font-size: 1.15rem; color: #0046AD;">Parecer do Modelo Canônico</strong>
+                            <strong style="font-size: 1.15rem; color: #0046AD;">Parecer do Modelo Canônico 4.0</strong>
                         </div>
                         <span id="ai-provedor-tag" style="background: rgba(0,70,173, 0.2); color: #003380; border: 1px solid rgba(0,70,173, 0.4); padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700;">
                             Cálculo local
@@ -1216,6 +1216,13 @@ Exemplo para {{ config.nome }}:
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
                 }
 
+                if (av.dispersao_hexagonal && av.dispersao_hexagonal.disponivel) {
+                    const dh = av.dispersao_hexagonal;
+                    html += `<div style="font-size: 0.88rem; margin-bottom: 10px; background: #F0FDF4; border-left: 3px solid #16A34A; padding: 6px 10px; border-radius: 4px;">
+                        📐 <strong>Dispersão Hexagonal 4.0 (MCOH):</strong> ${dh.classificacao} — <strong>${dh.setores_cobertos} de ${dh.total_setores} setores</strong> cobertos (IDE: ${dh.indice_dispersao}%).
+                    </div>`;
+                }
+
                 const ind = av.indicadores;
                 if (ind && ind.itens.length > 0) {
                     html += `<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 6px;">
@@ -1245,7 +1252,7 @@ Exemplo para {{ config.nome }}:
                     const sugerido = av.sugestao.jogo_sugerido.map(formatarNumero).join(' ');
                     html += `<div style="font-size: 0.88rem; background: rgba(0,70,173,0.06); padding: 10px 12px; border-radius: 6px;">
                         💡 <strong>Sugestão de troca:</strong> ${trocas}<br>Jogo sugerido: <strong>${sugerido}</strong>
-                        <span style="color: #5B6B82;">(troca por números com maior peso no Modelo Canônico, sem os padrões acima)</span></div>`;
+                        <span style="color: #5B6B82;">(troca por números com maior peso no Modelo Canônico 4.0, sem os padrões acima)</span></div>`;
                 }
                 html += '</div>';
             });
@@ -1458,7 +1465,7 @@ Exemplo para {{ config.nome }}:
             }
             
             if (typeof showLoading === 'function') {
-                showLoading('Gerando combinações com o Modelo Canônico...');
+                showLoading('Gerando combinações com o Modelo Canônico 4.0...');
             }
 
             try {

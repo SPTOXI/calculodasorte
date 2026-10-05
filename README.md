@@ -1,9 +1,9 @@
 # Loteria Canônica - Sistema de Análise Estatística
 
-## Modelo Canônico 3.0 + MCP-MD 1.0
-### AGENTE LLN ICT FR
+## Modelo Canônico 4.0 + MCOH + MCP-MD 1.0
+### AGENTE LLN ICT FR & OTIMIZAÇÃO HEXAGONAL
 
-Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 3.0 - MCSCE** e sua extensão **MCP-MD 1.0**.
+Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 4.0 - MCSCE/MCOH** e sua extensão **MCP-MD 1.0**.
 
 ---
 
@@ -37,9 +37,9 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ## 📐 Arquitetura do Sistema
 
-### Núcleo Matemático (`core.py`)
+### Núcleo Matemático (`core.py`, `modelo_hexagonal.py`)
 
-#### Modelo Canônico 3.0 - 7 Camadas:
+#### Modelo Canônico 4.0 - 8 Camadas:
 
 1. **Convergência** - LLN, FR (Fator de Recorrência)
 2. **Estabilidade** - ICT (Índice de Convergência Temporal)
@@ -48,6 +48,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 5. **Informacional** - Entropia, Complexidade, Compressibilidade
 6. **Não Linear** - Fractal, Multifractal, Caos
 7. **Validação** - Monte Carlo, Bayesiano, Backtest
+8. **Dispersão Espacial Hexagonal (MCOH)** - K-Medians em espaço modular cíclico $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE), Cobertura Hexagonal de 6 Setores e Proximidade $\le 1$
 
 #### MCP-MD 1.0 - Microdinâmica Condicionada:
 
@@ -199,7 +200,7 @@ Sistema desenvolvido para fins educacionais e de pesquisa estatística.
 
 ## 👥 AGENTE LLN ICT FR
 
-**Lei dos Grandes Números | Índice de Convergência Temporal | Fator de Recorrência**
+**Lei dos Grandes Números | Índice de Convergência Temporal | Fator de Recorrência | Otimização Hexagonal**
 
-*Modelo Canônico 3.0 — MCSCE*  
-*Arquitetura de Convergência, Saturação e Complexidade Estatística*
+*Modelo Canônico 4.0 — MCSCE / MCOH*  
+*Arquitetura de Convergência, Saturação, Complexidade Estatística e Dispersão Espacial*

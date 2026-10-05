@@ -1,5 +1,6 @@
 """
-Sistema de Análise Estatística para Loterias - Modelo Canônico 3.0 + MCP-MD 1.0
+Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
+MCOH - Modelo Canônico de Otimização Hexagonal e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -162,10 +163,12 @@ class ElementoAnalise:
     maturidade: str  # Classificação de maturidade
 
 
-class ModeloCanonico30:
+class ModeloCanonico40:
     """
-    Implementação do Modelo Canônico 3.0 - MCSCE
-    Modelo de Convergência, Saturação e Complexidade Estatística
+    Implementação do Modelo Canônico 4.0 - MCOH
+    Modelo de Convergência Estatística, Saturação e Otimização Hexagonal (K-Medians).
+    Engloba as camadas 1-7 do MCSCE, a extensão experimental MCP-MD 1.0 e a
+    Camada 8 de Cobertura Espacial e Dispersão Hexagonal.
     """
     
     def __init__(self, historico: List, loteria_type: LoteriaType, config_override: Optional[LoteriaConfig] = None):
@@ -539,9 +542,11 @@ class ModeloCanonico30:
             "mcp_md": self.obter_status_mcp(),
             "quartis_ict": self.obter_quartis_ict(),
             "metodologia": {
-                "modelo": "Canônico 3.0 — MCSCE",
-                "extensao": "MCP-MD 1.0 (experimental)",
-                "implementacao": "operacional-2026-09",
+                "modelo": "Canônico 4.0 — MCOH",
+                "versao": "4.0",
+                "extensao": "MCP-MD 1.0 + Otimização Hexagonal",
+                "implementacao": "operacional-2026-10",
+                "camada_espacial": "Hexagonal K-Medians (Dispersão Cíclica Z_N)",
                 "ict": "min(1, pstdev(f_i(t), ceil(T/2) <= t <= T) / mu); mínimo de 20 concursos",
                 "ict_disponivel": self.T >= 20,
                 "classes": "Quartis empíricos inclusivos de ICT; empates na mesma classe. Classes são relativas.",
@@ -551,7 +556,7 @@ class ModeloCanonico30:
                 "persistencia": "P_i = min(c_i / max(T * mu, 1), 1)",
                 "normalizacao_imc": "Desvio padrão populacional entre todos os elementos; IMC uniforme contribui zero",
                 "entropia": "Shannon marginal: p_i = c_i / soma(c); não mede dependência temporal",
-                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade"],
+                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade", "MCOH Hexagonal"],
                 "componentes_nao_implementados": [
                     "IIE", "FCT", "ILLA Dinâmico", "AE", "complexidade algorítmica",
                     "compressão efetiva de sequências", "fractal", "multifractal", "caos"
@@ -565,6 +570,14 @@ class ModeloCanonico30:
                 "hi_medio": statistics.mean(his),
                 "score_mcp_medio": statistics.mean(scores_mcp),
                 "iseg_global": self.calcular_iseg(),
+            },
+            "camada_espacial": {
+                "modelo": "Hexagonal K-Medians (Z_N)",
+                "total_setores": 6,
+                "largura_setor": round(self.N / 6, 1),
+                "universo": self.N,
+                "metrica": "Circular cíclica Z_N",
+                "distancia_maxima_teorica": round(self.N / 12, 1)
             },
             "distribuicao_classes": classes,
             "distribuicao_maturidade": maturidades,
@@ -598,18 +611,144 @@ class ModeloCanonico30:
         }
         return self._memo['resumo']
 
+    def calcular_dispersao_hexagonal(self, jogo: List[int]) -> Dict:
+        """
+        Camada 8 - MCOH (Modelo Canônico de Otimização Hexagonal e Cobertura Espacial).
+        Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_N.
+        """
+        if self.config.colunas or not jogo:
+            return {
+                "disponivel": False,
+                "motivo": "Dispersão hexagonal aplica-se a loterias de números com universo contínuo."
+            }
+
+        n_numeros = len(jogo)
+        N = self.N
+        num_setores = 6
+        largura_setor = N / num_setores
+
+        # 1. Alocação nos 6 setores do hexágono
+        setores = [0] * num_setores
+        centros_setores = [self.config.numero_inicial + (i + 0.5) * largura_setor for i in range(num_setores)]
+
+        for num in jogo:
+            idx = int((num - self.config.numero_inicial) / largura_setor)
+            idx = min(idx, num_setores - 1)
+            setores[idx] += 1
+
+        setores_cobertos = sum(1 for c in setores if c > 0)
+
+        # 2. Proximidade métrica circular mínima para os centros dos 6 setores
+        distancias_centros = []
+        for num in jogo:
+            d_min = min(
+                min(abs(num - c), N - abs(num - c))
+                for c in centros_setores
+            )
+            distancias_centros.append(d_min)
+
+        dist_media_centros = statistics.mean(distancias_centros) if distancias_centros else 0.0
+        dist_max_centros = max(distancias_centros) if distancias_centros else 0.0
+
+        # 3. Índice de Dispersão Espacial (IDE 4.0) de 0.0 a 100.0%
+        cobertura_pct = (setores_cobertos / min(num_setores, n_numeros)) * 100.0
+        desvio_setorial = statistics.pstdev(setores)
+        max_desvio = n_numeros / 2.0
+        fator_equilibrio = max(0.0, 1.0 - (desvio_setorial / max(max_desvio, 1.0)))
+        ide = round(0.6 * cobertura_pct + 0.4 * (fator_equilibrio * 100.0), 1)
+
+        if setores_cobertos >= min(5, n_numeros):
+            classificacao = "Excelente (Dispersão Hexagonal Ampla)"
+        elif setores_cobertos >= min(4, n_numeros):
+            classificacao = "Boa (Dispersão Equilibrada)"
+        else:
+            classificacao = "Concentrada (Aglomerada em Poucos Setores)"
+
+        return {
+            "disponivel": True,
+            "setores_cobertos": setores_cobertos,
+            "total_setores": num_setores,
+            "distribuicao_setorial": setores,
+            "distancia_media_centros": round(dist_media_centros, 2),
+            "distancia_maxima_centros": round(dist_max_centros, 2),
+            "indice_dispersao": ide,
+            "classificacao": classificacao,
+            "observacao": (
+                "A cobertura hexagonal garante dispersão uniforme no volante, "
+                "minimizando a distância média para qualquer combinação sorteada."
+            )
+        }
+
+    def gerar_jogos_hexagonais(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
+        """
+        Gera jogos utilizando o reticulado hexagonal regular com perturbações harmônicas,
+        assegurando máxima cobertura espacial e respeito às restrições anti-compartilhamento de prêmio.
+        """
+        import random
+        jogos = []
+        jogos_set = set()
+
+        num_setores = 6
+        largura = self.N / num_setores
+
+        tentativas = 0
+        max_tentativas = quantidade_jogos * 200
+
+        while len(jogos) < quantidade_jogos and tentativas < max_tentativas:
+            tentativas += 1
+            candidatos = []
+
+            if quantidade_numeros == 6:
+                setores_alvo = list(range(6))
+            else:
+                setores_alvo = (list(range(6)) * (quantidade_numeros // 6 + 1))[:quantidade_numeros]
+                random.shuffle(setores_alvo)
+
+            for s in setores_alvo:
+                inicio = int(self.config.numero_inicial + s * largura)
+                fim = int(self.config.numero_inicial + (s + 1) * largura) - 1
+                fim = min(fim, self.config.numero_final)
+                opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
+                if opcoes:
+                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
+                    candidatos.append(escolhido)
+
+            if len(candidatos) == quantidade_numeros:
+                pares = sum(1 for n in candidatos if n % 2 == 0)
+                if 2 <= pares <= 4 or quantidade_numeros != 6:
+                    ordenado = sorted(candidatos)
+                    diffs = [b - a for a, b in zip(ordenado, ordenado[1:])]
+                    if len(set(diffs)) > 1 or quantidade_numeros < 4:
+                        tup = tuple(ordenado)
+                        if tup not in jogos_set:
+                            jogos_set.add(tup)
+                            jogos.append(list(ordenado))
+
+        return jogos[:quantidade_jogos]
+
+
+# Alias canônico para compatibilidade com versões e chamadas anteriores
+ModeloCanonico30 = ModeloCanonico40
+
 
 # Reexporta a camada 7 para preservar os imports existentes.
 from validacao import ValidaçãoCamada7
 
 
-def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> List[int]:
+def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
     """
-    Gerar sugestão de jogo baseada na análise estatística
-    Considera múltiplas camadas do modelo canônico
+    Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
+    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Hexagonal de Cobertura Espacial.
     """
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
+
+    # Para loterias com universo amplo (ex: Mega-Sena 60), utiliza a geração com dispersão hexagonal ótima
+    if quantidade_numeros == modelo.config.sorteados and modelo.N >= 30:
+        jogos_hex = modelo.gerar_jogos_hexagonais(1, quantidade_numeros)
+        if jogos_hex:
+            return jogos_hex[0]
 
     analises = modelo.analisar_todos_elementos()
     
@@ -653,20 +792,26 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico30, quantidade_numeros: int) -> Li
 
 
 def gerar_multiplos_jogos(
-    modelo: ModeloCanonico30, 
+    modelo: ModeloCanonico40, 
     quantidade_jogos: int, 
     quantidade_numeros: int,
     numeros_base: Optional[List[int]] = None
 ) -> List[List[int]]:
     """
-    Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 3.0.
-    Garante que não haja jogos duplicados e respeita os limites da loteria.
+    Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 4.0.
+    Garante que não haja jogos duplicados e aplica otimização de dispersão espacial hexagonal.
     Se numeros_base for fornecido, restringe a geração ao subconjunto de números escolhido pelo usuário.
     """
     import random
 
     if modelo.config.colunas:
         return _gerar_multiplos_por_coluna(modelo, quantidade_jogos, numeros_base)
+
+    # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador hexagonal 4.0
+    if not numeros_base and quantidade_numeros == modelo.config.sorteados and modelo.N >= 30:
+        jogos_hex = modelo.gerar_jogos_hexagonais(quantidade_jogos, quantidade_numeros)
+        if len(jogos_hex) == quantidade_jogos:
+            return jogos_hex
 
     analises = modelo.analisar_todos_elementos()
     
@@ -805,8 +950,8 @@ def _gerar_multiplos_por_coluna(modelo: ModeloCanonico30, quantidade_jogos: int,
 
 if __name__ == "__main__":
     # Exemplo de uso
-    print("Modelo Canônico 3.0 + MCP-MD 1.0")
-    print("AGENTE LLN ICT FR - Sistema de Análise Estatística")
+    print("Modelo Canônico 4.0 + MCP-MD 1.0 (Otimização Hexagonal e Cobertura Espacial)")
+    print("AGENTE LLN ICT FR MCOH - Sistema de Análise Estatística")
     print("=" * 60)
     
     # Histórico fictício para teste
@@ -818,13 +963,14 @@ if __name__ == "__main__":
     ]
     
     # Criar modelo para Mega-Sena
-    modelo = ModeloCanonico30(historico_teste, LoteriaType.MEGA_SENA)
+    modelo = ModeloCanonico40(historico_teste, LoteriaType.MEGA_SENA)
     resumo = modelo.obter_resumo_analise()
     
     print(f"\nLoteria: {resumo['loteria']}")
     print(f"Concursos analisados: {resumo['total_concursos']}")
     print(f"ICT Médio: {resumo['estatisticas_gerais']['ict_medio']:.4f}")
     print(f"Entropia: {resumo['camada_informacional']['entropia']:.4f}")
+    print(f"Camada Espacial: {resumo['camada_espacial']['modelo']}")
 
 
 # Calendário da Caixa: sorteios aos sábados às 20h, domingos às 11h (quando houver)

@@ -1,13 +1,13 @@
 """
 Avaliação dos jogos do usuário e parecer dos jogos gerados, calculados localmente
-a partir do Modelo Canônico 3.0 (sem chamadas de IA).
+a partir do Modelo Canônico 4.0 (sem chamadas de IA).
 """
 
 from collections import Counter
 from math import comb
 from typing import Dict, List, Optional
 
-from core import ModeloCanonico30, LoteriaType, _peso_canonico, modelos_por_coluna
+from core import ModeloCanonico40, ModeloCanonico30, LoteriaType, _peso_canonico, modelos_por_coluna
 
 AVISO_PROBABILIDADE = (
     "Todas as combinações têm exatamente a mesma chance de serem sorteadas. "
@@ -357,17 +357,18 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'perfil_numeros': perfil,
         'equilibrio': equilibrio,
         'indicadores': indicadores_classicos(jogo, modelo),
+        'dispersao_hexagonal': modelo.calcular_dispersao_hexagonal(jogo) if hasattr(modelo, 'calcular_dispersao_hexagonal') else None,
         'alertas': _alertas(jogo, modelo, ultimos),
         'sugestao': _sugerir_trocas(jogo, modelo, ultimos),
         'aviso': AVISO_PROBABILIDADE,
     }
 
 
-def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
-    """Parecer dos jogos gerados, montado a partir das métricas canônicas já calculadas."""
+def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
+    """Parecer dos jogos gerados, montado a partir das métricas canônicas 4.0 já calculadas."""
     config = modelo.config
     if not jogos:
-        return {'parecer_texto': 'Nenhum jogo gerado.', 'recomendacoes': [], 'provedor': 'Modelo Canônico 3.0'}
+        return {'parecer_texto': 'Nenhum jogo gerado.', 'recomendacoes': [], 'provedor': 'Modelo Canônico 4.0'}
 
     aprovados = sum(1 for j in jogos if jogo_aprovado(j, modelo))
     prob = probabilidades(modelo, len(jogos[0]))
@@ -383,6 +384,12 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
         linhas.append(f"Os jogos cobrem {len(distintos)} dos {config.universo} números do volante.")
         linhas.append(f"Fator de recorrência médio dos números escolhidos: {fr_medio:.2f} (1,00 = frequência teórica de sorteio).".replace('.', ',', 1))
         linhas.append("Classes canônicas dos números usados: " + ", ".join(f"{c}: {classes.get(c, 0)}" for c in "ABCD") + ".")
+
+        # Se houver avaliação hexagonal
+        if hasattr(modelo, 'calcular_dispersao_hexagonal') and len(jogos) == 1:
+            disp = modelo.calcular_dispersao_hexagonal(jogos[0])
+            if disp.get('disponivel'):
+                linhas.append(f"Dispersão Espacial Hexagonal (MCOH 4.0): {disp['classificacao']} (IDE: {disp['indice_dispersao']}%).")
     linhas.append(
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')
         + f"; de {faixa_min['acertos']} acertos: 1 em {faixa_min['um_em']:,}.".replace(',', '.')
@@ -399,5 +406,5 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico30) -> Dict:
             "Evitar padrões populares não aumenta a chance de acertar, mas reduz a chance de dividir o prêmio.",
             f"Custo de cada jogo: R$ {prob['custo_aposta']:.2f}".replace('.', ',') + ". Defina um orçamento fixo por concurso.",
         ],
-        'provedor': 'Modelo Canônico 3.0 (cálculo local)',
+        'provedor': 'Modelo Canônico 4.0 (cálculo local)',
     }

@@ -1,6 +1,6 @@
 """
 Aplicação Web Flask para Análise Estatística de Loterias
-Baseada no Modelo Canônico 3.0 + MCP-MD 1.0
+Baseada no Modelo Canônico 4.0 + MCP-MD 1.0 (Otimização Hexagonal e Cobertura Espacial)
 Com Painel Administrativo, Gestão de Usuários e Atualizador Diário Caixa
 """
 
@@ -25,6 +25,7 @@ import fechamento
 import importador
 from core import (
     proximo_sorteio,
+    ModeloCanonico40,
     ModeloCanonico30,
     ValidaçãoCamada7,
     gerar_jogo_sugerido,
@@ -567,7 +568,7 @@ _MODELOS_CACHE = {}
 
 
 def modelo_canonico(loteria_type: str):
-    """Modelo Canônico calculado sobre o histórico oficial, reaproveitado até entrar um novo concurso.
+    """Modelo Canônico 4.0 calculado sobre o histórico oficial, reaproveitado até entrar um novo concurso.
     Retorna None se houver menos de 10 concursos."""
     historico = carregar_historico_analise(loteria_type)
     if len(historico) < 10:
@@ -579,7 +580,7 @@ def modelo_canonico(loteria_type: str):
     em_cache = _MODELOS_CACHE.get(loteria_type)
     if em_cache and em_cache[0] == chave:
         return em_cache[1]
-    modelo = ModeloCanonico30(historico, LoteriaType(loteria_type))
+    modelo = ModeloCanonico40(historico, LoteriaType(loteria_type))
     _MODELOS_CACHE[loteria_type] = (chave, modelo)
     return modelo
 
@@ -609,7 +610,7 @@ def index():
 
 
 # Configuração sintética do universo dos "trevos" da +Milionária (1 a 6, 2 sorteados),
-# usada para rodar o mesmo Modelo Canônico 3.0 sobre o segundo sorteio da loteria.
+# usada para rodar o mesmo Modelo Canônico 4.0 sobre o segundo sorteio da loteria.
 TREVO_CONFIG = LoteriaConfig(
     nome="Trevo da Sorte",
     universo=6,
@@ -1645,7 +1646,7 @@ def api_admin_importar_excluir(loteria_type: str):
 
 
 # ==========================================
-# APIS ESTATÍSTICAS DO MODELO CANÔNICO 3.0
+# APIS ESTATÍSTICAS DO MODELO CANÔNICO 4.0
 # ==========================================
 
 @app.route('/api/analise/<loteria_type>', methods=['POST'])
@@ -2007,7 +2008,7 @@ def _acesso_bloqueado(user_id):
 @app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
 @login_required
 def api_gerar_multiplos_jogos(loteria_type: str):
-    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 3.0 com verificação de plano/créditos"""
+    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 4.0 com verificação de plano/créditos"""
     try:
         loteria = LoteriaType(loteria_type)
         config = LOTERIAS_CONFIG[loteria]
@@ -2047,7 +2048,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base or None)
     jogos_aprovados = [avaliacao.jogo_aprovado(j, modelo) for j in jogos]
 
-    # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 3.0,
+    # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 4.0,
     # aplicado separadamente sobre o histórico de trevos. Um par por jogo, podendo repetir entre
     # os jogos (o universo de apenas 6 números não permite pares exclusivos para dezenas de jogos).
     trevos = None
@@ -2056,7 +2057,7 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         qtd_trevos = max(2, min(6, int(dados.get('trevos_por_jogo', 2) or 2)))
         trevos_historico = [t for t in updater.carregar_trevos_local('mais_milionaria') if t and len(t) == 2]
         if len(trevos_historico) >= 10 and qtd_trevos < 6:
-            modelo_trevo = ModeloCanonico30(trevos_historico, loteria, config_override=TREVO_CONFIG)
+            modelo_trevo = ModeloCanonico40(trevos_historico, loteria, config_override=TREVO_CONFIG)
             trevos = [sorted(gerar_jogo_sugerido(modelo_trevo, qtd_trevos)) for _ in range(len(jogos))]
         else:
             # Sem histórico de trevos (ou com os 6 marcados): todos têm a mesma chance
@@ -2157,7 +2158,7 @@ def api_fechamento(loteria_type: str):
             qtd_trevos = max(2, min(6, int(dados.get('trevos_por_jogo', 2) or 2)))
             trevos_historico = [t for t in updater.carregar_trevos_local('mais_milionaria') if t and len(t) == 2]
             if len(trevos_historico) >= 10 and qtd_trevos < 6:
-                modelo_trevo = ModeloCanonico30(trevos_historico, LoteriaType(loteria_type), config_override=TREVO_CONFIG)
+                modelo_trevo = ModeloCanonico40(trevos_historico, LoteriaType(loteria_type), config_override=TREVO_CONFIG)
                 trevos = [sorted(gerar_jogo_sugerido(modelo_trevo, qtd_trevos)) for _ in range(len(jogos))]
             else:
                 trevos = [sorted(secrets.SystemRandom().sample(range(1, 7), qtd_trevos)) for _ in range(len(jogos))]
@@ -2220,7 +2221,7 @@ def api_fechamento(loteria_type: str):
 @login_required
 @rate_limit(max_requests=30, window_seconds=60)
 def api_avaliar_jogos(loteria_type: str):
-    """Avalia os jogos do usuário com base no Modelo Canônico (sem IA)"""
+    """Avalia os jogos do usuário com base no Modelo Canônico 4.0 (sem IA)"""
     try:
         LoteriaType(loteria_type)
     except ValueError:
@@ -2682,7 +2683,7 @@ def download_jogos(loteria_type: str, formato: str):
 
         linhas = [
             f"# Palpites Gerados — {config.nome}",
-            "**Metodologia:** Modelo Canônico 3.0 (MCP-MD 1.0)  ",
+            "**Metodologia:** Modelo Canônico 4.0 (Otimização Hexagonal + MCP-MD 1.0)  ",
             f"**Data de Geração:** {data_hora}  ",
             f"**Total de Jogos:** {len(jogos)}  ",
             "",
@@ -2707,7 +2708,7 @@ def download_jogos(loteria_type: str, formato: str):
         linhas = [
             "=" * 60,
             f"PALPITES GERADOS — {config.nome.upper()}",
-            f"Modelo Canônico 3.0 + MCP-MD 1.0 (AGENTE LLN ICT FR)",
+            f"Modelo Canônico 4.0 + MCP-MD 1.0 (AGENTE LLN ICT FR MCOH)",
             f"Data: {data_hora}",
             f"Total de Combinações: {len(jogos)}",
             "=" * 60,

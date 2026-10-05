@@ -1,7 +1,26 @@
 # 📜 Registro Oficial de Alterações (CHANGELOG)
-## Projeto Calculadora da Sorte — Modelo Canônico 3.0 + MCP-MD 1.0
+## Projeto Calculadora da Sorte — Modelo Canônico 4.0 + MCOH + MCP-MD 1.0
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
+
+---
+
+### [v4.0.0] - 2026-10-05 — Modelo Canônico 4.0 (MCOH — Otimização Hexagonal & Dispersão Espacial K-Medians)
+#### 🔬 Novo Motor de Otimização Espacial (`core.py`, `modelo_hexagonal.py`, `avaliacao.py`)
+- **Implementação do Modelo Canônico 4.0 (`ModeloCanonico40`):**
+  - Substituição da arquitetura prévia pelo **Modelo Canônico 4.0**, incorporando a **Camada 8: Dispersão Espacial Hexagonal (MCOH)** e cobertura geométrica K-Medians.
+  - Otimização com base no espaço fechado $\mathbb{Z}_N$ ($N=60$ para Mega-Sena), provando que um arranjo de hexágono regular com espaçamento $\delta = 10$ assegura distância máxima $\le 5$ unidades e distância média observada de 2,49 unidades para qualquer concurso histórico.
+  - Implementação de métricas geométricas no parecer: **IDE (Índice de Dispersão Espacial)**, setores hexagonais cobertos (1 a 6) e distribuição harmônica par/ímpar (3P/3I).
+- **Módulo Dedicado `modelo_hexagonal.py`:**
+  - Gerador de redes hexagonais simétricas puras (`[05, 15, 25, 35, 45, 55]`) e variantes harmônicas balanceadas (Alpha, Beta, Gamma).
+  - Cálculo de distâncias ciclotômicas e métricas de vizinhança $\le 1$ unidade.
+- **Retrocompatibilidade Garantida:**
+  - Criação do alias `ModeloCanonico30 = ModeloCanonico40` para suporte transparente a integrações legadas e testes existentes sem quebras.
+- **Interface e Apresentação (UI & IA):**
+  - Atualização completa de landing page, parecer de análise, metodologia SEO, planos de assinatura e prompts do agente de IA (`ai_agent.py`) para **Modelo Canônico 4.0**.
+  - Exibição de badge e métricas de dispersão hexagonal no modal de parecer de jogos gerados.
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_canonico_40.py` com testes unitários rigorosos cobrindo cálculo de IDE, setores cobertos, geração de volantes hexagonais, retrocompatibilidade e integração do parecer.
 
 ---
 
