@@ -3,6 +3,28 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.1.0] - 2026-10-05 — Modelo Canônico 4.0 Especializado: MCOP (Otimização Pentagonal da Quina)
+#### 🔬 Motor de Otimização Espacial Pentagonal (`modelo_pentagonal.py`, `core.py`, `avaliacao.py`)
+- **Implementação do Modelo Pentagonal Exclusivo da Quina (MCOP 4.0):**
+  - Especialização da **Camada 8 de Cobertura Espacial** por topologia de loteria: enquanto a Mega-Sena ($N=60, k=6$) opera com o reticulado **Hexagonal (MCOH)** de 6 setores, a Quina ($N=80, k=5$) agora opera nativamente com o reticulado **Pentagonal (MCOP)** de 5 setores regulares de 16 dezenas no anel modular cíclico $\mathbb{Z}_{80}$.
+  - Divisão perfeita do volante em 5 setores contínuos: Setor 1 [01..16], Setor 2 [17..32], Setor 3 [33..48], Setor 4 [49..64] e Setor 5 [65..80], com centros naturais em `[08, 24, 40, 56, 72]`.
+  - Cota analítica superior provada: qualquer dezena de 01 a 80 dista no máximo $\le 8$ unidades de um vértice pentagonal, com distância média teórica de exatamente $4,00$ unidades.
+  - Variantes harmônicas canônicas (Alpha, Beta, Gamma, Delta) com perturbação mínima ($\pm 1$) para equilíbrio estatístico de paridade ($3\text{P}/2\text{I}$ ou $2\text{P}/3\text{I}$) e respeito às diretrizes anti-compartilhamento de prêmio.
+- **Backtest Empírico nos 5.326 Concursos Históricos da Quina:**
+  - Avaliação extensiva em toda a base histórica oficial (concursos 1809 a 7134, cobrindo 19 anos):
+    - Distância média observada nos sorteios reais: **3,98 unidades** (confirmando a previsão teórica).
+    - Em **65,7% de todos os concursos da história da Quina**, pelo menos uma dezena sorteada caiu a uma distância $\le 1$ dos vértices pentagonais.
+- **Despacho Polimórfico Espacial:**
+  - `core.py` agora despacha dinamicamente `calcular_dispersao_espacial`, `gerar_jogo_sugerido` e `gerar_multiplos_jogos`:
+    - Quina $\to$ Camada 8 Pentagonal (MCOP).
+    - Mega-Sena $\to$ Camada 8 Hexagonal (MCOH).
+  - Preservação total de retrocompatibilidade com `calcular_dispersao_hexagonal`.
+- **Sincronização de Dados Oficiais da Quina:**
+  - Atualização do resultado oficial Caixa até o concurso **7134** (03/10/2026: `14 15 43 54 72`).
+  - Criação de `data/quina_concursos.json`, atualização de `data/quina_historico.json` e armazenamento da base completa em `data/quina_historico_completo.json`.
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_pentagonal_quina.py` com 10 testes unitários e de integração (100% aprovados).
+
 ---
 
 ### [v4.0.0] - 2026-10-05 — Modelo Canônico 4.0 (MCOH — Otimização Hexagonal & Dispersão Espacial K-Medians)

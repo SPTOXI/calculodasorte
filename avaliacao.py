@@ -357,6 +357,8 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'perfil_numeros': perfil,
         'equilibrio': equilibrio,
         'indicadores': indicadores_classicos(jogo, modelo),
+        'dispersao_espacial': modelo.calcular_dispersao_espacial(jogo) if hasattr(modelo, 'calcular_dispersao_espacial') else None,
+        'dispersao_pentagonal': modelo.calcular_dispersao_pentagonal(jogo) if hasattr(modelo, 'calcular_dispersao_pentagonal') else None,
         'dispersao_hexagonal': modelo.calcular_dispersao_hexagonal(jogo) if hasattr(modelo, 'calcular_dispersao_hexagonal') else None,
         'alertas': _alertas(jogo, modelo, ultimos),
         'sugestao': _sugerir_trocas(jogo, modelo, ultimos),
@@ -385,11 +387,17 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
         linhas.append(f"Fator de recorrência médio dos números escolhidos: {fr_medio:.2f} (1,00 = frequência teórica de sorteio).".replace('.', ',', 1))
         linhas.append("Classes canônicas dos números usados: " + ", ".join(f"{c}: {classes.get(c, 0)}" for c in "ABCD") + ".")
 
-        # Se houver avaliação hexagonal
-        if hasattr(modelo, 'calcular_dispersao_hexagonal') and len(jogos) == 1:
-            disp = modelo.calcular_dispersao_hexagonal(jogos[0])
-            if disp.get('disponivel'):
-                linhas.append(f"Dispersão Espacial Hexagonal (MCOH 4.0): {disp['classificacao']} (IDE: {disp['indice_dispersao']}%).")
+        # Se houver avaliação espacial (Pentagonal para Quina, Hexagonal para Mega-Sena)
+        if len(jogos) == 1:
+            disp = None
+            if hasattr(modelo, 'calcular_dispersao_espacial'):
+                disp = modelo.calcular_dispersao_espacial(jogos[0])
+            elif hasattr(modelo, 'calcular_dispersao_hexagonal'):
+                disp = modelo.calcular_dispersao_hexagonal(jogos[0])
+            if disp and disp.get('disponivel'):
+                geom = disp.get('geometria', 'Hexagonal' if config.nome == 'Mega-Sena' else 'Espacial')
+                sigla = 'MCOP 4.0' if geom == 'Pentagonal' else 'MCOH 4.0'
+                linhas.append(f"Dispersão Espacial {geom} ({sigla}): {disp['classificacao']} (IDE: {disp['indice_dispersao']}%).")
     linhas.append(
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')
         + f"; de {faixa_min['acertos']} acertos: 1 em {faixa_min['um_em']:,}.".replace(',', '.')

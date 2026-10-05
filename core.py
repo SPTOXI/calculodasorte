@@ -1,6 +1,6 @@
 """
 Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
-MCOH - Modelo Canônico de Otimização Hexagonal e Cobertura Espacial
+MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -526,6 +526,47 @@ class ModeloCanonico40:
         for a in analises:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
+        # Configuração da Camada Espacial especializada por topologia da loteria
+        is_quina = (self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5))
+        is_megasena = (self.config.nome == "Mega-Sena" or (self.N == 60 and self.config.sorteados == 6))
+
+        if is_quina:
+            modelo_metodologia = "Canônico 4.0 — MCOP (Quina)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Pentagonal"
+            camada_espacial_desc = "Pentagonal K-Medians (Dispersão Cíclica Z_80)"
+            camada_espacial_dict = {
+                "modelo": "Pentagonal K-Medians (Z_80)",
+                "total_setores": 5,
+                "largura_setor": 16.0,
+                "universo": 80,
+                "metrica": "Circular cíclica Z_80",
+                "distancia_maxima_teorica": 8.0
+            }
+        elif is_megasena:
+            modelo_metodologia = "Canônico 4.0 — MCOH (Mega-Sena)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Hexagonal"
+            camada_espacial_desc = "Hexagonal K-Medians (Dispersão Cíclica Z_60)"
+            camada_espacial_dict = {
+                "modelo": "Hexagonal K-Medians (Z_60)",
+                "total_setores": 6,
+                "largura_setor": 10.0,
+                "universo": 60,
+                "metrica": "Circular cíclica Z_60",
+                "distancia_maxima_teorica": 5.0
+            }
+        else:
+            modelo_metodologia = f"Canônico 4.0 ({self.config.nome})"
+            extensao_desc = "MCP-MD 1.0 + Cobertura Espacial"
+            camada_espacial_desc = f"Espacial K-Medians (Z_{self.N})"
+            camada_espacial_dict = {
+                "modelo": f"Espacial K-Medians (Z_{self.N})",
+                "total_setores": 6 if self.N >= 60 else max(3, self.config.sorteados),
+                "largura_setor": round(self.N / 6, 1),
+                "universo": self.N,
+                "metrica": f"Circular cíclica Z_{self.N}",
+                "distancia_maxima_teorica": round(self.N / 12, 1)
+            }
+
         self._memo['resumo'] = {
             "loteria": self.config.nome,
             "total_concursos": self.T,
@@ -542,11 +583,11 @@ class ModeloCanonico40:
             "mcp_md": self.obter_status_mcp(),
             "quartis_ict": self.obter_quartis_ict(),
             "metodologia": {
-                "modelo": "Canônico 4.0 — MCOH",
+                "modelo": modelo_metodologia,
                 "versao": "4.0",
-                "extensao": "MCP-MD 1.0 + Otimização Hexagonal",
+                "extensao": extensao_desc,
                 "implementacao": "operacional-2026-10",
-                "camada_espacial": "Hexagonal K-Medians (Dispersão Cíclica Z_N)",
+                "camada_espacial": camada_espacial_desc,
                 "ict": "min(1, pstdev(f_i(t), ceil(T/2) <= t <= T) / mu); mínimo de 20 concursos",
                 "ict_disponivel": self.T >= 20,
                 "classes": "Quartis empíricos inclusivos de ICT; empates na mesma classe. Classes são relativas.",
@@ -556,7 +597,7 @@ class ModeloCanonico40:
                 "persistencia": "P_i = min(c_i / max(T * mu, 1), 1)",
                 "normalizacao_imc": "Desvio padrão populacional entre todos os elementos; IMC uniforme contribui zero",
                 "entropia": "Shannon marginal: p_i = c_i / soma(c); não mede dependência temporal",
-                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade", "MCOH Hexagonal"],
+                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade", "MCOH Hexagonal", "MCOP Pentagonal"],
                 "componentes_nao_implementados": [
                     "IIE", "FCT", "ILLA Dinâmico", "AE", "complexidade algorítmica",
                     "compressão efetiva de sequências", "fractal", "multifractal", "caos"
@@ -571,14 +612,7 @@ class ModeloCanonico40:
                 "score_mcp_medio": statistics.mean(scores_mcp),
                 "iseg_global": self.calcular_iseg(),
             },
-            "camada_espacial": {
-                "modelo": "Hexagonal K-Medians (Z_N)",
-                "total_setores": 6,
-                "largura_setor": round(self.N / 6, 1),
-                "universo": self.N,
-                "metrica": "Circular cíclica Z_N",
-                "distancia_maxima_teorica": round(self.N / 12, 1)
-            },
+            "camada_espacial": camada_espacial_dict,
             "distribuicao_classes": classes,
             "distribuicao_maturidade": maturidades,
             "camada_informacional": {
@@ -616,6 +650,9 @@ class ModeloCanonico40:
         Camada 8 - MCOH (Modelo Canônico de Otimização Hexagonal e Cobertura Espacial).
         Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_N.
         """
+        if self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5):
+            return self.calcular_dispersao_pentagonal(jogo)
+
         if self.config.colunas or not jogo:
             return {
                 "disponivel": False,
@@ -727,6 +764,139 @@ class ModeloCanonico40:
 
         return jogos[:quantidade_jogos]
 
+    def calcular_dispersao_pentagonal(self, jogo: List[int]) -> Dict:
+        """
+        Camada 8 - MCOP (Modelo Canônico de Otimização Pentagonal e Cobertura Espacial - Quina).
+        Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_80,
+        dividido em 5 setores de 16 dezenas cada: [1..16], [17..32], [33..48], [49..64], [65..80].
+        Centros naturais: [8, 24, 40, 56, 72].
+        """
+        if self.config.colunas or not jogo:
+            return {
+                "disponivel": False,
+                "motivo": "Dispersão pentagonal aplica-se à Quina e loterias de números com universo contínuo."
+            }
+
+        n_numeros = len(jogo)
+        N = 80
+        num_setores = 5
+        largura_setor = 16
+        centros_setores = [8, 24, 40, 56, 72]
+
+        # 1. Alocação nos 5 setores do pentágono
+        setores = [0] * num_setores
+        for num in jogo:
+            idx = int((num - 1) / largura_setor)
+            idx = min(max(0, idx), num_setores - 1)
+            setores[idx] += 1
+
+        setores_cobertos = sum(1 for c in setores if c > 0)
+
+        # 2. Proximidade métrica circular mínima para os centros dos 5 setores
+        distancias_centros = []
+        for num in jogo:
+            d_min = min(
+                min(abs(num - c), N - abs(num - c))
+                for c in centros_setores
+            )
+            distancias_centros.append(d_min)
+
+        dist_media_centros = statistics.mean(distancias_centros) if distancias_centros else 0.0
+        dist_max_centros = max(distancias_centros) if distancias_centros else 0.0
+
+        # 3. Índice de Dispersão Espacial (IDE 4.0 Pentagonal) de 0.0 a 100.0%
+        cobertura_pct = (setores_cobertos / min(num_setores, n_numeros)) * 100.0
+        desvio_setorial = statistics.pstdev(setores)
+        max_desvio = n_numeros / 2.0
+        fator_equilibrio = max(0.0, 1.0 - (desvio_setorial / max(max_desvio, 1.0)))
+        ide = round(0.6 * cobertura_pct + 0.4 * (fator_equilibrio * 100.0), 1)
+
+        if setores_cobertos >= min(5, n_numeros):
+            classificacao = "Excelente (Dispersão Pentagonal Ampla)"
+        elif setores_cobertos >= min(4, n_numeros):
+            classificacao = "Boa (Dispersão Equilibrada)"
+        elif setores_cobertos >= min(3, n_numeros):
+            classificacao = "Regular (Dispersão Parcial)"
+        else:
+            classificacao = "Concentrada (Aglomerada em Poucos Setores)"
+
+        return {
+            "disponivel": True,
+            "geometria": "Pentagonal",
+            "setores_cobertos": setores_cobertos,
+            "total_setores": num_setores,
+            "distribuicao_setorial": setores,
+            "distancia_media_centros": round(dist_media_centros, 2),
+            "distancia_maxima_centros": round(dist_max_centros, 2),
+            "indice_dispersao": ide,
+            "classificacao": classificacao,
+            "observacao": (
+                "A cobertura pentagonal garante dispersão uniforme no volante de 80 números da Quina, "
+                "minimizando a distância para qualquer sorteio com cota máxima de 8 unidades."
+            )
+        }
+
+    def calcular_dispersao_espacial(self, jogo: List[int]) -> Dict:
+        """
+        Camada 8 - Despacho Polimórfico de Cobertura Espacial.
+        Encaminha para a geometria adequada de cada loteria:
+        - Quina: Pentagonal (MCOP 4.0)
+        - Mega-Sena: Hexagonal (MCOH 4.0)
+        - Demais loterias: Modelo espacial correspondente
+        """
+        if self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5):
+            return self.calcular_dispersao_pentagonal(jogo)
+        return self.calcular_dispersao_hexagonal(jogo)
+
+    def gerar_jogos_pentagonais(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
+        """
+        Gera jogos da Quina utilizando o reticulado pentagonal regular com perturbações harmônicas,
+        dividindo o volante de 80 dezenas em 5 setores de 16 dezenas cada:
+        Setor 0: 01 a 16 | Setor 1: 17 a 32 | Setor 2: 33 a 48 | Setor 3: 49 a 64 | Setor 4: 65 a 80.
+        Garante equilíbrio de paridade (2P/3I ou 3P/2I) e dispersão espacial em todos os setores.
+        """
+        import random
+        jogos = []
+        jogos_set = set()
+
+        num_setores = 5
+        largura = 16
+
+        tentativas = 0
+        max_tentativas = quantidade_jogos * 200
+
+        while len(jogos) < quantidade_jogos and tentativas < max_tentativas:
+            tentativas += 1
+            candidatos = []
+
+            if quantidade_numeros == 5:
+                setores_alvo = list(range(5))
+            else:
+                setores_alvo = (list(range(5)) * (quantidade_numeros // 5 + 1))[:quantidade_numeros]
+                random.shuffle(setores_alvo)
+
+            for s in setores_alvo:
+                inicio = 1 + s * largura
+                fim = min(1 + (s + 1) * largura - 1, 80)
+                opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
+                if opcoes:
+                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
+                    candidatos.append(escolhido)
+
+            if len(candidatos) == quantidade_numeros:
+                pares = sum(1 for n in candidatos if n % 2 == 0)
+                if (2 <= pares <= 3) or (quantidade_numeros != 5 and 1 <= pares <= 4):
+                    ordenado = sorted(candidatos)
+                    diffs = [b - a for a, b in zip(ordenado, ordenado[1:])]
+                    if len(set(diffs)) > 1 or quantidade_numeros < 4:
+                        tup = tuple(ordenado)
+                        if tup not in jogos_set:
+                            jogos_set.add(tup)
+                            jogos.append(list(ordenado))
+
+        return jogos[:quantidade_jogos]
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -739,13 +909,19 @@ from validacao import ValidaçãoCamada7
 def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
     """
     Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
-    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Hexagonal de Cobertura Espacial.
+    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Pentagonal/Hexagonal.
     """
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
 
-    # Para loterias com universo amplo (ex: Mega-Sena 60), utiliza a geração com dispersão hexagonal ótima
-    if quantidade_numeros == modelo.config.sorteados and modelo.N >= 30:
+    # Para a Quina (80 dezenas, 5 sorteadas), utiliza a geração pentagonal ótima
+    if (modelo.config.nome == 'Quina' or (modelo.N == 80 and quantidade_numeros == 5)):
+        jogos_pent = modelo.gerar_jogos_pentagonais(1, quantidade_numeros)
+        if jogos_pent:
+            return jogos_pent[0]
+
+    # Para a Mega-Sena (60 dezenas, 6 sorteadas), utiliza a geração hexagonal ótima
+    if (modelo.config.nome == 'Mega-Sena' or (modelo.N == 60 and quantidade_numeros == 6)):
         jogos_hex = modelo.gerar_jogos_hexagonais(1, quantidade_numeros)
         if jogos_hex:
             return jogos_hex[0]
@@ -799,7 +975,7 @@ def gerar_multiplos_jogos(
 ) -> List[List[int]]:
     """
     Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 4.0.
-    Garante que não haja jogos duplicados e aplica otimização de dispersão espacial hexagonal.
+    Garante que não haja jogos duplicados e aplica otimização de dispersão espacial (Pentagonal para Quina, Hexagonal para Mega-Sena).
     Se numeros_base for fornecido, restringe a geração ao subconjunto de números escolhido pelo usuário.
     """
     import random
@@ -807,11 +983,16 @@ def gerar_multiplos_jogos(
     if modelo.config.colunas:
         return _gerar_multiplos_por_coluna(modelo, quantidade_jogos, numeros_base)
 
-    # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador hexagonal 4.0
-    if not numeros_base and quantidade_numeros == modelo.config.sorteados and modelo.N >= 30:
-        jogos_hex = modelo.gerar_jogos_hexagonais(quantidade_jogos, quantidade_numeros)
-        if len(jogos_hex) == quantidade_jogos:
-            return jogos_hex
+    # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0
+    if not numeros_base:
+        if (modelo.config.nome == 'Quina' or (modelo.N == 80 and quantidade_numeros == 5)):
+            jogos_pent = modelo.gerar_jogos_pentagonais(quantidade_jogos, quantidade_numeros)
+            if len(jogos_pent) == quantidade_jogos:
+                return jogos_pent
+        elif (modelo.config.nome == 'Mega-Sena' or (modelo.N == 60 and quantidade_numeros == 6)):
+            jogos_hex = modelo.gerar_jogos_hexagonais(quantidade_jogos, quantidade_numeros)
+            if len(jogos_hex) == quantidade_jogos:
+                return jogos_hex
 
     analises = modelo.analisar_todos_elementos()
     

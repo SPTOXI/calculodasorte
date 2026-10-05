@@ -1216,10 +1216,12 @@ Exemplo para {{ config.nome }}:
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
                 }
 
-                if (av.dispersao_hexagonal && av.dispersao_hexagonal.disponivel) {
-                    const dh = av.dispersao_hexagonal;
+                const disp = av.dispersao_espacial || av.dispersao_pentagonal || av.dispersao_hexagonal;
+                if (disp && disp.disponivel) {
+                    const geom = disp.geometria || (disp.total_setores === 5 ? 'Pentagonal' : 'Hexagonal');
+                    const sigla = geom === 'Pentagonal' ? 'MCOP' : 'MCOH';
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px; background: #F0FDF4; border-left: 3px solid #16A34A; padding: 6px 10px; border-radius: 4px;">
-                        📐 <strong>Dispersão Hexagonal 4.0 (MCOH):</strong> ${dh.classificacao} — <strong>${dh.setores_cobertos} de ${dh.total_setores} setores</strong> cobertos (IDE: ${dh.indice_dispersao}%).
+                        📐 <strong>Dispersão ${geom} 4.0 (${sigla}):</strong> ${disp.classificacao} — <strong>${disp.setores_cobertos} de ${disp.total_setores} setores</strong> cobertos (IDE: ${disp.indice_dispersao}%).
                     </div>`;
                 }
 
