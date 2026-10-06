@@ -4,9 +4,10 @@ MCOSS (Heptacolunar - Super Sete) / MCODSen (Hexagonal Bivariado - Dupla Sena) /
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
+from __future__ import annotations
 import math
 import statistics
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any, Union, Set
 from dataclasses import dataclass
 from enum import Enum
 
