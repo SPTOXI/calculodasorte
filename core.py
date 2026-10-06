@@ -1,6 +1,6 @@
 """
 Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
-MCODSen (Hexagonal Bivariado - Dupla Sena) / MCODS (Heptagonal Calendário - Dia de Sorte) / MCOMIL (Biparamétrico Hexa-Trevo - +Milionária) / MCOC (Centesimal 10x10 - Lotomania) / MCOD (Decagonal - Timemania) / MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
+MCOSS (Heptacolunar - Super Sete) / MCODSen (Hexagonal Bivariado - Dupla Sena) / MCODS (Heptagonal Calendário - Dia de Sorte) / MCOMIL (Biparamétrico Hexa-Trevo - +Milionária) / MCOC (Centesimal 10x10 - Lotomania) / MCOD (Decagonal - Timemania) / MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -527,6 +527,7 @@ class ModeloCanonico40:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
         # Configuração da Camada Espacial especializada por topologia da loteria
+        is_supersete = (self.config.nome == "Super Sete" or self.config.colunas == 7 or getattr(self, 'loteria_type', None) == LoteriaType.SUPER_SETE)
         is_duplasena = (self.config.nome == "Dupla Sena" or getattr(self, 'loteria_type', None) == LoteriaType.DUPLA_SENA or (self.N == 50 and self.config.sorteios_por_concurso == 2))
         is_diadesorte = (self.config.nome == "Dia de Sorte" or getattr(self, 'loteria_type', None) == LoteriaType.DIA_DE_SORTE or (self.N == 31 and self.config.sorteados == 7))
         is_maismilionaria = (self.config.nome == "+Milionária" or getattr(self, 'loteria_type', None) == LoteriaType.MAIS_MILIONARIA or (self.N == 50 and self.config.sorteados == 6 and not is_duplasena))
@@ -536,7 +537,19 @@ class ModeloCanonico40:
         is_quina = (self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5))
         is_megasena = (self.config.nome == "Mega-Sena" or (self.N == 60 and self.config.sorteados == 6))
 
-        if is_duplasena:
+        if is_supersete:
+            modelo_metodologia = "Canônico 4.0 — MCOSS (Super Sete)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Heptacolunar Independente"
+            camada_espacial_desc = "Heptacolunar Independente K-Medians (Dispersão Vetorial Z_10^7)"
+            camada_espacial_dict = {
+                "modelo": "Heptacolunar Independente K-Medians (Z_10^7)",
+                "total_setores": 7,
+                "largura_setor": 1.0,
+                "universo": 10,
+                "metrica": "Vetorial modular Z_10 em 7 colunas",
+                "distancia_maxima_teorica": 5.0
+            }
+        elif is_duplasena:
             modelo_metodologia = "Canônico 4.0 — MCODSen (Dupla Sena)"
             extensao_desc = "MCP-MD 1.0 + Otimização Hexagonal Bivariada de Duplo Sorteio"
             camada_espacial_desc = "Hexagonal Bivariada K-Medians (Dispersão Cíclica Z_50 Duplo Sorteio)"
@@ -728,6 +741,8 @@ class ModeloCanonico40:
         Camada 8 - MCOH (Modelo Canônico de Otimização Hexagonal e Cobertura Espacial).
         Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_N.
         """
+        if self.config.colunas == 7 or self.config.nome == "Super Sete" or getattr(self, 'loteria_type', None) == LoteriaType.SUPER_SETE:
+            return self.calcular_dispersao_heptacolunar_supersete(jogo)
         if self.config.nome == "Dupla Sena" or getattr(self, 'loteria_type', None) == LoteriaType.DUPLA_SENA or (self.N == 50 and self.config.sorteios_por_concurso == 2):
             return self.calcular_dispersao_bivariada_duplasena(jogo)
         if self.config.nome == "Dia de Sorte" or getattr(self, 'loteria_type', None) == LoteriaType.DIA_DE_SORTE or (self.N == 31 and self.config.sorteados == 7):
@@ -1182,10 +1197,19 @@ class ModeloCanonico40:
         from modelo_dupla_sena import ModeloBivariadoDuplaSena
         return ModeloBivariadoDuplaSena.calcular_dispersao_bivariada(jogo, sorteio1, sorteio2)
 
+    def calcular_dispersao_heptacolunar_supersete(self, jogo: List[int], sorteio_referencia: Optional[List[int]] = None) -> Dict:
+        """
+        Camada 8 - MCOSS (Modelo Canônico Heptacolunar Independente - Super Sete).
+        Avalia o equilíbrio no espaço vetorial Z_10^7 nas 7 colunas independentes.
+        """
+        from modelo_super_sete import ModeloHeptacolunarSuperSete
+        return ModeloHeptacolunarSuperSete.calcular_dispersao_heptacolunar(jogo, sorteio_referencia)
+
     def calcular_dispersao_espacial(self, jogo: List[int], complemento: Optional[Any] = None) -> Dict:
         """
         Camada 8 - Despacho Polimórfico de Cobertura Espacial.
         Encaminha para a geometria adequada de cada loteria:
+        - Super Sete: Heptacolunar Independente (MCOSS 4.0)
         - Dupla Sena: Hexagonal Bivariado de Duplo Sorteio (MCODSen 4.0)
         - Dia de Sorte: Heptagonal de Calendário (MCODS 4.0)
         - +Milionária: Hexa-Trevo Biparamétrico (MCOMIL 4.0)
@@ -1196,6 +1220,9 @@ class ModeloCanonico40:
         - Mega-Sena: Hexagonal (MCOH 4.0)
         - Demais loterias: Modelo espacial correspondente
         """
+        if self.config.colunas == 7 or self.config.nome == "Super Sete" or getattr(self, 'loteria_type', None) == LoteriaType.SUPER_SETE:
+            s_ref = complemento if isinstance(complemento, (list, tuple)) and len(complemento) == 7 else None
+            return self.calcular_dispersao_heptacolunar_supersete(jogo, s_ref)
         if self.config.nome == "Dupla Sena" or getattr(self, 'loteria_type', None) == LoteriaType.DUPLA_SENA or (self.N == 50 and self.config.sorteios_por_concurso == 2):
             s1 = complemento[0] if isinstance(complemento, (list, tuple)) and len(complemento) >= 1 else None
             s2 = complemento[1] if isinstance(complemento, (list, tuple)) and len(complemento) >= 2 else None
@@ -1614,6 +1641,15 @@ class ModeloCanonico40:
 
         return jogos[:quantidade_jogos]
 
+    def gerar_jogos_supersete(self, quantidade_jogos: int) -> List[List[int]]:
+        """
+        Gera jogos do Super Sete utilizando o Modelo Canônico Heptacolunar Independente (MCOSS 4.0),
+        otimizando a dispersão vetorial em Z_10^7 com paridade modal 3P/4I ou 4P/3I,
+        baricentro de soma ~31,5 e alta diversidade de dígitos entre as 7 colunas.
+        """
+        from modelo_super_sete import ModeloHeptacolunarSuperSete
+        return ModeloHeptacolunarSuperSete.gerar_jogos(quantidade=quantidade_jogos)
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -1628,6 +1664,12 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> Li
     Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
     Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Matricial/Pentagonal/Hexagonal/Decagonal/Centesimal.
     """
+    if modelo.config.colunas == 7 or modelo.config.nome == 'Super Sete' or getattr(modelo, 'loteria_type', None) == LoteriaType.SUPER_SETE:
+        jogos_ss = modelo.gerar_jogos_supersete(1)
+        if jogos_ss:
+            return jogos_ss[0]
+        return gerar_jogo_por_coluna(modelo)
+
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
 
@@ -1732,6 +1774,11 @@ def gerar_multiplos_jogos(
     Se numeros_base for fornecido, restringe a geração ao subconjunto de números escolhido pelo usuário.
     """
     import random
+
+    if (modelo.config.colunas == 7 or modelo.config.nome == 'Super Sete' or getattr(modelo, 'loteria_type', None) == LoteriaType.SUPER_SETE) and not numeros_base:
+        jogos_ss = modelo.gerar_jogos_supersete(quantidade_jogos)
+        if len(jogos_ss) == quantidade_jogos:
+            return jogos_ss
 
     if modelo.config.colunas:
         return _gerar_multiplos_por_coluna(modelo, quantidade_jogos, numeros_base)

@@ -356,8 +356,8 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'probabilidades': probabilidades(modelo, len(jogo)),
         'perfil_numeros': perfil,
         'equilibrio': equilibrio,
-        'indicadores': indicadores_classicos(jogo, modelo),
         'dispersao_espacial': modelo.calcular_dispersao_espacial(jogo) if hasattr(modelo, 'calcular_dispersao_espacial') else None,
+        'dispersao_heptacolunar': modelo.calcular_dispersao_heptacolunar_supersete(jogo) if hasattr(modelo, 'calcular_dispersao_heptacolunar_supersete') else None,
         'dispersao_bivariada': modelo.calcular_dispersao_bivariada_duplasena(jogo) if hasattr(modelo, 'calcular_dispersao_bivariada_duplasena') else None,
         'dispersao_heptagonal': modelo.calcular_dispersao_heptagonal_diadesorte(jogo) if hasattr(modelo, 'calcular_dispersao_heptagonal_diadesorte') else None,
         'dispersao_biparametrica': modelo.calcular_dispersao_biparametrica_maismilionaria(jogo) if hasattr(modelo, 'calcular_dispersao_biparametrica_maismilionaria') else None,
@@ -383,7 +383,13 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
     faixa_max, faixa_min = prob['faixas'][0], prob['faixas'][-1]
 
     linhas = [f"{len(jogos)} jogo(s) de {len(jogos[0])} números para a {config.nome}, a partir de {modelo.T} concursos analisados."]
-    if not config.colunas:
+    if config.colunas:
+        if len(jogos) == 1 and hasattr(modelo, 'calcular_dispersao_espacial'):
+            disp = modelo.calcular_dispersao_espacial(jogos[0])
+            if disp and (disp.get('disponivel') or disp.get('valido')):
+                ide_val = disp.get('indice_dispersao', disp.get('ide_heptacolunar', 100.0))
+                linhas.append(f"Dispersão Heptacolunar (MCOSS 4.0): {disp.get('classificacao', 'Conforme')} (IDE: {ide_val}%).")
+    else:
         analises = {a.numero: a for a in modelo.analisar_todos_elementos()}
         escolhidos = [n for j in jogos for n in j]
         distintos = set(escolhidos)
@@ -401,8 +407,10 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
             elif hasattr(modelo, 'calcular_dispersao_hexagonal'):
                 disp = modelo.calcular_dispersao_hexagonal(jogos[0])
             if disp and (disp.get('disponivel') or disp.get('valido')):
-                geom = disp.get('geometria', 'Bivariada' if config.nome == 'Dupla Sena' else ('Heptagonal' if config.nome == 'Dia de Sorte' else ('Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal')))))))
-                if geom == 'Bivariada':
+                geom = disp.get('geometria', 'Heptacolunar' if config.nome == 'Super Sete' else ('Bivariada' if config.nome == 'Dupla Sena' else ('Heptagonal' if config.nome == 'Dia de Sorte' else ('Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal'))))))))
+                if geom == 'Heptacolunar':
+                    sigla = 'MCOSS 4.0'
+                elif geom == 'Bivariada':
                     sigla = 'MCODSen 4.0'
                 elif geom == 'Heptagonal':
                     sigla = 'MCODS 4.0'
@@ -418,7 +426,7 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
                     sigla = 'MCOP 4.0'
                 else:
                     sigla = 'MCOH 4.0'
-                ide_val = disp.get('indice_dispersao', disp.get('ide_bivariado', 100.0))
+                ide_val = disp.get('indice_dispersao', disp.get('ide_bivariado', disp.get('ide_heptacolunar', 100.0)))
                 linhas.append(f"Dispersão Espacial {geom} ({sigla}): {disp['classificacao'] if 'classificacao' in disp else 'Conforme'} (IDE: {ide_val}%).")
     linhas.append(
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')

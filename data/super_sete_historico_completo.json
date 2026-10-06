@@ -1,0 +1,2252 @@
+[
+  {
+    "concurso": 758,
+    "data": "13/10/2025",
+    "dezenas": [
+      4,
+      6,
+      8,
+      0,
+      3,
+      0,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2500000.0
+  },
+  {
+    "concurso": 759,
+    "data": "15/10/2025",
+    "dezenas": [
+      2,
+      2,
+      5,
+      3,
+      5,
+      9,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2700000.0
+  },
+  {
+    "concurso": 760,
+    "data": "17/10/2025",
+    "dezenas": [
+      0,
+      2,
+      4,
+      0,
+      7,
+      4,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2800000.0
+  },
+  {
+    "concurso": 761,
+    "data": "20/10/2025",
+    "dezenas": [
+      4,
+      7,
+      4,
+      8,
+      6,
+      6,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2900000.0
+  },
+  {
+    "concurso": 762,
+    "data": "22/10/2025",
+    "dezenas": [
+      7,
+      7,
+      5,
+      3,
+      1,
+      0,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3100000.0
+  },
+  {
+    "concurso": 763,
+    "data": "24/10/2025",
+    "dezenas": [
+      3,
+      9,
+      0,
+      7,
+      3,
+      5,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3300000.0
+  },
+  {
+    "concurso": 764,
+    "data": "27/10/2025",
+    "dezenas": [
+      0,
+      4,
+      5,
+      3,
+      1,
+      8,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3400000.0
+  },
+  {
+    "concurso": 765,
+    "data": "29/10/2025",
+    "dezenas": [
+      8,
+      4,
+      6,
+      2,
+      4,
+      0,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3500000.0
+  },
+  {
+    "concurso": 766,
+    "data": "31/10/2025",
+    "dezenas": [
+      0,
+      1,
+      0,
+      7,
+      0,
+      4,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3600000.0
+  },
+  {
+    "concurso": 767,
+    "data": "03/11/2025",
+    "dezenas": [
+      0,
+      7,
+      6,
+      2,
+      0,
+      0,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3700000.0
+  },
+  {
+    "concurso": 768,
+    "data": "05/11/2025",
+    "dezenas": [
+      6,
+      5,
+      8,
+      0,
+      2,
+      5,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4000000.0
+  },
+  {
+    "concurso": 769,
+    "data": "07/11/2025",
+    "dezenas": [
+      5,
+      8,
+      4,
+      6,
+      3,
+      3,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4200000.0
+  },
+  {
+    "concurso": 770,
+    "data": "10/11/2025",
+    "dezenas": [
+      9,
+      4,
+      3,
+      4,
+      4,
+      9,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4400000.0
+  },
+  {
+    "concurso": 771,
+    "data": "12/11/2025",
+    "dezenas": [
+      3,
+      7,
+      6,
+      0,
+      5,
+      7,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4600000.0
+  },
+  {
+    "concurso": 772,
+    "data": "14/11/2025",
+    "dezenas": [
+      0,
+      9,
+      0,
+      9,
+      7,
+      9,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4800000.0
+  },
+  {
+    "concurso": 773,
+    "data": "17/11/2025",
+    "dezenas": [
+      9,
+      3,
+      6,
+      0,
+      1,
+      6,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5000000.0
+  },
+  {
+    "concurso": 774,
+    "data": "19/11/2025",
+    "dezenas": [
+      7,
+      9,
+      9,
+      8,
+      6,
+      2,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5200000.0
+  },
+  {
+    "concurso": 775,
+    "data": "21/11/2025",
+    "dezenas": [
+      3,
+      4,
+      4,
+      6,
+      6,
+      6,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5400000.0
+  },
+  {
+    "concurso": 776,
+    "data": "24/11/2025",
+    "dezenas": [
+      3,
+      2,
+      1,
+      6,
+      1,
+      8,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5500000.0
+  },
+  {
+    "concurso": 777,
+    "data": "26/11/2025",
+    "dezenas": [
+      9,
+      9,
+      1,
+      5,
+      0,
+      8,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5700000.0
+  },
+  {
+    "concurso": 778,
+    "data": "28/11/2025",
+    "dezenas": [
+      8,
+      2,
+      0,
+      8,
+      3,
+      8,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6000000.0
+  },
+  {
+    "concurso": 779,
+    "data": "01/12/2025",
+    "dezenas": [
+      9,
+      4,
+      0,
+      0,
+      0,
+      9,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6300000.0
+  },
+  {
+    "concurso": 780,
+    "data": "03/12/2025",
+    "dezenas": [
+      5,
+      4,
+      0,
+      2,
+      2,
+      3,
+      9
+    ],
+    "acumulado": false,
+    "valorEstimadoProximoConcurso": 100000.0
+  },
+  {
+    "concurso": 781,
+    "data": "05/12/2025",
+    "dezenas": [
+      4,
+      5,
+      4,
+      4,
+      3,
+      6,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 250000.0
+  },
+  {
+    "concurso": 782,
+    "data": "08/12/2025",
+    "dezenas": [
+      5,
+      1,
+      3,
+      4,
+      9,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 300000.0
+  },
+  {
+    "concurso": 783,
+    "data": "10/12/2025",
+    "dezenas": [
+      4,
+      4,
+      9,
+      0,
+      0,
+      7,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 400000.0
+  },
+  {
+    "concurso": 784,
+    "data": "12/12/2025",
+    "dezenas": [
+      8,
+      0,
+      1,
+      5,
+      3,
+      3,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 500000.0
+  },
+  {
+    "concurso": 785,
+    "data": "15/12/2025",
+    "dezenas": [
+      5,
+      2,
+      4,
+      9,
+      2,
+      9,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 600000.0
+  },
+  {
+    "concurso": 786,
+    "data": "17/12/2025",
+    "dezenas": [
+      8,
+      0,
+      7,
+      1,
+      8,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 700000.0
+  },
+  {
+    "concurso": 787,
+    "data": "19/12/2025",
+    "dezenas": [
+      8,
+      9,
+      2,
+      2,
+      7,
+      0,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 800000.0
+  },
+  {
+    "concurso": 788,
+    "data": "22/12/2025",
+    "dezenas": [
+      1,
+      7,
+      1,
+      2,
+      2,
+      4,
+      0
+    ],
+    "acumulado": false,
+    "valorEstimadoProximoConcurso": 100000.0
+  },
+  {
+    "concurso": 789,
+    "data": "24/12/2025",
+    "dezenas": [
+      6,
+      5,
+      7,
+      4,
+      3,
+      9,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 150000.0
+  },
+  {
+    "concurso": 790,
+    "data": "26/12/2025",
+    "dezenas": [
+      6,
+      3,
+      6,
+      2,
+      7,
+      4,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 200000.0
+  },
+  {
+    "concurso": 791,
+    "data": "29/12/2025",
+    "dezenas": [
+      2,
+      5,
+      9,
+      2,
+      3,
+      7,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 250000.0
+  },
+  {
+    "concurso": 792,
+    "data": "01/01/2026",
+    "dezenas": [
+      7,
+      1,
+      0,
+      3,
+      3,
+      0,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 350000.0
+  },
+  {
+    "concurso": 793,
+    "data": "02/01/2026",
+    "dezenas": [
+      5,
+      4,
+      5,
+      1,
+      4,
+      5,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 400000.0
+  },
+  {
+    "concurso": 794,
+    "data": "05/01/2026",
+    "dezenas": [
+      8,
+      4,
+      3,
+      7,
+      7,
+      6,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 500000.0
+  },
+  {
+    "concurso": 795,
+    "data": "07/01/2026",
+    "dezenas": [
+      7,
+      9,
+      1,
+      4,
+      3,
+      4,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 650000.0
+  },
+  {
+    "concurso": 796,
+    "data": "09/01/2026",
+    "dezenas": [
+      5,
+      6,
+      2,
+      7,
+      0,
+      7,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 750000.0
+  },
+  {
+    "concurso": 797,
+    "data": "12/01/2026",
+    "dezenas": [
+      3,
+      1,
+      4,
+      8,
+      3,
+      0,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 850000.0
+  },
+  {
+    "concurso": 798,
+    "data": "14/01/2026",
+    "dezenas": [
+      4,
+      8,
+      5,
+      7,
+      1,
+      4,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 950000.0
+  },
+  {
+    "concurso": 799,
+    "data": "16/01/2026",
+    "dezenas": [
+      9,
+      6,
+      0,
+      4,
+      7,
+      1,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1000000.0
+  },
+  {
+    "concurso": 800,
+    "data": "19/01/2026",
+    "dezenas": [
+      4,
+      1,
+      2,
+      5,
+      2,
+      2,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1100000.0
+  },
+  {
+    "concurso": 801,
+    "data": "21/01/2026",
+    "dezenas": [
+      2,
+      7,
+      4,
+      3,
+      9,
+      2,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1200000.0
+  },
+  {
+    "concurso": 802,
+    "data": "23/01/2026",
+    "dezenas": [
+      0,
+      0,
+      7,
+      8,
+      1,
+      6,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1300000.0
+  },
+  {
+    "concurso": 803,
+    "data": "26/01/2026",
+    "dezenas": [
+      6,
+      4,
+      2,
+      1,
+      6,
+      8,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1400000.0
+  },
+  {
+    "concurso": 804,
+    "data": "28/01/2026",
+    "dezenas": [
+      9,
+      7,
+      8,
+      9,
+      4,
+      6,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1450000.0
+  },
+  {
+    "concurso": 805,
+    "data": "30/01/2026",
+    "dezenas": [
+      3,
+      0,
+      0,
+      0,
+      8,
+      0,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1550000.0
+  },
+  {
+    "concurso": 806,
+    "data": "02/02/2026",
+    "dezenas": [
+      7,
+      4,
+      4,
+      9,
+      7,
+      6,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1650000.0
+  },
+  {
+    "concurso": 807,
+    "data": "04/02/2026",
+    "dezenas": [
+      9,
+      5,
+      0,
+      3,
+      3,
+      6,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1750000.0
+  },
+  {
+    "concurso": 808,
+    "data": "06/02/2026",
+    "dezenas": [
+      5,
+      4,
+      1,
+      2,
+      7,
+      5,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1850000.0
+  },
+  {
+    "concurso": 809,
+    "data": "09/02/2026",
+    "dezenas": [
+      6,
+      1,
+      7,
+      0,
+      8,
+      5,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2000000.0
+  },
+  {
+    "concurso": 810,
+    "data": "11/02/2026",
+    "dezenas": [
+      5,
+      9,
+      3,
+      5,
+      1,
+      0,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2100000.0
+  },
+  {
+    "concurso": 811,
+    "data": "13/02/2026",
+    "dezenas": [
+      9,
+      6,
+      1,
+      2,
+      0,
+      2,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2200000.0
+  },
+  {
+    "concurso": 812,
+    "data": "18/02/2026",
+    "dezenas": [
+      2,
+      7,
+      2,
+      0,
+      1,
+      1,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2300000.0
+  },
+  {
+    "concurso": 813,
+    "data": "20/02/2026",
+    "dezenas": [
+      4,
+      7,
+      9,
+      1,
+      9,
+      2,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2450000.0
+  },
+  {
+    "concurso": 814,
+    "data": "23/02/2026",
+    "dezenas": [
+      2,
+      5,
+      6,
+      9,
+      4,
+      6,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2600000.0
+  },
+  {
+    "concurso": 815,
+    "data": "25/02/2026",
+    "dezenas": [
+      5,
+      5,
+      7,
+      5,
+      6,
+      5,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2700000.0
+  },
+  {
+    "concurso": 816,
+    "data": "27/02/2026",
+    "dezenas": [
+      6,
+      9,
+      3,
+      7,
+      2,
+      4,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2900000.0
+  },
+  {
+    "concurso": 817,
+    "data": "02/03/2026",
+    "dezenas": [
+      6,
+      9,
+      3,
+      8,
+      7,
+      3,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3100000.0
+  },
+  {
+    "concurso": 818,
+    "data": "04/03/2026",
+    "dezenas": [
+      8,
+      6,
+      4,
+      2,
+      7,
+      5,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3200000.0
+  },
+  {
+    "concurso": 819,
+    "data": "06/03/2026",
+    "dezenas": [
+      7,
+      9,
+      8,
+      2,
+      3,
+      0,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3300000.0
+  },
+  {
+    "concurso": 820,
+    "data": "09/03/2026",
+    "dezenas": [
+      3,
+      0,
+      1,
+      8,
+      8,
+      5,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3500000.0
+  },
+  {
+    "concurso": 821,
+    "data": "11/03/2026",
+    "dezenas": [
+      4,
+      5,
+      6,
+      5,
+      2,
+      0,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3600000.0
+  },
+  {
+    "concurso": 822,
+    "data": "13/03/2026",
+    "dezenas": [
+      4,
+      6,
+      0,
+      9,
+      9,
+      9,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3700000.0
+  },
+  {
+    "concurso": 823,
+    "data": "16/03/2026",
+    "dezenas": [
+      6,
+      7,
+      5,
+      6,
+      1,
+      4,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3800000.0
+  },
+  {
+    "concurso": 824,
+    "data": "18/03/2026",
+    "dezenas": [
+      6,
+      5,
+      4,
+      4,
+      8,
+      4,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3900000.0
+  },
+  {
+    "concurso": 825,
+    "data": "20/03/2026",
+    "dezenas": [
+      6,
+      1,
+      2,
+      2,
+      0,
+      1,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4000000.0
+  },
+  {
+    "concurso": 826,
+    "data": "23/03/2026",
+    "dezenas": [
+      2,
+      8,
+      9,
+      3,
+      5,
+      3,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4200000.0
+  },
+  {
+    "concurso": 827,
+    "data": "25/03/2026",
+    "dezenas": [
+      1,
+      8,
+      3,
+      5,
+      4,
+      6,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4400000.0
+  },
+  {
+    "concurso": 828,
+    "data": "27/03/2026",
+    "dezenas": [
+      0,
+      1,
+      7,
+      6,
+      7,
+      6,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4700000.0
+  },
+  {
+    "concurso": 829,
+    "data": "30/03/2026",
+    "dezenas": [
+      2,
+      5,
+      5,
+      4,
+      4,
+      3,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5000000.0
+  },
+  {
+    "concurso": 830,
+    "data": "01/04/2026",
+    "dezenas": [
+      0,
+      6,
+      2,
+      0,
+      7,
+      8,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5100000.0
+  },
+  {
+    "concurso": 831,
+    "data": "06/04/2026",
+    "dezenas": [
+      5,
+      8,
+      7,
+      8,
+      0,
+      4,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5400000.0
+  },
+  {
+    "concurso": 832,
+    "data": "08/04/2026",
+    "dezenas": [
+      1,
+      2,
+      1,
+      8,
+      4,
+      5,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5500000.0
+  },
+  {
+    "concurso": 833,
+    "data": "10/04/2026",
+    "dezenas": [
+      2,
+      9,
+      0,
+      9,
+      6,
+      4,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5700000.0
+  },
+  {
+    "concurso": 834,
+    "data": "13/04/2026",
+    "dezenas": [
+      8,
+      5,
+      2,
+      1,
+      3,
+      4,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6000000.0
+  },
+  {
+    "concurso": 835,
+    "data": "15/04/2026",
+    "dezenas": [
+      0,
+      4,
+      5,
+      1,
+      9,
+      5,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6100000.0
+  },
+  {
+    "concurso": 836,
+    "data": "17/04/2026",
+    "dezenas": [
+      3,
+      2,
+      7,
+      2,
+      2,
+      0,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6300000.0
+  },
+  {
+    "concurso": 837,
+    "data": "20/04/2026",
+    "dezenas": [
+      1,
+      0,
+      3,
+      0,
+      0,
+      4,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6500000.0
+  },
+  {
+    "concurso": 838,
+    "data": "22/04/2026",
+    "dezenas": [
+      1,
+      0,
+      7,
+      8,
+      7,
+      3,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6700000.0
+  },
+  {
+    "concurso": 839,
+    "data": "24/04/2026",
+    "dezenas": [
+      0,
+      5,
+      8,
+      6,
+      0,
+      6,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7000000.0
+  },
+  {
+    "concurso": 840,
+    "data": "27/04/2026",
+    "dezenas": [
+      1,
+      1,
+      3,
+      8,
+      6,
+      3,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7200000.0
+  },
+  {
+    "concurso": 841,
+    "data": "29/04/2026",
+    "dezenas": [
+      3,
+      7,
+      3,
+      6,
+      7,
+      6,
+      7
+    ],
+    "acumulado": false,
+    "valorEstimadoProximoConcurso": 100000.0
+  },
+  {
+    "concurso": 842,
+    "data": "04/05/2026",
+    "dezenas": [
+      3,
+      8,
+      5,
+      0,
+      2,
+      1,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 200000.0
+  },
+  {
+    "concurso": 843,
+    "data": "06/05/2026",
+    "dezenas": [
+      8,
+      2,
+      4,
+      1,
+      7,
+      9,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 250000.0
+  },
+  {
+    "concurso": 844,
+    "data": "08/05/2026",
+    "dezenas": [
+      7,
+      8,
+      7,
+      9,
+      9,
+      3,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 300000.0
+  },
+  {
+    "concurso": 845,
+    "data": "11/05/2026",
+    "dezenas": [
+      4,
+      2,
+      6,
+      8,
+      8,
+      4,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 400000.0
+  },
+  {
+    "concurso": 846,
+    "data": "13/05/2026",
+    "dezenas": [
+      1,
+      0,
+      2,
+      4,
+      4,
+      1,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 450000.0
+  },
+  {
+    "concurso": 847,
+    "data": "15/05/2026",
+    "dezenas": [
+      6,
+      3,
+      6,
+      4,
+      1,
+      0,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 500000.0
+  },
+  {
+    "concurso": 848,
+    "data": "18/05/2026",
+    "dezenas": [
+      7,
+      2,
+      5,
+      3,
+      5,
+      6,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 550000.0
+  },
+  {
+    "concurso": 849,
+    "data": "20/05/2026",
+    "dezenas": [
+      9,
+      3,
+      4,
+      5,
+      2,
+      7,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 650000.0
+  },
+  {
+    "concurso": 850,
+    "data": "22/05/2026",
+    "dezenas": [
+      4,
+      3,
+      1,
+      5,
+      6,
+      3,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 750000.0
+  },
+  {
+    "concurso": 851,
+    "data": "25/05/2026",
+    "dezenas": [
+      9,
+      7,
+      4,
+      0,
+      9,
+      3,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 850000.0
+  },
+  {
+    "concurso": 852,
+    "data": "27/05/2026",
+    "dezenas": [
+      7,
+      6,
+      8,
+      4,
+      6,
+      4,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 900000.0
+  },
+  {
+    "concurso": 853,
+    "data": "29/05/2026",
+    "dezenas": [
+      3,
+      8,
+      3,
+      5,
+      6,
+      0,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1000000.0
+  },
+  {
+    "concurso": 854,
+    "data": "01/06/2026",
+    "dezenas": [
+      6,
+      7,
+      9,
+      7,
+      4,
+      5,
+      4
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1100000.0
+  },
+  {
+    "concurso": 855,
+    "data": "03/06/2026",
+    "dezenas": [
+      4,
+      3,
+      8,
+      5,
+      3,
+      6,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1200000.0
+  },
+  {
+    "concurso": 856,
+    "data": "05/06/2026",
+    "dezenas": [
+      5,
+      8,
+      6,
+      4,
+      7,
+      0,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1300000.0
+  },
+  {
+    "concurso": 857,
+    "data": "08/06/2026",
+    "dezenas": [
+      8,
+      1,
+      3,
+      4,
+      3,
+      1,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1400000.0
+  },
+  {
+    "concurso": 858,
+    "data": "10/06/2026",
+    "dezenas": [
+      2,
+      3,
+      4,
+      0,
+      6,
+      2,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1500000.0
+  },
+  {
+    "concurso": 859,
+    "data": "12/06/2026",
+    "dezenas": [
+      9,
+      4,
+      1,
+      3,
+      3,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1600000.0
+  },
+  {
+    "concurso": 860,
+    "data": "15/06/2026",
+    "dezenas": [
+      2,
+      1,
+      4,
+      4,
+      1,
+      3,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1800000.0
+  },
+  {
+    "concurso": 861,
+    "data": "17/06/2026",
+    "dezenas": [
+      6,
+      3,
+      0,
+      9,
+      7,
+      7,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 1900000.0
+  },
+  {
+    "concurso": 862,
+    "data": "20/06/2026",
+    "dezenas": [
+      9,
+      5,
+      4,
+      7,
+      6,
+      6,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2000000.0
+  },
+  {
+    "concurso": 863,
+    "data": "22/06/2026",
+    "dezenas": [
+      5,
+      2,
+      7,
+      8,
+      0,
+      5,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2100000.0
+  },
+  {
+    "concurso": 864,
+    "data": "25/06/2026",
+    "dezenas": [
+      0,
+      0,
+      4,
+      1,
+      5,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2200000.0
+  },
+  {
+    "concurso": 865,
+    "data": "26/06/2026",
+    "dezenas": [
+      5,
+      3,
+      6,
+      0,
+      8,
+      4,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2400000.0
+  },
+  {
+    "concurso": 866,
+    "data": "29/06/2026",
+    "dezenas": [
+      4,
+      7,
+      5,
+      1,
+      6,
+      2,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2500000.0
+  },
+  {
+    "concurso": 867,
+    "data": "01/07/2026",
+    "dezenas": [
+      9,
+      4,
+      0,
+      9,
+      5,
+      9,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2600000.0
+  },
+  {
+    "concurso": 868,
+    "data": "03/07/2026",
+    "dezenas": [
+      6,
+      8,
+      5,
+      6,
+      8,
+      1,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2700000.0
+  },
+  {
+    "concurso": 869,
+    "data": "06/07/2026",
+    "dezenas": [
+      8,
+      7,
+      4,
+      3,
+      9,
+      6,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 2800000.0
+  },
+  {
+    "concurso": 870,
+    "data": "08/07/2026",
+    "dezenas": [
+      5,
+      5,
+      5,
+      6,
+      0,
+      5,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3000000.0
+  },
+  {
+    "concurso": 871,
+    "data": "10/07/2026",
+    "dezenas": [
+      6,
+      4,
+      0,
+      8,
+      3,
+      6,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3100000.0
+  },
+  {
+    "concurso": 872,
+    "data": "13/07/2026",
+    "dezenas": [
+      8,
+      3,
+      6,
+      3,
+      0,
+      6,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3300000.0
+  },
+  {
+    "concurso": 873,
+    "data": "15/07/2026",
+    "dezenas": [
+      0,
+      9,
+      5,
+      5,
+      4,
+      0,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3500000.0
+  },
+  {
+    "concurso": 874,
+    "data": "17/07/2026",
+    "dezenas": [
+      5,
+      9,
+      1,
+      5,
+      1,
+      8,
+      8
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3600000.0
+  },
+  {
+    "concurso": 875,
+    "data": "20/07/2026",
+    "dezenas": [
+      7,
+      5,
+      8,
+      7,
+      6,
+      1,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3800000.0
+  },
+  {
+    "concurso": 876,
+    "data": "22/07/2026",
+    "dezenas": [
+      1,
+      5,
+      9,
+      5,
+      6,
+      4,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 3900000.0
+  },
+  {
+    "concurso": 877,
+    "data": "24/07/2026",
+    "dezenas": [
+      0,
+      0,
+      5,
+      5,
+      1,
+      7,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4100000.0
+  },
+  {
+    "concurso": 878,
+    "data": "27/07/2026",
+    "dezenas": [
+      5,
+      5,
+      0,
+      1,
+      7,
+      5,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4200000.0
+  },
+  {
+    "concurso": 879,
+    "data": "29/07/2026",
+    "dezenas": [
+      3,
+      4,
+      7,
+      1,
+      9,
+      4,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4300000.0
+  },
+  {
+    "concurso": 880,
+    "data": "31/07/2026",
+    "dezenas": [
+      7,
+      0,
+      4,
+      3,
+      5,
+      8,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4500000.0
+  },
+  {
+    "concurso": 881,
+    "data": "03/08/2026",
+    "dezenas": [
+      0,
+      5,
+      1,
+      5,
+      5,
+      9,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4700000.0
+  },
+  {
+    "concurso": 882,
+    "data": "05/08/2026",
+    "dezenas": [
+      8,
+      2,
+      2,
+      1,
+      4,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 4900000.0
+  },
+  {
+    "concurso": 883,
+    "data": "07/08/2026",
+    "dezenas": [
+      9,
+      5,
+      9,
+      9,
+      6,
+      0,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5000000.0
+  },
+  {
+    "concurso": 884,
+    "data": "10/08/2026",
+    "dezenas": [
+      9,
+      9,
+      9,
+      2,
+      1,
+      7,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5200000.0
+  },
+  {
+    "concurso": 885,
+    "data": "12/08/2026",
+    "dezenas": [
+      4,
+      9,
+      0,
+      5,
+      8,
+      5,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5400000.0
+  },
+  {
+    "concurso": 886,
+    "data": "14/08/2026",
+    "dezenas": [
+      1,
+      5,
+      2,
+      2,
+      7,
+      6,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5600000.0
+  },
+  {
+    "concurso": 887,
+    "data": "17/08/2026",
+    "dezenas": [
+      1,
+      7,
+      5,
+      9,
+      8,
+      9,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 5800000.0
+  },
+  {
+    "concurso": 888,
+    "data": "19/08/2026",
+    "dezenas": [
+      1,
+      4,
+      1,
+      5,
+      7,
+      5,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6000000.0
+  },
+  {
+    "concurso": 889,
+    "data": "21/08/2026",
+    "dezenas": [
+      3,
+      2,
+      5,
+      9,
+      5,
+      1,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6200000.0
+  },
+  {
+    "concurso": 890,
+    "data": "24/08/2026",
+    "dezenas": [
+      5,
+      3,
+      8,
+      3,
+      5,
+      0,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6300000.0
+  },
+  {
+    "concurso": 891,
+    "data": "26/08/2026",
+    "dezenas": [
+      1,
+      9,
+      2,
+      5,
+      1,
+      4,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6500000.0
+  },
+  {
+    "concurso": 892,
+    "data": "28/08/2026",
+    "dezenas": [
+      1,
+      8,
+      6,
+      5,
+      7,
+      2,
+      0
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 6700000.0
+  },
+  {
+    "concurso": 893,
+    "data": "31/08/2026",
+    "dezenas": [
+      7,
+      3,
+      8,
+      5,
+      0,
+      4,
+      7
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7000000.0
+  },
+  {
+    "concurso": 894,
+    "data": "02/09/2026",
+    "dezenas": [
+      9,
+      8,
+      1,
+      3,
+      1,
+      9,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7200000.0
+  },
+  {
+    "concurso": 895,
+    "data": "04/09/2026",
+    "dezenas": [
+      3,
+      8,
+      9,
+      0,
+      5,
+      5,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7500000.0
+  },
+  {
+    "concurso": 896,
+    "data": "09/09/2026",
+    "dezenas": [
+      3,
+      8,
+      5,
+      2,
+      8,
+      4,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 7700000.0
+  },
+  {
+    "concurso": 897,
+    "data": "11/09/2026",
+    "dezenas": [
+      1,
+      1,
+      4,
+      6,
+      8,
+      7,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 8000000.0
+  },
+  {
+    "concurso": 898,
+    "data": "14/09/2026",
+    "dezenas": [
+      7,
+      8,
+      3,
+      9,
+      8,
+      1,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 8100000.0
+  },
+  {
+    "concurso": 899,
+    "data": "16/09/2026",
+    "dezenas": [
+      5,
+      0,
+      0,
+      5,
+      1,
+      0,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 8300000.0
+  },
+  {
+    "concurso": 900,
+    "data": "18/09/2026",
+    "dezenas": [
+      4,
+      6,
+      0,
+      8,
+      6,
+      6,
+      1
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 8500000.0
+  },
+  {
+    "concurso": 901,
+    "data": "21/09/2026",
+    "dezenas": [
+      5,
+      2,
+      6,
+      7,
+      2,
+      4,
+      5
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 8800000.0
+  },
+  {
+    "concurso": 902,
+    "data": "23/09/2026",
+    "dezenas": [
+      9,
+      9,
+      9,
+      7,
+      2,
+      3,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 9000000.0
+  },
+  {
+    "concurso": 903,
+    "data": "25/09/2026",
+    "dezenas": [
+      9,
+      2,
+      4,
+      7,
+      5,
+      5,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 9300000.0
+  },
+  {
+    "concurso": 904,
+    "data": "28/09/2026",
+    "dezenas": [
+      3,
+      8,
+      1,
+      0,
+      3,
+      4,
+      6
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 9700000.0
+  },
+  {
+    "concurso": 905,
+    "data": "30/09/2026",
+    "dezenas": [
+      8,
+      2,
+      4,
+      7,
+      4,
+      9,
+      3
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 10000000.0
+  },
+  {
+    "concurso": 906,
+    "data": "02/10/2026",
+    "dezenas": [
+      5,
+      5,
+      2,
+      3,
+      3,
+      1,
+      2
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 10300000.0
+  },
+  {
+    "concurso": 907,
+    "data": "05/10/2026",
+    "dezenas": [
+      6,
+      0,
+      2,
+      1,
+      1,
+      4,
+      9
+    ],
+    "acumulado": true,
+    "valorEstimadoProximoConcurso": 10500000.0
+  }
+]

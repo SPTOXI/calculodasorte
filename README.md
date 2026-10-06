@@ -1,9 +1,9 @@
 # Loteria Canônica - Sistema de Análise Estatística
 
-## Modelo Canônico 4.0 (MCOD / MCOM / MCOH / MCOP) + MCP-MD 1.0
+## Modelo Canônico 4.0 (MCOSS / MCODSen / MCODS / MCOMIL / MCOC / MCOD / MCOM / MCOH / MCOP) + MCP-MD 1.0
 ### AGENTE LLN ICT FR & OTIMIZAÇÃO ESPACIAL POLIMÓRFICA
 
-Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 4.0** especializado por topologia lotérica (MCOD para Timemania, MCOM para Lotofácil, MCOH para Mega-Sena, MCOP para Quina) e sua extensão **MCP-MD 1.0**.
+Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 4.0** especializado por topologia lotérica para todas as 9 loterias oficiais da Caixa Econômica Federal e sua extensão **MCP-MD 1.0**.
 
 ---
 
@@ -17,7 +17,7 @@ Sistema web completo para análise estatística de loterias brasileiras baseado 
 - **+Milionária** (50 números + 6 trevos — Modelo Biparamétrico Hexa-Trevo MCOMIL 4.0)
 - **Dia de Sorte** (31 números + Mês da Sorte — Modelo Heptagonal Calendário MCODS 4.0)
 - **Dupla Sena** (50 números, 2 sorteios independentes — Modelo Hexagonal Bivariado MCODSen 4.0)
-- **Super Sete** (7 colunas de 0-9)
+- **Super Sete** (7 colunas independentes de 0 a 9 — Modelo Heptacolunar MCOSS 4.0)
 
 ---
 
@@ -37,7 +37,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ## 📐 Arquitetura do Sistema
 
-### Núcleo Matemático (`core.py`, `modelo_dupla_sena.py`, `modelo_dia_de_sorte.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
+### Núcleo Matemático (`core.py`, `modelo_super_sete.py`, `modelo_dupla_sena.py`, `modelo_dia_de_sorte.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
 
 #### Modelo Canônico 4.0 - 8 Camadas:
 
@@ -48,7 +48,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 5. **Informacional** - Entropia, Complexidade, Compressibilidade
 6. **Não Linear** - Fractal, Multifractal, Caos
 7. **Validação** - Monte Carlo, Bayesiano, Backtest
-8. **Dispersão e Cobertura Espacial Especializada** - MCODSen (Hexagonal Bivariado - Dupla Sena), MCODS (Heptagonal Calendário - Dia de Sorte), MCOMIL (Biparamétrico Hexa-Trevo - +Milionária), MCOC (Centesimal 10x10 - Lotomania), MCOD (Decagonal - Timemania), MCOM (Matricial 5x5 e Quintetos - Lotofácil), MCOH (Hexagonal - Mega-Sena), MCOP (Pentagonal - Quina), K-Medians no grid/anel cíclico modular $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE 4.0).
+8. **Dispersão e Cobertura Espacial Especializada** - MCOSS (Heptacolunar Independente em $\mathbb{Z}_{10}^7$ - Super Sete), MCODSen (Hexagonal Bivariado - Dupla Sena), MCODS (Heptagonal Calendário - Dia de Sorte), MCOMIL (Biparamétrico Hexa-Trevo - +Milionária), MCOC (Centesimal 10x10 - Lotomania), MCOD (Decagonal - Timemania), MCOM (Matricial 5x5 e Quintetos - Lotofácil), MCOH (Hexagonal - Mega-Sena), MCOP (Pentagonal - Quina), K-Medians no grid/anel cíclico modular $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE 4.0).
 
 #### MCP-MD 1.0 - Microdinâmica Condicionada:
 
