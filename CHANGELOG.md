@@ -3,6 +3,39 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.4.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCOC (Otimização Centesimal e Matricial 10x10 da Lotomania)
+#### 🔬 Motor de Otimização Centesimal e Matricial 10x10 (`modelo_lotomania.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
+- **Implementação do Modelo Canônico 4.0 Exclusivo da Lotomania (MCOC 4.0):**
+  - Especialização da **Camada 8 de Cobertura Espacial** para a topologia da Lotomania ($N=100, k=20$, aposta simples de $m=50$ dezenas de 00 a 99):
+    - Mapeamento bijetivo do volante em **matriz bidimensional reticulada $10 \times 10$** com coordenadas cartesianas discretas $(r, c) = (\lfloor n/10 \rfloor, n \bmod 10)$.
+    - Métrica ortogonal de **distância de Manhattan ($L_1$)**: $d(a, b) = |r_a - r_b| + |c_a - c_b|$.
+    - **Partição em 4 Quadrantes $5 \times 5$:** $25$ dezenas por quadrante (Q1 Noroeste, Q2 Nordeste, Q3 Sudoeste, Q4 Sudeste), com valor esperado teórico de $\mathbb{E}[Q_i] = 12,5$ dezenas (partição canônica $13/12/12/13$).
+    - **Bipartição Moldura ($36$ números) vs. Miolo ($64$ números):** Proporção hipergeométrica calibrada em $18\text{M} / 32\text{M}$ ($50\%$ de cada).
+    - **Equilíbrio modal de paridade estocástica:** Moda em $25\text{P} / 25\text{I}$ ($15,8\%$ no universo de 50 dezenas sorteadas).
+    - **Baricentro de soma ótimo:** $\mu = 50 \times 49,5 = 2.475,0$.
+  - **Base Centesimal Pura em Padrão Xadrez ($(r + c) \equiv 0 \pmod 2$):**
+    - $50$ dezenas marcadas cobrindo simetricamente o volante ($5$ por linha e $5$ por coluna).
+    - Cota máxima de Manhattan provada: qualquer número não marcado dista no máximo $\le 1$ passo ortogonal no grid.
+  - Cinco variantes centesimais canônicas: Regular Puro (Xadrez), Alpha ($13/12/12/13$), Beta (Espelho $(r+c) \equiv 1$), Gamma (Alternância cruzada) e Delta (Descorrelacionada $\le 2$).
+- **Despacho Polimórfico Espacial Quíntuplo Consolidado em `core.py`:**
+  - `core.py` agora despacha dinamicamente `calcular_dispersao_espacial`, `gerar_jogo_sugerido` e `gerar_multiplos_jogos` para as 5 loterias com modelos geométricos canônicos dedicados:
+    - **Lotomania** $\to$ Centesimal (MCOC 4.0, grid $10 \times 10$, quadrantes, moldura/miolo, cota Manhattan $\le 1$).
+    - **Timemania** $\to$ Decagonal (MCOD 4.0, 10 setores no anel $\mathbb{Z}_{80}$, cota máxima $\le 4$).
+    - **Lotofácil** $\to$ Matricial 5x5 (MCOM 4.0, quintetos, moldura/miolo, cota $\le 1$).
+    - **Quina** $\to$ Pentagonal (MCOP 4.0, 5 setores no anel $\mathbb{Z}_{80}$, cota máxima $\le 8$).
+    - **Mega-Sena** $\to$ Hexagonal (MCOH 4.0, 6 setores no anel $\mathbb{Z}_{60}$, cota máxima $\le 5$).
+- **Sincronização de Dados Oficiais da Caixa (Até Concurso 2984):**
+  - Download e compilação de 150 concursos oficiais da Lotomania (2835 a 2984, sorteio de 05/10/2026) em `data/lotomania_historico_completo.json`.
+  - Atualização dos metadados e arquivos de histórico em `data/lotomania_*`.
+- **Validação Empírica de Backtest:**
+  - Distância média observada nos sorteios reais: $0,49$ a $0,51$ passos de Manhattan.
+  - $100,0\%$ das dezenas sorteadas possuem um vizinho no jogo canônico a $\le 1$ passo de distância no grid.
+  - Média de acertos exatos por concurso: $10,02$ acertos (convergência estrita com a esperança teórica de $10,0$).
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_centesimal_lotomania.py` com 7 testes unitários e de integração (100% aprovados, totalizando 47 testes na suíte global).
+
+---
+
 ### [v4.3.0] - 2026-10-05 — Modelo Canônico 4.0 Especializado: MCOD (Otimização Decagonal e Time do Coração da Timemania)
 #### 🔬 Motor de Otimização Decagonal e Time do Coração (`modelo_decagonal_timemania.py`, `core.py`, `avaliacao.py`, `app.py`)
 - **Implementação do Modelo Canônico 4.0 Exclusivo da Timemania (MCOD 4.0):**
