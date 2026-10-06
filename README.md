@@ -14,7 +14,7 @@ Sistema web completo para análise estatística de loterias brasileiras baseado 
 - **Lotofácil** (25 números, 15 sorteados — Modelo Matricial 5x5 MCOM 4.0)
 - **Timemania** (80 números, 7 sorteados, 10 na aposta + Time do Coração — Modelo Decagonal MCOD 4.0)
 - **Lotomania** (100 números de 00 a 99, 20 sorteados, 50 na aposta simples — Modelo Centesimal MCOC 4.0)
-- **+Milionária** (50 números + 6 trevos)
+- **+Milionária** (50 números + 6 trevos — Modelo Biparamétrico Hexa-Trevo MCOMIL 4.0)
 - **Dia de Sorte** (31 números + mês)
 - **Super Sete** (7 colunas de 0-9)
 - **Dupla Sena** (50 números, 2 sorteios)
@@ -37,7 +37,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ## 📐 Arquitetura do Sistema
 
-### Núcleo Matemático (`core.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
+### Núcleo Matemático (`core.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
 
 #### Modelo Canônico 4.0 - 8 Camadas:
 
@@ -48,7 +48,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 5. **Informacional** - Entropia, Complexidade, Compressibilidade
 6. **Não Linear** - Fractal, Multifractal, Caos
 7. **Validação** - Monte Carlo, Bayesiano, Backtest
-8. **Dispersão e Cobertura Espacial Especializada** - MCOC (Centesimal 10x10 - Lotomania), MCOD (Decagonal - Timemania), MCOM (Matricial 5x5 e Quintetos - Lotofácil), MCOH (Hexagonal - Mega-Sena), MCOP (Pentagonal - Quina), K-Medians no grid/anel cíclico modular $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE 4.0).
+8. **Dispersão e Cobertura Espacial Especializada** - MCOMIL (Biparamétrico Hexa-Trevo - +Milionária), MCOC (Centesimal 10x10 - Lotomania), MCOD (Decagonal - Timemania), MCOM (Matricial 5x5 e Quintetos - Lotofácil), MCOH (Hexagonal - Mega-Sena), MCOP (Pentagonal - Quina), K-Medians no grid/anel cíclico modular $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE 4.0).
 
 #### MCP-MD 1.0 - Microdinâmica Condicionada:
 

@@ -1216,12 +1216,14 @@ Exemplo para {{ config.nome }}:
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
                 }
 
-                const disp = av.dispersao_espacial || av.dispersao_centesimal || av.dispersao_decagonal || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
+                const disp = av.dispersao_espacial || av.dispersao_biparametrica || av.dispersao_centesimal || av.dispersao_decagonal || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
                 if (disp && disp.disponivel) {
-                    const geom = disp.geometria || (disp.total_setores === 10 ? (disp.quadrantes !== undefined ? 'Centesimal' : 'Decagonal') : (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal'));
-                    const sigla = geom === 'Centesimal' ? 'MCOC' : (geom === 'Decagonal' ? 'MCOD' : (geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH')));
+                    const geom = disp.geometria || (disp.score_trevos !== undefined ? 'Hexa-Trevo' : (disp.total_setores === 10 ? (disp.quadrantes !== undefined ? 'Centesimal' : 'Decagonal') : (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal')));
+                    const sigla = geom === 'Hexa-Trevo' ? 'MCOMIL' : (geom === 'Centesimal' ? 'MCOC' : (geom === 'Decagonal' ? 'MCOD' : (geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH'))));
                     let extraInfo = '';
-                    if (disp.quadrantes) {
+                    if (disp.trevos_info && disp.trevos_info.trevos) {
+                        extraInfo = ` [Trevos: ${disp.trevos_info.trevos.join(', ')} (${disp.trevos_info.paridade}, Soma ${disp.trevos_info.soma})]`;
+                    } else if (disp.quadrantes) {
                         extraInfo = ` [Quadrantes: Q1=${disp.quadrantes.Q1}, Q2=${disp.quadrantes.Q2}, Q3=${disp.quadrantes.Q3}, Q4=${disp.quadrantes.Q4} | Moldura: ${disp.moldura}/36, Miolo: ${disp.miolo}/64]`;
                     } else if (disp.moldura !== undefined && disp.miolo !== undefined) {
                         extraInfo = ` [Moldura: ${disp.moldura}/16, Miolo: ${disp.miolo}/9]`;
