@@ -1,6 +1,6 @@
 """
 Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
-MCOMIL (Biparamétrico Hexa-Trevo - +Milionária) / MCOC (Centesimal 10x10 - Lotomania) / MCOD (Decagonal - Timemania) / MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
+MCODS (Heptagonal Calendário - Dia de Sorte) / MCOMIL (Biparamétrico Hexa-Trevo - +Milionária) / MCOC (Centesimal 10x10 - Lotomania) / MCOD (Decagonal - Timemania) / MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -527,6 +527,7 @@ class ModeloCanonico40:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
         # Configuração da Camada Espacial especializada por topologia da loteria
+        is_diadesorte = (self.config.nome == "Dia de Sorte" or getattr(self, 'loteria_type', None) == LoteriaType.DIA_DE_SORTE or (self.N == 31 and self.config.sorteados == 7))
         is_maismilionaria = (self.config.nome == "+Milionária" or getattr(self, 'loteria_type', None) == LoteriaType.MAIS_MILIONARIA or (self.N == 50 and self.config.sorteados == 6))
         is_lotomania = (self.config.nome == "Lotomania" or (self.N == 100 and self.config.sorteados == 20))
         is_timemania = (self.config.nome == "Timemania" or (self.N == 80 and self.config.sorteados == 7))
@@ -534,7 +535,19 @@ class ModeloCanonico40:
         is_quina = (self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5))
         is_megasena = (self.config.nome == "Mega-Sena" or (self.N == 60 and self.config.sorteados == 6))
 
-        if is_maismilionaria:
+        if is_diadesorte:
+            modelo_metodologia = "Canônico 4.0 — MCODS (Dia de Sorte)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Heptagonal de Calendário"
+            camada_espacial_desc = "Heptagonal Calendário K-Medians (Dispersão Cíclica Z_31)"
+            camada_espacial_dict = {
+                "modelo": "Heptagonal Calendário K-Medians (Z_31)",
+                "total_setores": 7,
+                "largura_setor": 4.43,
+                "universo": 31,
+                "metrica": "Circular cíclica Z_31 (Calendário)",
+                "distancia_maxima_teorica": 2.0
+            }
+        elif is_maismilionaria:
             modelo_metodologia = "Canônico 4.0 — MCOMIL (+Milionária)"
             extensao_desc = "MCP-MD 1.0 + Otimização Biparamétrica Hexa-Trevo"
             camada_espacial_desc = "Hexa-Trevo K-Medians (Dispersão Cíclica Z_50 + Trevos)"
@@ -702,6 +715,8 @@ class ModeloCanonico40:
         Camada 8 - MCOH (Modelo Canônico de Otimização Hexagonal e Cobertura Espacial).
         Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_N.
         """
+        if self.config.nome == "Dia de Sorte" or getattr(self, 'loteria_type', None) == LoteriaType.DIA_DE_SORTE or (self.N == 31 and self.config.sorteados == 7):
+            return self.calcular_dispersao_heptagonal_diadesorte(jogo)
         if self.config.nome == "+Milionária" or getattr(self, 'loteria_type', None) == LoteriaType.MAIS_MILIONARIA or (self.N == 50 and self.config.sorteados == 6):
             return self.calcular_dispersao_biparametrica_maismilionaria(jogo)
         if self.config.nome == "Lotomania" or (self.N == 100 and self.config.sorteados == 20):
@@ -1136,10 +1151,19 @@ class ModeloCanonico40:
         from modelo_mais_milionaria import ModeloHexaTrevoMaisMilionaria
         return ModeloHexaTrevoMaisMilionaria.calcular_dispersao_biparametrica(jogo, trevos)
 
-    def calcular_dispersao_espacial(self, jogo: List[int], trevos: Optional[List[int]] = None) -> Dict:
+    def calcular_dispersao_heptagonal_diadesorte(self, jogo: List[int], mes: Optional[str] = None) -> Dict:
+        """
+        Camada 8 - MCODS (Modelo Canônico Heptagonal de Calendário e Mês da Sorte - Dia de Sorte).
+        Avalia o equilíbrio no anel circular modular Z_31 (dias do mês) e cota de proximidade <= 2.
+        """
+        from modelo_dia_de_sorte import ModeloHeptagonalDiaDeSorte
+        return ModeloHeptagonalDiaDeSorte.calcular_dispersao_heptagonal(jogo, mes)
+
+    def calcular_dispersao_espacial(self, jogo: List[int], complemento: Optional[Any] = None) -> Dict:
         """
         Camada 8 - Despacho Polimórfico de Cobertura Espacial.
         Encaminha para a geometria adequada de cada loteria:
+        - Dia de Sorte: Heptagonal de Calendário (MCODS 4.0)
         - +Milionária: Hexa-Trevo Biparamétrico (MCOMIL 4.0)
         - Lotomania: Centesimal 10x10 (MCOC 4.0)
         - Timemania: Decagonal (MCOD 4.0)
@@ -1148,8 +1172,10 @@ class ModeloCanonico40:
         - Mega-Sena: Hexagonal (MCOH 4.0)
         - Demais loterias: Modelo espacial correspondente
         """
+        if self.config.nome == "Dia de Sorte" or getattr(self, 'loteria_type', None) == LoteriaType.DIA_DE_SORTE or (self.N == 31 and self.config.sorteados == 7):
+            return self.calcular_dispersao_heptagonal_diadesorte(jogo, complemento if isinstance(complemento, str) else None)
         if self.config.nome == "+Milionária" or getattr(self, 'loteria_type', None) == LoteriaType.MAIS_MILIONARIA or (self.N == 50 and self.config.sorteados == 6):
-            return self.calcular_dispersao_biparametrica_maismilionaria(jogo, trevos)
+            return self.calcular_dispersao_biparametrica_maismilionaria(jogo, complemento if isinstance(complemento, list) else None)
         if self.config.nome == "Lotomania" or (self.N == 100 and self.config.sorteados == 20):
             return self.calcular_dispersao_centesimal_lotomania(jogo)
         if self.config.nome == "Timemania" or (self.N == 80 and self.config.sorteados == 7):
@@ -1462,6 +1488,55 @@ class ModeloCanonico40:
 
         return jogos[:quantidade_jogos]
 
+    def gerar_jogos_diadesorte(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
+        """
+        Gera jogos do Dia de Sorte utilizando o Modelo Canônico Heptagonal de Calendário (MCODS 4.0),
+        otimizando a dispersão nos 7 setores regulares do anel modular Z_31 com cota determinística <= 2
+        e paridade modal 3P/4I ou 4P/3I.
+        """
+        import random
+        from modelo_dia_de_sorte import ModeloHeptagonalDiaDeSorte
+
+        jogos = []
+        jogos_set = set()
+
+        if quantidade_numeros == 7:
+            canonicas = ModeloHeptagonalDiaDeSorte.gerar_variantes_canonicas()
+            for v in canonicas:
+                tup = tuple(v["dezenas"])
+                if tup not in jogos_set:
+                    jogos_set.add(tup)
+                    jogos.append(list(v["dezenas"]))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
+
+        # Gerador estocástico heptagonal no anel Z_31 ponderado por scores MCP
+        tentativas = 0
+        max_tentativas = quantidade_jogos * 200
+
+        while len(jogos) < quantidade_jogos and tentativas < max_tentativas:
+            tentativas += 1
+            candidatos = []
+
+            for s_idx in range(7):
+                s_info = ModeloHeptagonalDiaDeSorte.SETORES[s_idx]
+                dezenas_setor = s_info["dezenas"]
+                pesos_setor = [_peso_canonico(self.analisar_elemento(n)) for n in dezenas_setor]
+                n = random.choices(dezenas_setor, weights=pesos_setor, k=1)[0]
+                candidatos.append(n)
+
+            if len(set(candidatos)) == quantidade_numeros:
+                pares = sum(1 for n in candidatos if n % 2 == 0)
+                soma = sum(candidatos)
+                if (3 <= pares <= 4) and (90 <= soma <= 135):
+                    ordenado = sorted(candidatos)
+                    tup = tuple(ordenado)
+                    if tup not in jogos_set:
+                        jogos_set.add(tup)
+                        jogos.append(list(ordenado))
+
+        return jogos[:quantidade_jogos]
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -1478,6 +1553,12 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> Li
     """
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
+
+    # Para o Dia de Sorte (31 dezenas, 7 sorteadas, aposta padrão de 7 números), utiliza a geração heptagonal ótima
+    if (modelo.config.nome == 'Dia de Sorte' or (modelo.N == 31 and quantidade_numeros in (7, 15))):
+        jogos_dia = modelo.gerar_jogos_diadesorte(1, quantidade_numeros)
+        if jogos_dia:
+            return jogos_dia[0]
 
     # Para a +Milionária (50 dezenas, 6 sorteadas, aposta padrão de 6 números), utiliza a geração hexa-trevo ótima
     if (modelo.config.nome == '+Milionária' or (modelo.N == 50 and quantidade_numeros in (6, 12))):
@@ -1574,7 +1655,11 @@ def gerar_multiplos_jogos(
 
     # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0
     if not numeros_base:
-        if (modelo.config.nome == '+Milionária' or (modelo.N == 50 and quantidade_numeros in (6, 12))):
+        if (modelo.config.nome == 'Dia de Sorte' or (modelo.N == 31 and quantidade_numeros in (7, 15))):
+            jogos_dia = modelo.gerar_jogos_diadesorte(quantidade_jogos, quantidade_numeros)
+            if len(jogos_dia) == quantidade_jogos:
+                return jogos_dia
+        elif (modelo.config.nome == '+Milionária' or (modelo.N == 50 and quantidade_numeros in (6, 12))):
             jogos_mili = modelo.gerar_jogos_maismilionaria(quantidade_jogos, quantidade_numeros)
             if len(jogos_mili) == quantidade_jogos:
                 return jogos_mili

@@ -358,6 +358,7 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'equilibrio': equilibrio,
         'indicadores': indicadores_classicos(jogo, modelo),
         'dispersao_espacial': modelo.calcular_dispersao_espacial(jogo) if hasattr(modelo, 'calcular_dispersao_espacial') else None,
+        'dispersao_heptagonal': modelo.calcular_dispersao_heptagonal_diadesorte(jogo) if hasattr(modelo, 'calcular_dispersao_heptagonal_diadesorte') else None,
         'dispersao_biparametrica': modelo.calcular_dispersao_biparametrica_maismilionaria(jogo) if hasattr(modelo, 'calcular_dispersao_biparametrica_maismilionaria') else None,
         'dispersao_centesimal': modelo.calcular_dispersao_centesimal_lotomania(jogo) if hasattr(modelo, 'calcular_dispersao_centesimal_lotomania') else None,
         'dispersao_decagonal': modelo.calcular_dispersao_decagonal(jogo) if hasattr(modelo, 'calcular_dispersao_decagonal') else None,
@@ -399,8 +400,10 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
             elif hasattr(modelo, 'calcular_dispersao_hexagonal'):
                 disp = modelo.calcular_dispersao_hexagonal(jogos[0])
             if disp and disp.get('disponivel'):
-                geom = disp.get('geometria', 'Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal')))))
-                if geom == 'Hexa-Trevo':
+                geom = disp.get('geometria', 'Heptagonal' if config.nome == 'Dia de Sorte' else ('Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal'))))))
+                if geom == 'Heptagonal':
+                    sigla = 'MCODS 4.0'
+                elif geom == 'Hexa-Trevo':
                     sigla = 'MCOMIL 4.0'
                 elif geom == 'Centesimal':
                     sigla = 'MCOC 4.0'

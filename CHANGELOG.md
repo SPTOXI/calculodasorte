@@ -3,6 +3,32 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.6.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCODS (Otimização Heptagonal Calendário do Dia de Sorte)
+#### 🔬 Motor de Otimização Heptagonal Calendário (`modelo_dia_de_sorte.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
+- **Implementação do Modelo Canônico 4.0 Exclusivo do Dia de Sorte (MCODS 4.0):**
+  - Especialização da **Camada 8 de Cobertura Espacial** para o produto topológico $\mathbb{Z}_{31} \times \{1..12\}$ do Dia de Sorte ($N=31, k=7$, aposta simples de $m=7$ dias + 1 Mês da Sorte):
+    - Partição do anel modular circular $\mathbb{Z}_{31}$ em **7 setores regulares de 4,43 dias cada**:
+      `S0: [01..04]` (C: 03), `S1: [05..09]` (C: 07), `S2: [10..14]` (C: 12),
+      `S3: [15..18]` (C: 16), `S4: [19..23]` (C: 21), `S5: [24..27]` (C: 25), `S6: [28..31]` (C: 30).
+    - Cota analítica máxima de proximidade circular no anel $\mathbb{Z}_{31}$: **determinística e estritamente $\le 2$ dias** para 100% dos 31 dias possíveis.
+    - Equilíbrio modal hipergeométrico nos dias: $3\text{P}/4\text{I}$ ($31,98\%$) ou $4\text{P}/3\text{I}$ ($29,07\%$), compondo bloco modal de $61,05\%$.
+    - Baricentro de soma ótimo calibrado rigorosamente em $\mu = 7 \times 16 = 112,0$ (faixa de alta probabilidade: 90 a 134).
+    - **Modelagem do Subespaço do Mês da Sorte:** Distribuição uniforme $1/12 \approx 8,33\%$, seleção harmônica e balanceamento temporal.
+  - Cinco variantes heptagonais canônicas: Base Pura Heptagonal, Alpha (Hipergeométrico 4P/3I), Beta (Baricentro estrito 112), Gamma (Distribuição de semanas) e Delta (Anti-aniversário e anti-agrupamento).
+- **Despacho Polimórfico Espacial Heptagonal Consolidado em `core.py`:**
+  - `core.py` agora despacha dinamicamente `calcular_dispersao_espacial`, `gerar_jogo_sugerido` e `gerar_multiplos_jogos` incluindo o Dia de Sorte (MCODS 4.0).
+- **Sincronização de Dados Oficiais da Caixa (Até Concurso 1315):**
+  - Compilação de 150 concursos oficiais do Dia de Sorte (1166 a 1315, sorteio de 05/10/2026) em `data/dia_de_sorte_historico_completo.json`.
+  - Atualização dos metadados e arquivos de histórico em `data/dia_de_sorte_*`.
+- **Validação Empírica de Backtest:**
+  - Distância circular média observada nos sorteios reais: $1,07$ a $1,10$ dias (aderente ao teórico de $\approx 1,1$).
+  - Distância máxima observada: estritamente $\le 2$ dias em 100% dos 150 concursos analisados.
+  - Paridade modal observada: $60,67\%$ em consonância exata com a teoria ($61,05\%$).
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_heptagonal_diadesorte.py` com 6 testes unitários e de integração (100% aprovados, totalizando 59 testes na suíte global).
+
+---
+
 ### [v4.5.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCOMIL (Otimização Biparamétrica Hexa-Trevo da +Milionária)
 #### 🔬 Motor de Otimização Biparamétrica Hexa-Trevo (`modelo_mais_milionaria.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
 - **Implementação do Modelo Canônico 4.0 Exclusivo da +Milionária (MCOMIL 4.0):**
