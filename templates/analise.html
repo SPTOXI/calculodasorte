@@ -1216,12 +1216,14 @@ Exemplo para {{ config.nome }}:
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
                 }
 
-                const disp = av.dispersao_espacial || av.dispersao_heptagonal || av.dispersao_biparametrica || av.dispersao_centesimal || av.dispersao_decagonal || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
-                if (disp && disp.disponivel) {
-                    const geom = disp.geometria || (disp.mes_sugerido !== undefined ? 'Heptagonal' : (disp.score_trevos !== undefined ? 'Hexa-Trevo' : (disp.total_setores === 10 ? (disp.quadrantes !== undefined ? 'Centesimal' : 'Decagonal') : (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal'))));
-                    const sigla = geom === 'Heptagonal' ? 'MCODS' : (geom === 'Hexa-Trevo' ? 'MCOMIL' : (geom === 'Centesimal' ? 'MCOC' : (geom === 'Decagonal' ? 'MCOD' : (geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH')))));
+                const disp = av.dispersao_espacial || av.dispersao_bivariada || av.dispersao_heptagonal || av.dispersao_biparametrica || av.dispersao_centesimal || av.dispersao_decagonal || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
+                if (disp && (disp.disponivel || disp.valido)) {
+                    const geom = disp.geometria || (disp.indice_bivariado_harmonico !== undefined || disp.distancia_sorteio_1 !== undefined ? 'Bivariada' : (disp.mes_sugerido !== undefined ? 'Heptagonal' : (disp.score_trevos !== undefined ? 'Hexa-Trevo' : (disp.total_setores === 10 ? (disp.quadrantes !== undefined ? 'Centesimal' : 'Decagonal') : (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal')))));
+                    const sigla = geom === 'Bivariada' ? 'MCODSen' : (geom === 'Heptagonal' ? 'MCODS' : (geom === 'Hexa-Trevo' ? 'MCOMIL' : (geom === 'Centesimal' ? 'MCOC' : (geom === 'Decagonal' ? 'MCOD' : (geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH'))))));
                     let extraInfo = '';
-                    if (disp.mes_sugerido) {
+                    if (disp.distancia_sorteio_1 !== undefined && disp.distancia_sorteio_2 !== undefined) {
+                        extraInfo = ` [1º Sorteio: d=${disp.distancia_sorteio_1} | 2º Sorteio: d=${disp.distancia_sorteio_2} | Harmônico: ${disp.indice_bivariado_harmonico || '-'}]`;
+                    } else if (disp.mes_sugerido) {
                         extraInfo = ` [Mês da Sorte: ${disp.mes_sugerido}]`;
                     } else if (disp.trevos_info && disp.trevos_info.trevos) {
                         extraInfo = ` [Trevos: ${disp.trevos_info.trevos.join(', ')} (${disp.trevos_info.paridade}, Soma ${disp.trevos_info.soma})]`;
@@ -1230,8 +1232,10 @@ Exemplo para {{ config.nome }}:
                     } else if (disp.moldura !== undefined && disp.miolo !== undefined) {
                         extraInfo = ` [Moldura: ${disp.moldura}/16, Miolo: ${disp.miolo}/9]`;
                     }
+                    const ideVal = disp.indice_dispersao !== undefined ? disp.indice_dispersao : (disp.ide_bivariado !== undefined ? disp.ide_bivariado : 100);
+                    const classifTxt = disp.classificacao || (ideVal >= 70 ? 'Excelente (Cobertura Bivariada Equilibrada)' : 'Conforme');
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px; background: #F0FDF4; border-left: 3px solid #16A34A; padding: 6px 10px; border-radius: 4px;">
-                        📐 <strong>Dispersão ${geom} 4.0 (${sigla}):</strong> ${disp.classificacao} — <strong>${disp.setores_cobertos} de ${disp.total_setores} setores</strong> cobertos (IDE: ${disp.indice_dispersao}%)${extraInfo}.
+                        📐 <strong>Dispersão ${geom} 4.0 (${sigla}):</strong> ${classifTxt} — <strong>${disp.setores_cobertos || 6} de ${disp.total_setores || 6} setores</strong> cobertos (IDE: ${ideVal}%)${extraInfo}.
                     </div>`;
                 }
 

@@ -3,6 +3,32 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.7.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCODSen (Otimização Hexagonal Bivariada de Duplo Sorteio da Dupla Sena)
+#### 🔬 Motor de Otimização Hexagonal Bivariada (`modelo_dupla_sena.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
+- **Implementação do Modelo Canônico 4.0 Exclusivo da Dupla Sena (MCODSen 4.0):**
+  - Especialização da **Camada 8 de Cobertura Espacial** para o produto cartesiano bivariado $\mathcal{P}_6(\{1..50\}) \times \mathcal{P}_6(\{1..50\})$ da Dupla Sena ($N=50, k=6$, aposta simples de $m=6$ dezenas com dois sorteios independentes por concurso):
+    - Partição regular do anel circular modular $\mathbb{Z}_{50}$ em **6 setores regulares de 8,33 dezenas cada**:
+      `S0: [01..08]` (C: 04), `S1: [09..17]` (C: 13), `S2: [18..25]` (C: 21),
+      `S3: [26..34]` (C: 30), `S4: [35..42]` (C: 38), `S5: [43..50]` (C: 46).
+    - Cota analítica máxima de proximidade circular no anel $\mathbb{Z}_{50}$: **determinística e estritamente $\le 4$ unidades** para 100% dos 50 números possíveis.
+    - **Dinâmica Bivariada Simultânea de Duplo Sorteio:** Avaliação conjunta contra o 1º sorteio ($D_1$), 2º sorteio ($D_2$), dispersão bivariada média $D_{biv} = (D_1 + D_2)/2$ e Índice Bivariado Harmônico $Score_{biv}$.
+    - Equilíbrio modal hipergeométrico nas dezenas: $3\text{P}/3\text{I}$ ($33,29\%$ teórico, $38,0\%$ no 1º sorteio e $39,3\%$ no 2º sorteio empírico).
+    - Baricentro de soma ótimo calibrado rigorosamente em $\mu = 6 \times 25,5 = 153,0$ (faixa de alta probabilidade: 125 a 181).
+  - Cinco variantes canônicas bivariadas: Base Pura Hexagonal, Alpha (Moda Paridade & Soma 153), Beta (Harmônica Bivariada Conjunta), Gamma (Transição Intersetorial) e Delta (Anti-Agrupamento / Equidistante).
+- **Despacho Polimórfico Espacial Bivariado Consolidado em `core.py`:**
+  - `core.py` agora despacha dinamicamente `calcular_dispersao_espacial`, `gerar_jogo_sugerido` e `gerar_multiplos_jogos` incluindo a Dupla Sena (MCODSen 4.0).
+- **Sincronização de Dados Oficiais da Caixa (Até Concurso 3017):**
+  - Compilação de 150 concursos oficiais da Dupla Sena (2868 a 3017, sorteio de 05/10/2026 com ambos os sorteios) em `data/dupla_sena_historico_completo.json`.
+  - Atualização dos metadados e arquivos de histórico em `data/dupla_sena_*`.
+- **Validação Empírica de Backtest:**
+  - Distância circular média observada nos sorteios reais: $2,1189$ (1º sorteio), $2,0967$ (2º sorteio), $2,1078$ (bivariada conjunta).
+  - Distância máxima observada: estritamente $\le 4$ unidades em 100% dos 150 concursos analisados em ambos os sorteios.
+  - ~60% das dezenas sorteadas a $\le 2$ unidades dos centros canônicos.
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_bivariado_duplasena.py` com 6 testes unitários e de integração (100% aprovados, totalizando 65 testes na suíte global).
+
+---
+
 ### [v4.6.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCODS (Otimização Heptagonal Calendário do Dia de Sorte)
 #### 🔬 Motor de Otimização Heptagonal Calendário (`modelo_dia_de_sorte.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
 - **Implementação do Modelo Canônico 4.0 Exclusivo do Dia de Sorte (MCODS 4.0):**

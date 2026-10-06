@@ -358,6 +358,7 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'equilibrio': equilibrio,
         'indicadores': indicadores_classicos(jogo, modelo),
         'dispersao_espacial': modelo.calcular_dispersao_espacial(jogo) if hasattr(modelo, 'calcular_dispersao_espacial') else None,
+        'dispersao_bivariada': modelo.calcular_dispersao_bivariada_duplasena(jogo) if hasattr(modelo, 'calcular_dispersao_bivariada_duplasena') else None,
         'dispersao_heptagonal': modelo.calcular_dispersao_heptagonal_diadesorte(jogo) if hasattr(modelo, 'calcular_dispersao_heptagonal_diadesorte') else None,
         'dispersao_biparametrica': modelo.calcular_dispersao_biparametrica_maismilionaria(jogo) if hasattr(modelo, 'calcular_dispersao_biparametrica_maismilionaria') else None,
         'dispersao_centesimal': modelo.calcular_dispersao_centesimal_lotomania(jogo) if hasattr(modelo, 'calcular_dispersao_centesimal_lotomania') else None,
@@ -399,9 +400,11 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
                 disp = modelo.calcular_dispersao_espacial(jogos[0])
             elif hasattr(modelo, 'calcular_dispersao_hexagonal'):
                 disp = modelo.calcular_dispersao_hexagonal(jogos[0])
-            if disp and disp.get('disponivel'):
-                geom = disp.get('geometria', 'Heptagonal' if config.nome == 'Dia de Sorte' else ('Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal'))))))
-                if geom == 'Heptagonal':
+            if disp and (disp.get('disponivel') or disp.get('valido')):
+                geom = disp.get('geometria', 'Bivariada' if config.nome == 'Dupla Sena' else ('Heptagonal' if config.nome == 'Dia de Sorte' else ('Hexa-Trevo' if config.nome == '+Milionária' else ('Centesimal' if config.nome == 'Lotomania' else ('Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal')))))))
+                if geom == 'Bivariada':
+                    sigla = 'MCODSen 4.0'
+                elif geom == 'Heptagonal':
                     sigla = 'MCODS 4.0'
                 elif geom == 'Hexa-Trevo':
                     sigla = 'MCOMIL 4.0'
@@ -415,7 +418,8 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
                     sigla = 'MCOP 4.0'
                 else:
                     sigla = 'MCOH 4.0'
-                linhas.append(f"Dispersão Espacial {geom} ({sigla}): {disp['classificacao']} (IDE: {disp['indice_dispersao']}%).")
+                ide_val = disp.get('indice_dispersao', disp.get('ide_bivariado', 100.0))
+                linhas.append(f"Dispersão Espacial {geom} ({sigla}): {disp['classificacao'] if 'classificacao' in disp else 'Conforme'} (IDE: {ide_val}%).")
     linhas.append(
         f"Chance de {faixa_max['acertos']} acertos com cada jogo: 1 em {faixa_max['um_em']:,}".replace(',', '.')
         + f"; de {faixa_min['acertos']} acertos: 1 em {faixa_min['um_em']:,}.".replace(',', '.')
