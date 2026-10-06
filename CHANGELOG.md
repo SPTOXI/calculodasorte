@@ -3,6 +3,38 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.9.0] - 2026-10-06 — Dinâmica Canônica MCO-DYN: Expansão vs Retração por Casa com Ajuste de Aproximação em Todas as 9 Loterias
+#### 🔬 Motor de Dinâmica Canônica Restauradora (`dinamica_canonica.py`, `core.py`, `app.py`, `templates/analise.html`)
+- **Implementação do Módulo MCO-DYN para Todas as 9 Loterias da Caixa:**
+  - Avaliação temporal em tempo real dos últimos concursos oficiais ($t$ e $t-1$) para cada uma das casas/setores/colunas canônicas:
+    - **Mega-Sena:** 6 casas hexagonais no anel $\mathbb{Z}_{60}$.
+    - **Quina:** 5 casas pentagonais no anel $\mathbb{Z}_{80}$.
+    - **Lotofácil:** 5 linhas matriciais 5x5 em $\mathbb{Z}_{25}$ (avaliação de densidade e média por quinteto).
+    - **Timemania:** 10 casas decagonais em $\mathbb{Z}_{80}$ (+ time do coração).
+    - **Lotomania:** 10 linhas decimais em $\mathbb{Z}_{100}$ (densidade e projeção de 50 dezenas).
+    - **+Milionária:** 6 casas de dezenas em $\mathbb{Z}_{50}$ + 2 casas de trevos em $\{1..6\}$.
+    - **Dia de Sorte:** 7 casas de dias em $\mathbb{Z}_{31}$ + mês da sorte.
+    - **Dupla Sena:** 6 casas bivariadas em $\mathbb{Z}_{50}$ para ambos os sorteios independentes.
+    - **Super Sete:** 7 colunas verticais independentes em $\mathbb{Z}_{10}^7$.
+  - **Classificação Dinâmica por Casa:**
+    - **Expansão (↗):** Dezena deslocada acima do centro canônico ($d_i > 0$).
+    - **Retração (↘):** Dezena deslocada abaixo do centro canônico ($d_i < 0$).
+    - **Equilíbrio (🎯):** Dezena em perfeita convergência com o centro ($d_i = 0$).
+  - **Força Restauradora e Ajuste de Aproximação:**
+    - Aplicação do atrator elástico canônico $A_i = -\text{round}(0,5 \cdot d_i)$, gerando o palpite projetado ajustado para buscar a máxima aproximação métrica no próximo concurso.
+  - **Geração do Palpite Canônico Dinâmico Ajustado (MCO-DYN):**
+    - Combinação de dezenas únicas balanceadas respeitando a cota máxima e o baricentro modal.
+- **Novos Endpoints e Integrações de API:**
+  - Rota dedicada: `GET/POST /api/dinamica-canonica/<loteria_type>`.
+  - Inclusão de `dinamica_canonica` e `sugestoes.jogo_dinamico_ajustado` em `POST /api/analise/<loteria_type>`.
+  - Suporte ao `modo='dinamico_ajustado'` em `POST /gerar-jogo/<loteria_type>`.
+- **Interface Visual no Painel de Análise (`templates/analise.html`):**
+  - Painel interativo com badges de contagem de expansões/retrações, tabela casa a casa com centros e diagnósticos restauradores, e botões de cópia e aplicação imediata no volante de apostas.
+- **Cobertura de Testes:**
+  - Adicionado `test_dinamica_canonica.py` cobrindo todas as 9 loterias (9 novos testes, totalizando **94 testes passando com 100% de sucesso**).
+
+---
+
 ### [v4.8.0] - 2026-10-06 — Modelo Canônico 4.0 Especializado: MCOSS (Otimização Heptacolunar Independente do Super Sete) — Cobertura Completa de Todas as 9 Loterias da Caixa
 #### 🔬 Motor de Otimização Heptacolunar Independente (`modelo_super_sete.py`, `core.py`, `avaliacao.py`, `templates/analise.html`, `templates/seo_metodologia.html`)
 - **Implementação do Modelo Canônico 4.0 Exclusivo do Super Sete (MCOSS 4.0):**

@@ -37,14 +37,14 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ## 📐 Arquitetura do Sistema
 
-### Núcleo Matemático (`core.py`, `modelo_super_sete.py`, `modelo_dupla_sena.py`, `modelo_dia_de_sorte.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
+### Núcleo Matemático (`core.py`, `dinamica_canonica.py`, `modelo_super_sete.py`, `modelo_dupla_sena.py`, `modelo_dia_de_sorte.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
 
-#### Modelo Canônico 4.0 - 8 Camadas:
+#### Modelo Canônico 4.0 - 8 Camadas + Dinâmica Restauradora MCO-DYN:
 
 1. **Convergência** - LLN, FR (Fator de Recorrência)
 2. **Estabilidade** - ICT (Índice de Convergência Temporal)
 3. **Saturação** - ISEG, IIE, FCT
-4. **Dinâmica** - ILLA, ILLA Dinâmico, AE
+4. **Dinâmica** - ILLA, ILLA Dinâmico, AE e **MCO-DYN (Expansão vs Retração por Casa com Ajuste de Aproximação)**
 5. **Informacional** - Entropia, Complexidade, Compressibilidade
 6. **Não Linear** - Fractal, Multifractal, Caos
 7. **Validação** - Monte Carlo, Bayesiano, Backtest

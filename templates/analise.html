@@ -607,6 +607,7 @@ Exemplo para {{ config.nome }}:
                     <p id="analise-limites" style="color: #5B6B82; margin-top: 8px;"></p>
                     <p style="margin-top: 10px;"><a href="/metodologia">Consultar fórmulas e limites da metodologia</a></p>
                 </div>
+                <div id="dinamica-canonica-box" style="margin-bottom: 24px;"></div>
                 <div id="indicadores-classicos-box" style="margin-bottom: 20px;"></div>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -1699,8 +1700,125 @@ Exemplo para {{ config.nome }}:
             box.innerHTML = html + '</table></div></div>';
         }
 
+        function exibirDinamicaCanonica(dinamica) {
+            const box = document.getElementById('dinamica-canonica-box');
+            if (!box) return;
+            if (!dinamica || !dinamica.casas || dinamica.casas.length === 0) {
+                box.innerHTML = '';
+                return;
+            }
+
+            const res = dinamica.resumo_tendencia || {};
+            let html = `
+            <div style="background: #FFFFFF; border: 2px solid #0046AD; border-radius: 14px; padding: 20px; box-shadow: 0 4px 16px rgba(0,70,173,0.08); margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid rgba(0,70,173,0.12); padding-bottom: 12px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.6rem;">🔬</span>
+                            <h3 style="margin: 0; color: #0A1A3F; font-size: 1.25rem;">Dinâmica Canônica dos Últimos Sorteios: Expansão vs Retração por Casa</h3>
+                        </div>
+                        <p style="color: #5B6B82; font-size: 0.9rem; margin: 4px 0 0 0;">
+                            Avaliação em tempo real de cada setor canônico. Identifica se a casa expandiu (↗) ou retraiu (↘) e aplica a força restauradora do atrator para buscar a máxima aproximação métrica no próximo sorteio.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: rgba(22,163,74,0.1); color: #16A34A; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">🎯 ${res.equilibrios || 0} no Centro</span>
+                        <span style="background: rgba(234,88,12,0.1); color: #EA580C; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↗ ${res.expansoes || 0} Expansões</span>
+                        <span style="background: rgba(37,99,235,0.1); color: #2563EB; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↘ ${res.retracoes || 0} Retrações</span>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto; margin-bottom: 16px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="background: #F8FAFC; text-align: left; color: #5B6B82; border-bottom: 2px solid #E2E8F0;">
+                                <th style="padding: 8px 10px;">Casa / Setor</th>
+                                <th style="padding: 8px 10px;">Centro Canônico</th>
+                                <th style="padding: 8px 10px;">Último Sorteado</th>
+                                <th style="padding: 8px 10px;">Tendência</th>
+                                <th style="padding: 8px 10px;">Ajuste de Aproximação</th>
+                                <th style="padding: 8px 10px;">Valor Projetado</th>
+                                <th style="padding: 8px 10px;">Diagnóstico Restaurador</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            dinamica.casas.forEach(c => {
+                let badgeStyle = "background: #F1F5F9; color: #475569;";
+                if (c.estado === "expansao") {
+                    badgeStyle = "background: #FFEDD5; color: #C2410C; font-weight: 700;";
+                } else if (c.estado === "retracao") {
+                    badgeStyle = "background: #DBEAFE; color: #1D4ED8; font-weight: 700;";
+                } else if (c.estado === "equilibrio") {
+                    badgeStyle = "background: #DCFCE7; color: #15803D; font-weight: 700;";
+                }
+
+                const ajStr = c.ajuste_aplicado > 0 ? `+${c.ajuste_aplicado}` : (c.ajuste_aplicado < 0 ? `${c.ajuste_aplicado}` : '0 (Neutro)');
+                const ultFormatado = typeof c.ultimo_sorteado === 'number' ? (CONFIG_LOTERIA && CONFIG_LOTERIA.colunas ? c.ultimo_sorteado : String(Math.round(c.ultimo_sorteado)).padStart(2, '0')) : c.ultimo_sorteado;
+                const valAdjFormatado = CONFIG_LOTERIA && CONFIG_LOTERIA.colunas ? c.valor_ajustado : String(c.valor_ajustado).padStart(2, '0');
+
+                html += `
+                    <tr style="border-bottom: 1px solid #F1F5F9;">
+                        <td style="padding: 10px; font-weight: 600; color: #0A1A3F;">${c.nome} <span style="font-size: 0.78rem; color: #64748B;">(${c.faixa})</span></td>
+                        <td style="padding: 10px; font-weight: 700; color: #0046AD;">${c.centro_canonico}</td>
+                        <td style="padding: 10px;"><strong>${ultFormatado}</strong></td>
+                        <td style="padding: 10px;"><span style="padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; ${badgeStyle}">${c.estado_icone} ${c.estado_rotulo}</span></td>
+                        <td style="padding: 10px; font-weight: 700; color: ${c.ajuste_aplicado === 0 ? '#15803D' : (c.ajuste_aplicado > 0 ? '#1D4ED8' : '#C2410C')};">${ajStr}</td>
+                        <td style="padding: 10px;"><span style="background: #0046AD; color: #FFFFFF; font-weight: 800; padding: 4px 10px; border-radius: 8px;">${valAdjFormatado}</span></td>
+                        <td style="padding: 10px; font-size: 0.84rem; color: #475569;">${c.diagnostico}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: linear-gradient(135deg, rgba(0,70,173,0.06), rgba(243,146,0,0.08)); border: 1px solid #0046AD; border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                    <div>
+                        <strong style="color: #0A1A3F; font-size: 1.05rem;">🎯 Palpite Canônico Dinâmico Ajustado (MCO-DYN):</strong>
+                        <div style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #0046AD; margin-top: 4px;">
+                            ${dinamica.jogo_ajustado_formatado}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #5B6B82; margin-top: 2px;">
+                            Combina a memória recente dos últimos sorteios com a restauração de expansões e retrações em cada setor.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-action" style="padding: 8px 14px; font-size: 0.88rem;" onclick="copiarPalpiteDinamico('${dinamica.jogo_ajustado_formatado}')">
+                            📋 Copiar Palpite
+                        </button>
+                        <button type="button" class="btn-action" style="background: #16A34A; padding: 8px 14px; font-size: 0.88rem;" onclick="aplicarJogoDinamicoNoInput('${dinamica.jogo_ajustado_formatado}')">
+                            ✏️ Usar em Meus Números
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            box.innerHTML = html;
+        }
+
+        function copiarPalpiteDinamico(jogoTxt) {
+            navigator.clipboard.writeText(jogoTxt).then(() => {
+                alert('Palpite dinâmico ajustado copiado: ' + jogoTxt);
+            });
+        }
+
+        function aplicarJogoDinamicoNoInput(jogoTxt) {
+            showTab('meus-numeros');
+            const input = document.getElementById('historico-input');
+            if (input) {
+                input.value = jogoTxt;
+                validarInputEmTempoReal();
+            }
+        }
+
         function exibirAnalise(result) {
             document.getElementById('analise-resultado').style.display = 'block';
+            exibirDinamicaCanonica(result.dinamica_canonica);
             exibirIndicadoresClassicos(result.indicadores_classicos);
             const mcp = result.mcp_md || {};
             document.getElementById('analise-mcp').textContent = mcp.disponivel

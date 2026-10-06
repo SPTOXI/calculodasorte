@@ -29,6 +29,7 @@ from core import (
     ModeloCanonico30,
     ValidaçãoCamada7,
     gerar_jogo_sugerido,
+    gerar_jogo_dinamico_ajustado,
     gerar_multiplos_jogos,
     analise_por_coluna,
     LoteriaType,
@@ -1686,17 +1687,32 @@ def api_analise(loteria_type: str):
         modelo._memo['validacao'] = ValidaçãoCamada7(modelo).validacao_completa()
     resumo['validacao_camada7'] = modelo._memo['validacao']
     
-    # Gerar sugestões de jogos
+    # Gerar sugestões de jogos e dinâmica de expansão/retração
     config = LOTERIAS_CONFIG[loteria]
+    dinamica = resumo.get('dinamica_canonica') or modelo.avaliar_dinamica_expansao_retracao()
+    resumo['dinamica_canonica'] = dinamica
     resumo['sugestoes'] = {
         'jogo_simples': gerar_jogo_sugerido(modelo, config.minimo_aposta),
         'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta)),
+        'jogo_dinamico_ajustado': dinamica.get('jogo_ajustado') if isinstance(dinamica, dict) else None,
     }
     if config.colunas:
         resumo['analise_por_coluna'] = analise_por_coluna(modelo)
     resumo['indicadores_classicos'] = avaliacao.resumo_indicadores(modelo)
     
     return jsonify(resumo)
+
+
+@app.route('/api/dinamica-canonica/<loteria_type>', methods=['GET', 'POST'])
+def api_dinamica_canonica(loteria_type: str):
+    """API para consultar a dinâmica de expansão e retração dos últimos sorteios por casa com ajuste de aproximação"""
+    try:
+        modelo = modelo_canonico(loteria_type)
+    except Exception as exc:
+        return jsonify({'erro': f'Erro ao carregar modelo: {exc}'}), 400
+    if modelo is None:
+        return jsonify({'erro': 'Histórico insuficiente para análise dinâmica.'}), 400
+    return jsonify(modelo.avaliar_dinamica_expansao_retracao())
 
 
 def _obter_identificadores_usuario():
@@ -1996,7 +2012,11 @@ def gerar_jogo(loteria_type: str):
     if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para análise'}), 400
 
-    jogo = gerar_jogo_sugerido(modelo, quantidade)
+    modo = dados.get('modo')
+    if modo in ('dinamico', 'dinamico_ajustado', 'expansao_retracao'):
+        jogo = gerar_jogo_dinamico_ajustado(modelo)
+    else:
+        jogo = gerar_jogo_sugerido(modelo, quantidade)
     
     return jsonify({
         'jogo': jogo,

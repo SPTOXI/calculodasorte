@@ -733,7 +733,8 @@ class ModeloCanonico40:
                     "score_mcp": round(a.score_mcp, 4)
                 }
                 for a in sorted(analises, key=lambda x: x.ict)
-            ]
+            ],
+            "dinamica_canonica": self.avaliar_dinamica_expansao_retracao()
         }
         return self._memo['resumo']
 
@@ -1651,6 +1652,49 @@ class ModeloCanonico40:
         from modelo_super_sete import ModeloHeptacolunarSuperSete
         return ModeloHeptacolunarSuperSete.gerar_jogos(quantidade=quantidade_jogos)
 
+    def avaliar_dinamica_expansao_retracao(self) -> Dict[str, Any]:
+        """
+        Avalia os últimos sorteios oficiais pelo Modelo Canônico 4.0, identificando
+        se a tendência de cada casa/setor é de Expansão (↗), Retração (↘) ou Equilíbrio (🎯),
+        calculando o ajuste da força restauradora para buscar a máxima aproximação.
+        """
+        from dinamica_canonica import AvaliadorDinamicaCanonica
+        lot_slug = self.loteria_type.value if hasattr(self.loteria_type, 'value') else str(self.loteria_type)
+        res = AvaliadorDinamicaCanonica.avaliar_dinamica(
+            loteria_type=lot_slug,
+            historico=self.historico,
+            ultimo_concurso_id=self.T
+        )
+        return {
+            "loteria": res.loteria,
+            "total_casas": res.total_casas,
+            "concursos_analisados": res.concursos_analisados,
+            "ultimo_concurso": res.ultimo_concurso,
+            "casas": [
+                {
+                    "indice": c.indice,
+                    "nome": c.nome,
+                    "faixa": c.faixa,
+                    "centro_canonico": c.centro_canonico,
+                    "ultimo_sorteado": c.ultimo_sorteado,
+                    "penultimo_sorteado": c.penultimo_sorteado,
+                    "desvio_centro": c.desvio_centro,
+                    "variacao_recente": c.variacao_recente,
+                    "estado": c.estado,
+                    "estado_icone": c.estado_icone,
+                    "estado_rotulo": c.estado_rotulo,
+                    "ajuste_aplicado": c.ajuste_aplicado,
+                    "valor_ajustado": c.valor_ajustado,
+                    "diagnostico": c.diagnostico,
+                }
+                for c in res.casas
+            ],
+            "jogo_ajustado": res.jogo_ajustado,
+            "jogo_ajustado_formatado": res.jogo_ajustado_formatado,
+            "resumo_tendencia": res.resumo_tendencia,
+            "complemento": res.complemento,
+        }
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -1658,6 +1702,15 @@ ModeloCanonico30 = ModeloCanonico40
 
 # Reexporta a camada 7 para preservar os imports existentes.
 from validacao import ValidaçãoCamada7
+
+
+def gerar_jogo_dinamico_ajustado(modelo: ModeloCanonico40) -> List[int]:
+    """
+    Gera jogo ajustado pela dinâmica de expansão e retração dos últimos sorteios,
+    buscando a máxima aproximação do atrator canônico.
+    """
+    din = modelo.avaliar_dinamica_expansao_retracao()
+    return din.get("jogo_ajustado", [])
 
 
 def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
