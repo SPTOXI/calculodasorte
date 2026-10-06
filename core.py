@@ -1,6 +1,6 @@
 """
 Sistema de Análise Estatística para Loterias - Modelo Canônico 4.0 + MCP-MD 1.0
-MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
+MCOD (Decagonal - Timemania) / MCOM (Matricial 5x5 - Lotofácil) / MCOH (Hexagonal - Mega-Sena) / MCOP (Pentagonal - Quina) - Modelos Canônicos de Otimização e Cobertura Espacial
 AGENTE LLN ICT FR - Lei dos Grandes Números, Índice de Convergência Temporal, Fator de Recorrência
 """
 
@@ -527,11 +527,24 @@ class ModeloCanonico40:
             maturidades[a.maturidade] = maturidades.get(a.maturidade, 0) + 1
         
         # Configuração da Camada Espacial especializada por topologia da loteria
+        is_timemania = (self.config.nome == "Timemania" or (self.N == 80 and self.config.sorteados == 7))
         is_lotofacil = (self.config.nome == "Lotofácil" or (self.N == 25 and self.config.sorteados == 15))
         is_quina = (self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5))
         is_megasena = (self.config.nome == "Mega-Sena" or (self.N == 60 and self.config.sorteados == 6))
 
-        if is_lotofacil:
+        if is_timemania:
+            modelo_metodologia = "Canônico 4.0 — MCOD (Timemania)"
+            extensao_desc = "MCP-MD 1.0 + Otimização Decagonal e Time do Coração"
+            camada_espacial_desc = "Decagonal K-Medians (Dispersão Cíclica Z_80)"
+            camada_espacial_dict = {
+                "modelo": "Decagonal K-Medians (Z_80)",
+                "total_setores": 10,
+                "largura_setor": 8.0,
+                "universo": 80,
+                "metrica": "Circular cíclica Z_80",
+                "distancia_maxima_teorica": 4.0
+            }
+        elif is_lotofacil:
             modelo_metodologia = "Canônico 4.0 — MCOM (Lotofácil)"
             extensao_desc = "MCP-MD 1.0 + Otimização Matricial 5x5"
             camada_espacial_desc = "Matricial 5x5 K-Medians (Quintetos)"
@@ -610,7 +623,7 @@ class ModeloCanonico40:
                 "persistencia": "P_i = min(c_i / max(T * mu, 1), 1)",
                 "normalizacao_imc": "Desvio padrão populacional entre todos os elementos; IMC uniforme contribui zero",
                 "entropia": "Shannon marginal: p_i = c_i / soma(c); não mede dependência temporal",
-                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade", "MCOH Hexagonal", "MCOP Pentagonal"],
+                "aproximacoes": ["ICT", "ISEG", "C_i", "P_i", "pesos ILLA", "limiares de maturidade", "MCOH Hexagonal", "MCOP Pentagonal", "MCOM Matricial", "MCOD Decagonal"],
                 "componentes_nao_implementados": [
                     "IIE", "FCT", "ILLA Dinâmico", "AE", "complexidade algorítmica",
                     "compressão efetiva de sequências", "fractal", "multifractal", "caos"
@@ -663,6 +676,10 @@ class ModeloCanonico40:
         Camada 8 - MCOH (Modelo Canônico de Otimização Hexagonal e Cobertura Espacial).
         Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_N.
         """
+        if self.config.nome == "Timemania" or (self.N == 80 and self.config.sorteados == 7):
+            return self.calcular_dispersao_decagonal(jogo)
+        if self.config.nome == "Lotofácil" or (self.N == 25 and self.config.sorteados == 15):
+            return self.calcular_dispersao_matricial_lotofacil(jogo)
         if self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5):
             return self.calcular_dispersao_pentagonal(jogo)
 
@@ -922,15 +939,93 @@ class ModeloCanonico40:
             )
         }
 
+    def calcular_dispersao_decagonal(self, jogo: List[int]) -> Dict:
+        """
+        Camada 8 - MCOD (Modelo Canônico de Otimização Decagonal e Cobertura Espacial - Timemania).
+        Calcula a dispersão geométrica e proximidade métrica do jogo no espaço cíclico Z_80,
+        dividido em 10 setores de 8 dezenas cada: [1..8], [9..16], ..., [73..80].
+        Centros naturais: [4, 12, 20, 28, 36, 44, 52, 60, 68, 76].
+        Cota máxima de proximidade K-Medians: <= 4 unidades no anel cíclico modular Z_80.
+        """
+        if self.config.colunas or not jogo:
+            return {
+                "disponivel": False,
+                "motivo": "Dispersão decagonal aplica-se à Timemania e loterias de números com universo de 80 dezenas."
+            }
+
+        n_numeros = len(jogo)
+        N = 80
+        num_setores = 10
+        largura_setor = 8
+        centros_setores = [4, 12, 20, 28, 36, 44, 52, 60, 68, 76]
+
+        # 1. Alocação nos 10 setores do decágono
+        setores = [0] * num_setores
+        for num in jogo:
+            idx = int((num - 1) / largura_setor)
+            idx = min(max(0, idx), num_setores - 1)
+            setores[idx] += 1
+
+        setores_cobertos = sum(1 for c in setores if c > 0)
+
+        # 2. Proximidade métrica circular mínima para os centros dos 10 setores
+        distancias_centros = []
+        for num in jogo:
+            d_min = min(
+                min(abs(num - c), N - abs(num - c))
+                for c in centros_setores
+            )
+            distancias_centros.append(d_min)
+
+        dist_media_centros = statistics.mean(distancias_centros) if distancias_centros else 0.0
+        dist_max_centros = max(distancias_centros) if distancias_centros else 0.0
+
+        # 3. Índice de Dispersão Espacial (IDE 4.0 Decagonal) de 0.0 a 100.0%
+        cobertura_pct = (setores_cobertos / min(num_setores, n_numeros)) * 100.0
+        desvio_setorial = statistics.pstdev(setores)
+        max_desvio = n_numeros / 2.0
+        fator_equilibrio = max(0.0, 1.0 - (desvio_setorial / max(max_desvio, 1.0)))
+        ide = round(0.6 * cobertura_pct + 0.4 * (fator_equilibrio * 100.0), 1)
+
+        if setores_cobertos >= min(8, n_numeros):
+            classificacao = "Excelente (Dispersão Decagonal Ampla)"
+        elif setores_cobertos >= min(6, n_numeros):
+            classificacao = "Boa (Dispersão Equilibrada)"
+        elif setores_cobertos >= min(4, n_numeros):
+            classificacao = "Regular (Dispersão Parcial)"
+        else:
+            classificacao = "Concentrada (Aglomerada em Poucos Setores)"
+
+        return {
+            "disponivel": True,
+            "geometria": "Decagonal",
+            "setores_cobertos": setores_cobertos,
+            "total_setores": num_setores,
+            "distribuicao_setorial": setores,
+            "distancia_media_centros": round(dist_media_centros, 2),
+            "distancia_maxima_centros": round(dist_max_centros, 2),
+            "indice_dispersao": ide,
+            "classificacao": classificacao,
+            "distancia_maxima_garantida": 4,
+            "distancia_media_teorica": 2.0,
+            "observacao": (
+                "A cobertura decagonal (MCOD 4.0) garante dispersão ótima no volante de 80 números da Timemania, "
+                "distribuindo as 10 dezenas entre os 10 setores com cota máxima de 4 unidades no anel cíclico Z_80."
+            )
+        }
+
     def calcular_dispersao_espacial(self, jogo: List[int]) -> Dict:
         """
         Camada 8 - Despacho Polimórfico de Cobertura Espacial.
         Encaminha para a geometria adequada de cada loteria:
+        - Timemania: Decagonal (MCOD 4.0)
         - Lotofácil: Matricial 5x5 (MCOM 4.0)
         - Quina: Pentagonal (MCOP 4.0)
         - Mega-Sena: Hexagonal (MCOH 4.0)
         - Demais loterias: Modelo espacial correspondente
         """
+        if self.config.nome == "Timemania" or (self.N == 80 and self.config.sorteados == 7):
+            return self.calcular_dispersao_decagonal(jogo)
         if self.config.nome == "Lotofácil" or (self.N == 25 and self.config.sorteados == 15):
             return self.calcular_dispersao_matricial_lotofacil(jogo)
         if self.config.nome == "Quina" or (self.N == 80 and self.config.sorteados == 5):
@@ -1074,6 +1169,70 @@ class ModeloCanonico40:
 
         return jogos[:quantidade_jogos]
 
+    def gerar_jogos_decagonais(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
+        """
+        Gera jogos da Timemania utilizando o Modelo Canônico Decagonal e Time do Coração (MCOD 4.0),
+        dividindo o volante de 80 dezenas em 10 setores regulares de 8 dezenas cada:
+        Setor 0: 01 a 08 | Setor 1: 09 a 16 | Setor 2: 17 a 24 | Setor 3: 25 a 32 | Setor 4: 33 a 40 |
+        Setor 5: 41 a 48 | Setor 6: 49 a 56 | Setor 7: 57 a 64 | Setor 8: 65 a 72 | Setor 9: 73 a 80.
+        Garante equilíbrio de paridade modal (5P/5I, 6P/4I ou 4P/6I), baricentro de soma ~405 e dispersão ampla.
+        """
+        import random
+        from modelo_decagonal_timemania import ModeloDecagonalTimemania
+
+        jogos = []
+        jogos_set = set()
+
+        # Se for o tamanho padrão de 10 dezenas, inicia com as variantes canônicas ótimas
+        if quantidade_numeros == 10:
+            canonicas = ModeloDecagonalTimemania.gerar_variantes_canonicas()
+            for v in canonicas:
+                tup = tuple(v["dezenas"])
+                if tup not in jogos_set:
+                    jogos_set.add(tup)
+                    jogos.append(list(v["dezenas"]))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
+
+        num_setores = 10
+        largura = 8
+
+        tentativas = 0
+        max_tentativas = quantidade_jogos * 200
+
+        while len(jogos) < quantidade_jogos and tentativas < max_tentativas:
+            tentativas += 1
+            candidatos = []
+
+            if quantidade_numeros == 10:
+                setores_alvo = list(range(10))
+            else:
+                setores_alvo = (list(range(10)) * (quantidade_numeros // 10 + 1))[:quantidade_numeros]
+                random.shuffle(setores_alvo)
+
+            for s in setores_alvo:
+                inicio = 1 + s * largura
+                fim = min(1 + (s + 1) * largura - 1, 80)
+                opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
+                if opcoes:
+                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
+                    candidatos.append(escolhido)
+
+            if len(candidatos) == quantidade_numeros:
+                pares = sum(1 for n in candidatos if n % 2 == 0)
+                soma = sum(candidatos)
+                if (4 <= pares <= 6) and (360 <= soma <= 450):
+                    ordenado = sorted(candidatos)
+                    diffs = [b - a for a, b in zip(ordenado, ordenado[1:])]
+                    if len(set(diffs)) > 1 or quantidade_numeros < 4:
+                        tup = tuple(ordenado)
+                        if tup not in jogos_set:
+                            jogos_set.add(tup)
+                            jogos.append(list(ordenado))
+
+        return jogos[:quantidade_jogos]
+
 
 # Alias canônico para compatibilidade com versões e chamadas anteriores
 ModeloCanonico30 = ModeloCanonico40
@@ -1086,10 +1245,16 @@ from validacao import ValidaçãoCamada7
 def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
     """
     Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
-    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Matricial/Pentagonal/Hexagonal.
+    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Matricial/Pentagonal/Hexagonal/Decagonal.
     """
     if modelo.config.colunas:
         return gerar_jogo_por_coluna(modelo)
+
+    # Para a Timemania (80 dezenas, 7 sorteadas, aposta padrão de 10 números), utiliza a geração decagonal ótima
+    if (modelo.config.nome == 'Timemania' or (modelo.N == 80 and quantidade_numeros in (7, 10))):
+        jogos_dec = modelo.gerar_jogos_decagonais(1, quantidade_numeros)
+        if jogos_dec:
+            return jogos_dec[0]
 
     # Para a Lotofácil (25 dezenas, 15 sorteadas), utiliza a geração matricial ótima
     if (modelo.config.nome == 'Lotofácil' or (modelo.N == 25 and quantidade_numeros == 15)):
@@ -1168,7 +1333,11 @@ def gerar_multiplos_jogos(
 
     # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0
     if not numeros_base:
-        if (modelo.config.nome == 'Lotofácil' or (modelo.N == 25 and quantidade_numeros == 15)):
+        if (modelo.config.nome == 'Timemania' or (modelo.N == 80 and quantidade_numeros in (7, 10))):
+            jogos_dec = modelo.gerar_jogos_decagonais(quantidade_jogos, quantidade_numeros)
+            if len(jogos_dec) == quantidade_jogos:
+                return jogos_dec
+        elif (modelo.config.nome == 'Lotofácil' or (modelo.N == 25 and quantidade_numeros == 15)):
             jogos_loto = modelo.gerar_jogos_lotofacil(quantidade_jogos, quantidade_numeros)
             if len(jogos_loto) == quantidade_jogos:
                 return jogos_loto

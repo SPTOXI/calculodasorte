@@ -1,22 +1,22 @@
 # Loteria Canônica - Sistema de Análise Estatística
 
-## Modelo Canônico 4.0 + MCOH + MCP-MD 1.0
-### AGENTE LLN ICT FR & OTIMIZAÇÃO HEXAGONAL
+## Modelo Canônico 4.0 (MCOD / MCOM / MCOH / MCOP) + MCP-MD 1.0
+### AGENTE LLN ICT FR & OTIMIZAÇÃO ESPACIAL POLIMÓRFICA
 
-Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 4.0 - MCSCE/MCOH** e sua extensão **MCP-MD 1.0**.
+Sistema web completo para análise estatística de loterias brasileiras baseado no **Modelo Canônico 4.0** especializado por topologia lotérica (MCOD para Timemania, MCOM para Lotofácil, MCOH para Mega-Sena, MCOP para Quina) e sua extensão **MCP-MD 1.0**.
 
 ---
 
 ## 📊 Loterias Suportadas
 
-- **Mega-Sena** (60 números, 6 sorteados)
-- **Quina** (80 números, 5 sorteados)
-- **Lotofácil** (25 números, 15 sorteados)
+- **Mega-Sena** (60 números, 6 sorteados — Modelo Hexagonal MCOH 4.0)
+- **Quina** (80 números, 5 sorteados — Modelo Pentagonal MCOP 4.0)
+- **Lotofácil** (25 números, 15 sorteados — Modelo Matricial 5x5 MCOM 4.0)
+- **Timemania** (80 números, 7 sorteados, 10 na aposta + Time do Coração — Modelo Decagonal MCOD 4.0)
 - **Lotomania** (100 números, 20 sorteados)
 - **+Milionária** (50 números + 6 trevos)
 - **Dia de Sorte** (31 números + mês)
 - **Super Sete** (7 colunas de 0-9)
-- **Timemania** (80 números + time)
 - **Dupla Sena** (50 números, 2 sorteios)
 
 ---
@@ -37,7 +37,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ## 📐 Arquitetura do Sistema
 
-### Núcleo Matemático (`core.py`, `modelo_hexagonal.py`)
+### Núcleo Matemático (`core.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
 
 #### Modelo Canônico 4.0 - 8 Camadas:
 
@@ -48,7 +48,7 @@ A aplicação estará disponível em: `http://localhost:5000`
 5. **Informacional** - Entropia, Complexidade, Compressibilidade
 6. **Não Linear** - Fractal, Multifractal, Caos
 7. **Validação** - Monte Carlo, Bayesiano, Backtest
-8. **Dispersão Espacial Hexagonal (MCOH)** - K-Medians em espaço modular cíclico $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE), Cobertura Hexagonal de 6 Setores e Proximidade $\le 1$
+8. **Dispersão e Cobertura Espacial Especializada** - MCOD (Decagonal - Timemania), MCOM (Matricial 5x5 e Quintetos - Lotofácil), MCOH (Hexagonal - Mega-Sena), MCOP (Pentagonal - Quina), K-Medians no anel cíclico modular $\mathbb{Z}_N$, Índice de Dispersão Espacial (IDE 4.0).
 
 #### MCP-MD 1.0 - Microdinâmica Condicionada:
 

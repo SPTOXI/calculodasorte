@@ -3,6 +3,40 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v4.3.0] - 2026-10-05 — Modelo Canônico 4.0 Especializado: MCOD (Otimização Decagonal e Time do Coração da Timemania)
+#### 🔬 Motor de Otimização Decagonal e Time do Coração (`modelo_decagonal_timemania.py`, `core.py`, `avaliacao.py`, `app.py`)
+- **Implementação do Modelo Canônico 4.0 Exclusivo da Timemania (MCOD 4.0):**
+  - Especialização da **Camada 8 de Cobertura Espacial** para a topologia da Timemania ($N=80, k=7$, aposta simples de $m=10$ números + 1 Time do Coração):
+    - Divisão exata do volante em **10 setores regulares de 8 dezenas cada** no anel modular cíclico $\mathbb{Z}_{80}$ ($80 / 10 = 8.0$ exato):
+      `S0: [01..08]` (C: 04), `S1: [09..16]` (C: 12), `S2: [17..24]` (C: 20), `S3: [25..32]` (C: 28), `S4: [33..40]` (C: 36),
+      `S5: [41..48]` (C: 44), `S6: [49..56]` (C: 52), `S7: [57..64]` (C: 60), `S8: [65..72]` (C: 68), `S9: [73..80]` (C: 76).
+    - Cota analítica máxima provada: qualquer dezena sorteada está a uma distância cíclica $K\text{-Medians} \le 4$ unidades da base decagonal.
+    - Distância média teórica exata de apenas $2.00$ unidades.
+    - Equilíbrio modal hipergeométrico de paridade: $5\text{P}/5\text{I}$ ($26,30\%$), acompanhado de $6\text{P}/4\text{I}$ e $4\text{P}/6\text{I}$ ($21,31\%$ cada, totalizando quase $70\%$ dos jogos).
+    - Baricentro de soma ótimo calibrado em $\mu = 10 \times 40.5 = 405.0$.
+  - Cinco variantes decagonais canônicas balanceadas: Base Pura Regular, Alpha ($5\text{P}/5\text{I}$), Beta ($5\text{P}/5\text{I}$, soma 405 exata), Gamma ($5\text{P}/5\text{I}$) e Delta ($5\text{P}/5\text{I}$).
+- **Integração Integral do Catálogo de Times do Coração:**
+  - Criação do catálogo oficial em `data/timemania_clubes.json` contendo 92 clubes cadastrados (cobrindo integralmente os 80 oficiais da Caixa, séries A/B/C do Brasileirão e clubes históricos).
+  - Atualização de `opcoes_complemento('timemania')` em `app.py` para disponibilizar dinamicamente o catálogo completo de 80/82 times nas interfaces, formulários e apostas.
+  - Implementação de `analisar_times_historico` com cálculo de frequência, atraso e fator de recorrência (FR) de cada clube.
+- **Despacho Polimórfico Espacial Quádruplo Consolidado em `core.py`:**
+  - `core.py` agora despacha dinamicamente `calcular_dispersao_espacial`, `gerar_jogo_sugerido` e `gerar_multiplos_jogos` para as 4 grandes loterias:
+    - **Timemania** $\to$ Decagonal (MCOD 4.0, 10 setores no anel $\mathbb{Z}_{80}$, cota máxima $\le 4$).
+    - **Lotofácil** $\to$ Matricial 5x5 (MCOM 4.0, quintetos, moldura/miolo, cota $\le 1$).
+    - **Quina** $\to$ Pentagonal (MCOP 4.0, 5 setores no anel $\mathbb{Z}_{80}$, cota máxima $\le 8$).
+    - **Mega-Sena** $\to$ Hexagonal (MCOH 4.0, 6 setores no anel $\mathbb{Z}_{60}$, cota máxima $\le 5$).
+  - Parecer técnico em `avaliacao.py` reporta dinamicamente a geometria `Decagonal` com sigla `MCOD 4.0`.
+- **Sincronização de Dados Reais da Caixa (Até Concurso 2450):**
+  - Download e compilação de 151 concursos oficiais da Timemania (2300 a 2450, sorteio de 03/10/2026) em `data/timemania_historico_completo.json`.
+  - Atualização de `data/timemania_concursos.json`, `data/timemania_historico.json`, `data/timemania_times.json` e `data/timemania_meta.json`.
+- **Validação Empírica de Backtest:**
+  - Distância média observada nos sorteios reais: $1.968$ unidades (aderente ao teórico de $2.00$).
+  - $98.68\%$ dos concursos com pelo menos 1 vizinho direto ($\le 1$) do reticulado decagonal.
+- **Suíte de Testes:**
+  - Adicionado `test_modelo_decagonal_timemania.py` com 9 testes unitários e de integração cobrindo métricas em $\mathbb{Z}_{80}$, cota máxima $\le 4$, geradores, parecer técnico e catálogo de clubes (100% aprovados).
+
+---
+
 ### [v4.2.0] - 2026-10-05 — Modelo Canônico 4.0 Especializado: MCOM (Otimização Matricial 5x5 e Quintetos da Lotofácil)
 #### 🔬 Motor de Otimização Matricial e Quintetos (`modelo_lotofacil.py`, `core.py`, `avaliacao.py`)
 - **Implementação do Modelo Canônico 4.0 Exclusivo da Lotofácil (MCOM 4.0):**

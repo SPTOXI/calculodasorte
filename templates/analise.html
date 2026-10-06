@@ -1216,10 +1216,10 @@ Exemplo para {{ config.nome }}:
                     html += `<div style="font-size: 0.88rem; margin-bottom: 10px;">⚖️ Pares/ímpares: <strong>${av.equilibrio.pares}/${av.equilibrio.impares}</strong> (média esperada: ${String(av.equilibrio.pares_esperado).replace('.', ',')} pares)</div>`;
                 }
 
-                const disp = av.dispersao_espacial || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
+                const disp = av.dispersao_espacial || av.dispersao_decagonal || av.dispersao_matricial || av.dispersao_pentagonal || av.dispersao_hexagonal;
                 if (disp && disp.disponivel) {
-                    const geom = disp.geometria || (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal');
-                    const sigla = geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH');
+                    const geom = disp.geometria || (disp.total_setores === 10 ? 'Decagonal' : (disp.total_setores === 5 ? (disp.moldura !== undefined ? 'Matricial' : 'Pentagonal') : 'Hexagonal'));
+                    const sigla = geom === 'Decagonal' ? 'MCOD' : (geom === 'Matricial' ? 'MCOM' : (geom === 'Pentagonal' ? 'MCOP' : 'MCOH'));
                     let extraInfo = '';
                     if (disp.moldura !== undefined && disp.miolo !== undefined) {
                         extraInfo = ` [Moldura: ${disp.moldura}/16, Miolo: ${disp.miolo}/9]`;

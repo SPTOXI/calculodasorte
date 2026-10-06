@@ -358,6 +358,7 @@ def avaliar_jogo(jogo: List[int], modelo: ModeloCanonico30) -> Dict:
         'equilibrio': equilibrio,
         'indicadores': indicadores_classicos(jogo, modelo),
         'dispersao_espacial': modelo.calcular_dispersao_espacial(jogo) if hasattr(modelo, 'calcular_dispersao_espacial') else None,
+        'dispersao_decagonal': modelo.calcular_dispersao_decagonal(jogo) if hasattr(modelo, 'calcular_dispersao_decagonal') else None,
         'dispersao_matricial': modelo.calcular_dispersao_matricial_lotofacil(jogo) if hasattr(modelo, 'calcular_dispersao_matricial_lotofacil') else None,
         'dispersao_pentagonal': modelo.calcular_dispersao_pentagonal(jogo) if hasattr(modelo, 'calcular_dispersao_pentagonal') else None,
         'dispersao_hexagonal': modelo.calcular_dispersao_hexagonal(jogo) if hasattr(modelo, 'calcular_dispersao_hexagonal') else None,
@@ -388,7 +389,7 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
         linhas.append(f"Fator de recorrência médio dos números escolhidos: {fr_medio:.2f} (1,00 = frequência teórica de sorteio).".replace('.', ',', 1))
         linhas.append("Classes canônicas dos números usados: " + ", ".join(f"{c}: {classes.get(c, 0)}" for c in "ABCD") + ".")
 
-        # Se houver avaliação espacial (Matricial para Lotofácil, Pentagonal para Quina, Hexagonal para Mega-Sena)
+        # Se houver avaliação espacial (Decagonal para Timemania, Matricial para Lotofácil, Pentagonal para Quina, Hexagonal para Mega-Sena)
         if len(jogos) == 1:
             disp = None
             if hasattr(modelo, 'calcular_dispersao_espacial'):
@@ -396,8 +397,10 @@ def parecer_jogos(jogos: List[List[int]], modelo: ModeloCanonico40) -> Dict:
             elif hasattr(modelo, 'calcular_dispersao_hexagonal'):
                 disp = modelo.calcular_dispersao_hexagonal(jogos[0])
             if disp and disp.get('disponivel'):
-                geom = disp.get('geometria', 'Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal'))
-                if geom == 'Matricial':
+                geom = disp.get('geometria', 'Decagonal' if config.nome == 'Timemania' else ('Matricial' if config.nome == 'Lotofácil' else ('Pentagonal' if config.nome == 'Quina' else 'Hexagonal')))
+                if geom == 'Decagonal':
+                    sigla = 'MCOD 4.0'
+                elif geom == 'Matricial':
                     sigla = 'MCOM 4.0'
                 elif geom == 'Pentagonal':
                     sigla = 'MCOP 4.0'

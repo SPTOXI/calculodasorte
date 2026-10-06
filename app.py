@@ -544,11 +544,24 @@ def carregar_historico(loteria_type: str) -> list:
 
 
 def opcoes_complemento(loteria_type: str) -> list:
-    """Times do Coração (Timemania) já vistos nos resultados, ou os 12 meses (Dia de Sorte)."""
+    """Times do Coração (Timemania) oficiais/cadastrados ou vistos nos resultados, ou os 12 meses (Dia de Sorte)."""
     if loteria_type == 'dia_de_sorte':
         return list(conferencia.MESES)
     if loteria_type == 'timemania':
         vistos = {}
+        # 1. Carregar catálogo oficial de clubes da Timemania (80/82 clubes)
+        caminho_clubes = os.path.join(DATA_DIR, 'timemania_clubes.json')
+        if os.path.exists(caminho_clubes):
+            try:
+                with open(caminho_clubes, 'r', encoding='utf-8') as f:
+                    clubes_oficiais = json.load(f)
+                    for c in clubes_oficiais:
+                        if c:
+                            nome = ' '.join(c.split()).replace(' /', '/')
+                            vistos[conferencia.normalizar_complemento(nome)] = nome
+            except Exception:
+                pass
+        # 2. Mesclar com histórico de times sorteados localmente
         for t in updater.carregar_times_local('timemania'):
             if t:
                 nome = ' '.join(t.split()).replace(' /', '/')
