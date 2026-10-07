@@ -1,33 +1,6 @@
 {
-  "trevosSorteados": null,
-  "acumulado": true,
+  "numero": 2984,
   "dataApuracao": "05/10/2026",
-  "dataProximoConcurso": "07/10/2026",
-  "dezenasSorteadasOrdemSorteio": [
-    "28",
-    "73",
-    "82",
-    "68",
-    "22",
-    "76",
-    "90",
-    "03",
-    "79",
-    "05",
-    "12",
-    "20",
-    "23",
-    "70",
-    "25",
-    "41",
-    "26",
-    "06",
-    "86",
-    "53"
-  ],
-  "exibirDetalhamentoPorCidade": false,
-  "id": null,
-  "indicadorConcursoEspecial": 1,
   "listaDezenas": [
     "03",
     "05",
@@ -51,70 +24,9 @@
     "90"
   ],
   "listaDezenasSegundoSorteio": null,
-  "listaMunicipioUFGanhadores": [],
-  "listaRateioPremio": [
-    {
-      "descricaoFaixa": "20 acertos",
-      "faixa": 1,
-      "numeroDeGanhadores": 0,
-      "valorPremio": 0
-    },
-    {
-      "descricaoFaixa": "19 acertos",
-      "faixa": 2,
-      "numeroDeGanhadores": 7,
-      "valorPremio": 41640.48
-    },
-    {
-      "descricaoFaixa": "18 acertos",
-      "faixa": 3,
-      "numeroDeGanhadores": 75,
-      "valorPremio": 2429.03
-    },
-    {
-      "descricaoFaixa": "17 acertos",
-      "faixa": 4,
-      "numeroDeGanhadores": 676,
-      "valorPremio": 269.49
-    },
-    {
-      "descricaoFaixa": "16 acertos",
-      "faixa": 5,
-      "numeroDeGanhadores": 3924,
-      "valorPremio": 46.42
-    },
-    {
-      "descricaoFaixa": "15 acertos",
-      "faixa": 6,
-      "numeroDeGanhadores": 17502,
-      "valorPremio": 10.4
-    },
-    {
-      "descricaoFaixa": "0 acertos",
-      "faixa": 7,
-      "numeroDeGanhadores": 0,
-      "valorPremio": 0
-    }
-  ],
-  "listaResultadoEquipeEsportiva": null,
-  "localSorteio": "ESPAÇO DA SORTE",
-  "nomeMunicipioUFSorteio": "SÃO PAULO, SP",
-  "nomeTimeCoracaoMesSorte": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
-  "numero": 2984,
-  "numeroConcursoAnterior": 2983,
-  "numeroConcursoFinal_0_5": 0,
-  "numeroConcursoProximo": 2985,
-  "numeroJogo": 16,
-  "observacao": "",
-  "premiacaoContingencia": null,
-  "tipoJogo": "LOTOMANIA",
-  "tipoPublicacao": 3,
-  "ultimoConcurso": true,
-  "valorArrecadado": 5943207,
-  "valorAcumuladoConcurso_0_5": 0,
-  "valorAcumuladoConcursoEspecial": 0,
-  "valorAcumuladoProximoConcurso": 8502016.37,
-  "valorEstimadoProximoConcurso": 9300000,
-  "valorSaldoReservaGarantidora": 0,
-  "valorTotalPremioFaixaUm": 0
+  "acumulado": true,
+  "valorEstimadoProximoConcurso": 9300000.0,
+  "dataProximoConcurso": "07/10/2026",
+  "listaTrevos": [],
+  "nomeTimeCoracaoMesSorte": null
 }

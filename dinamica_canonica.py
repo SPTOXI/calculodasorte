@@ -502,30 +502,31 @@ class AvaliadorDinamicaCanonica:
             media_ult = statistics.mean(dezenas_ult) if dezenas_ult else centro
             media_pen = statistics.mean(dezenas_pen) if dezenas_pen else centro
 
-            desvio_qtd = qtd_ult - qtd_esp
-            variacao_qtd = qtd_ult - qtd_pen
+            # Desvio posicional do centróide da linha em relação ao centro natural
+            desvio_pos = round(media_ult - centro, 1)
+            variacao_pos = round(media_ult - media_pen, 1)
 
-            if desvio_qtd > 0:
+            if desvio_pos > 0:
                 estado = "expansao"
                 icone = "↗"
                 rotulo = "Expansão"
                 expansao_count += 1
-                ajuste_qtd = -1
-                diag = f"Linha com {qtd_ult} dezenas sorteadas (acima de {qtd_esp}). Tendência de retração compensatória para 3 dezenas."
-            elif desvio_qtd < 0:
+                ajuste = -1
+                diag = f"Linha com centróide em {media_ult:.1f} (desvio de +{desvio_pos} acima do centro {centro:02d}, {qtd_ult} dezenas). Ajuste restaurador de {ajuste:+d} aproxima do atrator canônico."
+            elif desvio_pos < 0:
                 estado = "retracao"
                 icone = "↘"
                 rotulo = "Retração"
                 retracao_count += 1
-                ajuste_qtd = +1
-                diag = f"Linha com {qtd_ult} dezenas sorteadas (abaixo de {qtd_esp}). Tendência de expansão compensatória para 3 dezenas."
+                ajuste = +1
+                diag = f"Linha com centróide em {media_ult:.1f} (desvio de {desvio_pos} abaixo do centro {centro:02d}, {qtd_ult} dezenas). Ajuste restaurador de {ajuste:+d} aproxima do atrator canônico."
             else:
                 estado = "equilibrio"
                 icone = "🎯"
                 rotulo = "Equilíbrio"
                 equilibrio_count += 1
-                ajuste_qtd = 0
-                diag = f"Linha com exatamente {qtd_ult} dezenas sorteadas (perfeitamente alinhada com o baricentro)."
+                ajuste = 0
+                diag = f"Linha com centróide em {media_ult:.1f} exatamente sobre o centro canônico {centro:02d} ({qtd_ult} dezenas). Posição de convergência máxima preservada."
 
             # Seleciona dezenas ajustadas da linha em torno do centro
             candidatas_linha = list(range(c_min, c_max + 1))
@@ -541,12 +542,12 @@ class AvaliadorDinamicaCanonica:
                 centro_canonico=centro,
                 ultimo_sorteado=round(media_ult, 1),
                 penultimo_sorteado=round(media_pen, 1),
-                desvio_centro=round(media_ult - centro, 1),
-                variacao_recente=round(media_ult - media_pen, 1),
+                desvio_centro=desvio_pos,
+                variacao_recente=variacao_pos,
                 estado=estado,
                 estado_icone=icone,
                 estado_rotulo=rotulo,
-                ajuste_aplicado=ajuste_qtd,
+                ajuste_aplicado=ajuste,
                 valor_ajustado=centro,
                 diagnostico=diag
             ))
