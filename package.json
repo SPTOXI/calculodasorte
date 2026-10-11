@@ -1,0 +1,18 @@
+{
+  "name": "calculadora-da-sorte",
+  "version": "1.0.0",
+  "description": "Calculadora da Sorte - Ferramentas matemáticas e estatísticas para loterias da Caixa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "indexnow:submit": "node scripts/submit_indexnow.mjs",
+    "indexnow:dry-run": "node scripts/submit_indexnow.mjs --dry-run"
+  },
+  "keywords": [
+    "loterias",
+    "indexnow",
+    "seo"
+  ],
+  "author": "Silvio Morais",
+  "license": "UNLICENSED"
+}

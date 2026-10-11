@@ -35,6 +35,24 @@ A aplicação estará disponível em: `http://localhost:5000`
 
 ---
 
+## ⚡ IndexNow (SEO e Indexação Imediata)
+
+Para enviar instantaneamente todas as URLs dos sitemaps oficiais ao protocolo **IndexNow** (Bing, Yandex, Seznam, Naver):
+
+```bash
+# Via npm (Node.js nativo, sem necessidade de dependências externas)
+npm run indexnow:submit
+
+# Simulação sem envio (Dry run)
+npm run indexnow:dry-run
+
+# Ou via Python
+python scripts/submit_indexnow.py
+python scripts/submit_indexnow.py --dry-run
+```
+
+---
+
 ## 📐 Arquitetura do Sistema
 
 ### Núcleo Matemático (`core.py`, `dinamica_canonica.py`, `modelo_super_sete.py`, `modelo_dupla_sena.py`, `modelo_dia_de_sorte.py`, `modelo_mais_milionaria.py`, `modelo_lotomania.py`, `modelo_decagonal_timemania.py`, `modelo_lotofacil.py`, `modelo_pentagonal.py`, `modelo_hexagonal.py`)
