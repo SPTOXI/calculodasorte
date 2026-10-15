@@ -57,7 +57,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=20,
         custo_minimo=6.0,
-        dias_sorteio=["quarta", "sábado"],
+        dias_sorteio=["quarta", "domingo"],
         faixas_premiacao=[4, 5, 6]
     ),
     LoteriaType.QUINA: LoteriaConfig(
@@ -98,7 +98,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=12,
         custo_minimo=6.0,
-        dias_sorteio=["quarta", "sábado"],
+        dias_sorteio=["quarta", "domingo"],
         faixas_premiacao=list(range(1, 11))
     ),
     LoteriaType.DIA_DE_SORTE: LoteriaConfig(
