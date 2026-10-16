@@ -2,7 +2,7 @@
   "trevosSorteados": null,
   "acumulado": false,
   "dataApuracao": "13/10/2026",
-  "dataProximoConcurso": "15/10/2026",
+  "dataProximoConcurso": "16/10/2026",
   "dezenasSorteadasOrdemSorteio": [
     "22",
     "20",
@@ -109,7 +109,7 @@
   "valorAcumuladoConcurso_0_5": 778176.48,
   "valorAcumuladoConcursoEspecial": 10614661.38,
   "valorAcumuladoProximoConcurso": 0,
-  "valorEstimadoProximoConcurso": 5000000.0,
+  "valorEstimadoProximoConcurso": 2000000.0,
   "valorSaldoReservaGarantidora": 0,
   "valorTotalPremioFaixaUm": 0
 }

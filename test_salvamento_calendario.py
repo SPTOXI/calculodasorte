@@ -70,7 +70,7 @@ class TestCalendario(unittest.TestCase):
             LoteriaType.MAIS_MILIONARIA: {'quarta', 'domingo'},
             LoteriaType.DIA_DE_SORTE: {'terça', 'quarta', 'quinta', 'sexta', 'sábado'},
             LoteriaType.SUPER_SETE: {'quarta', 'sexta'},
-            LoteriaType.TIMEMANIA: {'terça', 'quinta', 'sábado'},
+            LoteriaType.TIMEMANIA: {'terça', 'quinta', 'domingo'},
             LoteriaType.DUPLA_SENA: {'quarta', 'sexta'},
         }
         for lt, dias in esperado.items():

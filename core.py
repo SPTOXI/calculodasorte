@@ -130,7 +130,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=10,
         maximo_aposta=10,
         custo_minimo=3.5,
-        dias_sorteio=["terça", "quinta", "sábado"],
+        dias_sorteio=["terça", "quinta", "domingo"],
         faixas_premiacao=[3, 4, 5, 6, 7]
     ),
     LoteriaType.DUPLA_SENA: LoteriaConfig(
