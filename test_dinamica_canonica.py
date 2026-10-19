@@ -164,6 +164,169 @@ class TestDinamicaCanonica(unittest.TestCase):
         self.assertIsNotNone(res.complemento)
         self.assertIn("time_ajustado", res.complemento)
 
+    def test_verificacao_ultimos_jogos_com_ultimo_resultado_9_loterias(self):
+        """Valida que a inteligência de verificação compara os últimos jogos com o último resultado em todas as 9 loterias."""
+        historicos_teste = {
+            "mega_sena": [
+                [4, 14, 24, 34, 44, 54],
+                [7, 17, 27, 37, 47, 57],
+                [5, 15, 25, 35, 45, 55],
+                [9, 12, 28, 33, 49, 52],
+            ],
+            "quina": [
+                [6, 22, 38, 54, 70],
+                [10, 26, 42, 58, 74],
+                [8, 24, 40, 56, 72],
+                [14, 19, 44, 51, 77],
+            ],
+            "lotofacil": [
+                [1, 2, 3, 6, 7, 8, 11, 12, 13, 16, 17, 18, 21, 22, 23],
+                [2, 3, 4, 7, 8, 9, 12, 13, 14, 17, 18, 19, 22, 23, 24],
+                [1, 3, 5, 6, 8, 10, 11, 13, 15, 16, 18, 20, 21, 23, 25],
+                [1, 2, 4, 5, 6, 9, 11, 12, 14, 15, 17, 19, 20, 22, 25],
+            ],
+            "timemania": [
+                [3, 11, 19, 27, 35, 43, 51],
+                [5, 13, 21, 29, 37, 45, 53],
+                [4, 12, 20, 28, 36, 44, 52],
+                [7, 14, 22, 31, 39, 48, 56],
+            ],
+            "lotomania": [
+                list(range(0, 40, 2)),
+                list(range(1, 41, 2)),
+                list(range(2, 62, 3)),
+                list(range(3, 63, 3)),
+            ],
+            "mais_milionaria": [
+                [3, 11, 19, 27, 35, 43],
+                [5, 13, 21, 29, 37, 45],
+                [4, 12, 20, 28, 36, 44],
+                [8, 15, 23, 31, 39, 47],
+            ],
+            "dia_de_sorte": [
+                [2, 6, 11, 15, 20, 24, 29],
+                [4, 8, 13, 17, 22, 26, 31],
+                [3, 7, 12, 16, 21, 25, 30],
+                [1, 9, 14, 18, 23, 27, 31],
+            ],
+            "dupla_sena": [
+                [3, 11, 19, 27, 35, 43],
+                [5, 13, 21, 29, 37, 45],
+                [4, 12, 20, 28, 36, 44],
+                [7, 15, 23, 31, 39, 48],
+            ],
+            "super_sete": [
+                [3, 4, 3, 4, 3, 4, 3],
+                [5, 6, 5, 6, 5, 6, 5],
+                [4, 5, 4, 5, 4, 5, 4],
+                [8, 2, 7, 1, 6, 3, 9],
+            ],
+        }
+
+        for loteria, hist in historicos_teste.items():
+            with self.subTest(loteria=loteria):
+                res = self.avaliador.avaliar_dinamica(loteria, hist, ultimo_concurso_id=100)
+                self.assertIsNotNone(res.verificacao_ultimos_jogos)
+                verif = res.verificacao_ultimos_jogos
+                self.assertTrue(verif.get("disponivel"))
+                self.assertIn("indice_assertividade", verif)
+                self.assertIn("fator_restaurador_medio", verif)
+                self.assertIn("movimento_numerais", verif)
+                self.assertIn("resumo_aprendizado", verif)
+                self.assertGreaterEqual(verif["indice_assertividade"], 0.0)
+                self.assertLessEqual(verif["indice_assertividade"], 100.0)
+                for casa in res.casas:
+                    self.assertGreater(casa.fator_restaurador, 0.0)
+                    self.assertTrue(len(casa.tendencia_numeral) > 0)
+
+    def test_lotofacil_e_lotomania_respondem_dinamicamente_ao_historico(self):
+        """Garante que Lotofácil e Lotomania alteram o jogo ajustado conforme expansão ou retração recente."""
+        hist_lf_baixo = [
+            [1, 2, 3, 6, 7, 8, 11, 12, 13, 16, 17, 18, 21, 22, 23],
+            [1, 2, 6, 7, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+        ]
+        hist_lf_alto = [
+            [3, 4, 5, 8, 9, 10, 13, 14, 15, 18, 19, 20, 23, 24, 25],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 19, 20, 25],
+        ]
+        res_lf_1 = self.avaliador.avaliar_dinamica("lotofacil", hist_lf_baixo)
+        res_lf_2 = self.avaliador.avaliar_dinamica("lotofacil", hist_lf_alto)
+        self.assertNotEqual(res_lf_1.jogo_ajustado, res_lf_2.jogo_ajustado)
+
+        hist_lm_1 = [list(range(0, 20)), list(range(0, 40, 2))]
+        hist_lm_2 = [list(range(80, 100)), list(range(9, 100, 5))]
+        res_lm_1 = self.avaliador.avaliar_dinamica("lotomania", hist_lm_1)
+        res_lm_2 = self.avaliador.avaliar_dinamica("lotomania", hist_lm_2)
+        self.assertNotEqual(res_lm_1.jogo_ajustado, res_lm_2.jogo_ajustado)
+
+
+class TestMetodosAnaliseTradicionaisECanonica(unittest.TestCase):
+    """Testa as 6 opções de análise e geração escolhidas pelo usuário."""
+
+    def test_todos_os_metodos_geram_jogos_validos_nas_loterias(self):
+        from core import ModeloCanonico40, LoteriaType
+        from metodos_analise import METODOS_ANALISE_DISPONIVEIS, sugerir_grupo_para_fechamento
+
+        historicos = {
+            LoteriaType.MEGA_SENA: [
+                [4, 14, 24, 34, 44, 54],
+                [7, 17, 27, 37, 47, 57],
+                [5, 15, 25, 35, 45, 55],
+                [9, 12, 28, 33, 49, 52],
+                [2, 11, 23, 36, 48, 59],
+            ],
+            LoteriaType.LOTOFACIL: [
+                [1, 2, 3, 6, 7, 8, 11, 12, 13, 16, 17, 18, 21, 22, 23],
+                [2, 3, 4, 7, 8, 9, 12, 13, 14, 17, 18, 19, 22, 23, 24],
+                [1, 3, 5, 6, 8, 10, 11, 13, 15, 16, 18, 20, 21, 23, 25],
+                [1, 2, 4, 5, 6, 9, 11, 12, 14, 15, 17, 19, 20, 22, 25],
+            ],
+            LoteriaType.SUPER_SETE: [
+                [3, 4, 3, 4, 3, 4, 3],
+                [5, 6, 5, 6, 5, 6, 5],
+                [4, 5, 4, 5, 4, 5, 4],
+                [8, 2, 7, 1, 6, 3, 9],
+            ],
+            LoteriaType.LOTOMANIA: [
+                list(range(0, 40, 2)),
+                list(range(1, 41, 2)),
+                list(range(2, 62, 3)),
+                list(range(3, 63, 3)),
+            ],
+        }
+
+        for loteria_enum, hist in historicos.items():
+            modelo = ModeloCanonico40(hist, loteria_enum)
+            opcoes = modelo.obter_opcoes_analise()
+            self.assertIn("catalogo_metodos", opcoes)
+            self.assertIn("canonica_dinamica", opcoes)
+            self.assertIn("frequencia_quentes", opcoes)
+            self.assertIn("atraso_frios", opcoes)
+            self.assertIn("equilibrio_classico", opcoes)
+            self.assertIn("fechamento", opcoes)
+            self.assertIn("hibrida_tradicional", opcoes)
+
+            k_min = modelo.config.minimo_aposta
+            for metodo in METODOS_ANALISE_DISPONIVEIS.keys():
+                with self.subTest(loteria=loteria_enum.value, metodo=metodo):
+                    jogos = modelo.gerar_multiplos_jogos(
+                        quantidade_jogos=3,
+                        quantidade_numeros=k_min,
+                        metodo=metodo,
+                    )
+                    self.assertEqual(len(jogos), 3)
+                    for j in jogos:
+                        self.assertEqual(len(j), k_min)
+                        if not modelo.config.colunas:
+                            self.assertEqual(len(set(j)), k_min)
+
+            if not modelo.config.colunas and loteria_enum != LoteriaType.LOTOMANIA:
+                grupo = sugerir_grupo_para_fechamento(modelo, k_min + 4, estrategia="hibrido")
+                self.assertEqual(len(grupo), k_min + 4)
+                self.assertEqual(len(set(grupo)), k_min + 4)
+
 
 if __name__ == '__main__':
     unittest.main()
+
+

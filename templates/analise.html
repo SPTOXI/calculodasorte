@@ -330,6 +330,56 @@ Exemplo para {{ config.nome }}:
             </div>
             {% endif %}
 
+            <!-- Seletor da Forma de Análise (Escolha do Usuário) -->
+            <div style="background: #FFFFFF; border: 2px solid rgba(0,70,173,0.22); border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(10,26,63,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                    <div>
+                        <strong style="color: #0A1A3F; font-size: 1.05rem;">🧠 1. Escolha Como Você Quer Montar Seus Jogos:</strong>
+                        <div style="color: #5B6B82; font-size: 0.86rem; margin-top: 2px;">
+                            Clique na opção que preferir. Abaixo explicamos de forma simples o que cada opção faz.
+                        </div>
+                    </div>
+                    <span id="badge-metodo-ativo" style="background: #0046AD; color: #FFFFFF; font-size: 0.78rem; font-weight: 800; padding: 4px 12px; border-radius: 16px;">
+                        🧭 Análise Canônica (Expansão e Retração)
+                    </span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;" id="grid-metodos-analise">
+                    <button type="button" class="metodo-analise-card active" data-metodo="canonica_dinamica" onclick="selecionarMetodoAnalise('canonica_dinamica')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #0046AD; background: rgba(0,70,173,0.08); cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">🧭 Análise Canônica</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Compara os últimos sorteios com o último resultado e equilibra números que subiram ou desceram demais.</div>
+                    </button>
+                    <button type="button" class="metodo-analise-card" data-metodo="fechamento" onclick="selecionarMetodoAnalise('fechamento')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #CBD5E1; background: #F8FAFC; cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">🔒 Fechamento Inteligente</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Cerca um grupo maior de números favoritos em jogos reduzidos para economizar nas apostas.</div>
+                    </button>
+                    <button type="button" class="metodo-analise-card" data-metodo="frequencia_quentes" onclick="selecionarMetodoAnalise('frequencia_quentes')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #CBD5E1; background: #F8FAFC; cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">🔥 Números Quentes</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Dá preferência às dezenas que estão saindo com mais frequência nos sorteios recentes.</div>
+                    </button>
+                    <button type="button" class="metodo-analise-card" data-metodo="atraso_frios" onclick="selecionarMetodoAnalise('atraso_frios')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #CBD5E1; background: #F8FAFC; cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">⏳ Atrasados & Ciclo</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Foca nos números que estão há mais tempo sem sair e nos que faltam fechar o ciclo atual.</div>
+                    </button>
+                    <button type="button" class="metodo-analise-card" data-metodo="equilibrio_classico" onclick="selecionarMetodoAnalise('equilibrio_classico')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #CBD5E1; background: #F8FAFC; cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">⚖️ Equilíbrio Tradicional</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Distribui pares e ímpares, espalha os números pelo volante e aproveita repetidas do último sorteio.</div>
+                    </button>
+                    <button type="button" class="metodo-analise-card" data-metodo="hibrida_tradicional" onclick="selecionarMetodoAnalise('hibrida_tradicional')" style="text-align: left; padding: 12px; border-radius: 10px; border: 2px solid #CBD5E1; background: #F8FAFC; cursor: pointer;">
+                        <div style="font-weight: 800; color: #0A1A3F; font-size: 0.92rem;">⚡ Análise Combinada</div>
+                        <div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">Mistura um pouco de tudo: números quentes, atrasados, repetidos do último jogo e equilíbrio.</div>
+                    </button>
+                </div>
+
+                <!-- Explicação Básica e Simples para o Usuário sobre a Opção Escolhida -->
+                <div id="explicacao-metodo-box" style="margin-top: 12px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 10px; padding: 12px 16px; font-size: 0.88rem; color: #0C4A6E;">
+                    <strong style="color: #0369A1;">💡 Como funciona esta opção (Análise Canônica):</strong>
+                    <span id="explicacao-metodo-texto">
+                        Observa como os números se comportaram nos últimos sorteios em comparação com o último resultado. Quando uma faixa de números sobe demais (expansão) ou desce demais (retração), busca o ponto de equilíbrio para o próximo jogo. <em>Ideal para quem quer palpites ajustados pelo movimento mais recente dos sorteios.</em>
+                    </span>
+                </div>
+            </div>
+
             <!-- Seletor dos 2 Modos -->
             <div class="modo-selector-grid">
                 <div class="modo-card active" id="modo-card-auto" onclick="alternarModoGeracao('automatico')">
@@ -337,7 +387,7 @@ Exemplo para {{ config.nome }}:
                         <span style="font-size: 1.5rem;">🔮</span>
                         <strong>Modo 1: Baseado nos Últimos Sorteios da Caixa</strong>
                     </div>
-                    <p>O gerador usa descritores do histórico oficial para organizar combinações. As métricas não aumentam a chance de uma combinação específica.</p>
+                    <p>O gerador aplica a forma de análise escolhida acima sobre o histórico oficial e o último resultado da Caixa.</p>
                 </div>
 
                 <div class="modo-card" id="modo-card-manual" onclick="alternarModoGeracao('manual_pool')">
@@ -345,7 +395,7 @@ Exemplo para {{ config.nome }}:
                         <span style="font-size: 1.5rem;">🎯</span>
                         <strong>Modo 2: A Partir dos Meus Números (Fechamento)</strong>
                     </div>
-                    <p>Você escolhe seu conjunto favorito de dezenas e o sistema gera as combinações selecionando exclusivamente dentro do seu grupo.</p>
+                    <p>Você escolhe seu conjunto favorito de dezenas (ou usa nossas sugestões inteligentes) e gera fechamentos com garantia.</p>
                 </div>
             </div>
 
@@ -355,11 +405,13 @@ Exemplo para {{ config.nome }}:
                     <div>
                         <strong style="color: #0A1A3F; font-size: 1.05rem;">🎯 Selecione seus Números Favoritos no Volante:</strong>
                         <div style="color: #5B6B82; font-size: 0.85rem; margin-top: 2px;">
-                            Clique nas dezenas abaixo ou digite no campo. O gerador combinará apenas os números que você marcar aqui.
+                            Clique nas dezenas abaixo, digite no campo ou preencha automaticamente com a estratégia que preferir.
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-badge" onclick="selecionarMaisFrequentes()">⭐ Sugerir Mais Frequentes</button>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn-badge" onclick="sugerirGrupoVolante('canonica_dinamica')" title="Sugere grupo pela expansão/retração canônica">🧭 Sugerir pela Canônica</button>
+                        <button type="button" class="btn-badge" onclick="selecionarMaisFrequentes()" title="Sugere as dezenas mais quentes">🔥 Sugerir Mais Quentes</button>
+                        <button type="button" class="btn-badge" onclick="sugerirGrupoVolante('atraso_frios')" title="Sugere dezenas atrasadas e do ciclo">⏳ Sugerir Atrasadas/Ciclo</button>
                         <button type="button" class="btn-badge" onclick="limparVolante()">🧹 Limpar Volante</button>
                     </div>
                 </div>
@@ -377,7 +429,7 @@ Exemplo para {{ config.nome }}:
                     <span style="color: #5B6B82;">(Mínimo necessário para gerar: <span id="volante-min-necessario">{{ config.minimo_aposta }}</span> dezenas)</span>
                 </div>
 
-                {% if loteria.value in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania'] %}
+                {% if loteria.value in ['mega_sena', 'quina', 'lotofacil', 'dupla_sena', 'dia_de_sorte', 'timemania', 'mais_milionaria'] %}
                 <div style="margin-top: 16px; background: linear-gradient(135deg, rgba(243,146,0,0.10), rgba(0,70,173,0.08)); border: 2px solid rgba(243,146,0,0.45); border-radius: 12px; padding: 16px;">
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <strong style="font-size: 1.05rem; color: #0A1A3F;">🔒 Fechamento com Garantia</strong>
@@ -598,6 +650,27 @@ Exemplo para {{ config.nome }}:
             <p id="analise-erro" role="alert" style="display: none; color: #b91c1c;"></p>
 
             <div id="analise-resultado" style="display: none;">
+                <!-- Seletor de Visualização de Análise na Aba de Estatísticas -->
+                <div style="background: #FFFFFF; border: 1px solid rgba(0,70,173,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <strong style="color: #0A1A3F; font-size: 0.96rem;">🔎 Escolha a Forma de Análise para Visualizar:</strong>
+                            <span style="color: #5B6B82; font-size: 0.84rem; margin-left: 6px;">Alterne entre as opções abaixo para entender o comportamento dos números</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="abas-visao-analise">
+                            <button type="button" class="btn-badge visao-analise-btn active" data-visao="todas" onclick="filtrarVisaoAnalise('todas')" style="background: #0046AD; color: #fff;">📊 Ver Todas</button>
+                            <button type="button" class="btn-badge visao-analise-btn" data-visao="canonica_dinamica" onclick="filtrarVisaoAnalise('canonica_dinamica')">🧭 Análise Canônica</button>
+                            <button type="button" class="btn-badge visao-analise-btn" data-visao="fechamento" onclick="filtrarVisaoAnalise('fechamento')">🔒 Fechamentos</button>
+                            <button type="button" class="btn-badge visao-analise-btn" data-visao="frequencia_quentes" onclick="filtrarVisaoAnalise('frequencia_quentes')">🔥 Números Quentes</button>
+                            <button type="button" class="btn-badge visao-analise-btn" data-visao="atraso_frios" onclick="filtrarVisaoAnalise('atraso_frios')">⏳ Atrasos & Ciclo</button>
+                            <button type="button" class="btn-badge visao-analise-btn" data-visao="equilibrio_classico" onclick="filtrarVisaoAnalise('equilibrio_classico')">⚖️ Equilíbrio Tradicional</button>
+                        </div>
+                    </div>
+                    <div id="explicacao-visao-analise" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #E2E8F0; font-size: 0.85rem; color: #475569;">
+                        💡 <strong>Visão Completa:</strong> Veja lado a lado o movimento recente das dezenas (Expansão e Retração), os números mais sorteados, os mais atrasados, o padrão de equilíbrio e sugestões prontas para jogar.
+                    </div>
+                </div>
+
                 <div class="resultado-section" style="margin-bottom: 20px;">
                     <h3>Como interpretar a análise</h3>
                     <p style="color: #5B6B82;">FR compara a frequência observada com a frequência teórica. As classes de ICT indicam estabilidade temporal relativa; elas não representam chance de acerto. Todas as combinações válidas de mesmo tamanho mantêm a mesma probabilidade em um sistema equiprovável.</p>
@@ -608,6 +681,7 @@ Exemplo para {{ config.nome }}:
                     <p style="margin-top: 10px;"><a href="/metodologia">Consultar fórmulas e limites da metodologia</a></p>
                 </div>
                 <div id="dinamica-canonica-box" style="margin-bottom: 24px;"></div>
+                <div id="opcoes-analise-tradicionais-box" style="margin-bottom: 24px;"></div>
                 <div id="indicadores-classicos-box" style="margin-bottom: 20px;"></div>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -1373,6 +1447,94 @@ Exemplo para {{ config.nome }}:
             sincronizarVolanteComSet();
         }
 
+        let metodoAnaliseSelecionado = 'canonica_dinamica';
+
+        const EXPLICACOES_BASICAS_METODOS = {
+            canonica_dinamica: {
+                badge: '🧭 Análise Canônica (Expansão e Retração)',
+                titulo: '💡 Como funciona esta opção (Análise Canônica):',
+                texto: 'Observa como os números se comportaram nos últimos sorteios em comparação com o último resultado. Quando uma faixa de números sobe demais (expansão) ou desce demais (retração), busca o ponto de equilíbrio para o próximo jogo. <em>Ideal para quem quer palpites ajustados pelo movimento mais recente dos sorteios.</em>'
+            },
+            fechamento: {
+                badge: '🔒 Fechamento Inteligente',
+                titulo: '💡 Como funciona esta opção (Fechamento Inteligente):',
+                texto: 'Você escolhe uma quantidade maior de números favoritos (ou usa nossa sugestão) e o sistema distribui esses números em vários jogos econômicos. Se os números sorteados caírem dentro do grupo escolhido, você garante premiações gastando bem menos. <em>Ideal para bolões ou para cercar mais números.</em>'
+            },
+            frequencia_quentes: {
+                badge: '🔥 Números Quentes (Mais Sorteados)',
+                titulo: '💡 Como funciona esta opção (Números Quentes):',
+                texto: 'Dá preferência às dezenas que estão saindo com mais frequência nos últimos sorteios e ao longo da história da loteria, aproveitando o momento dos números em evidência. <em>Ideal para quem gosta de jogar nos números que mais saem.</em>'
+            },
+            atraso_frios: {
+                badge: '⏳ Atrasados & Ciclo das Dezenas',
+                titulo: '💡 Como funciona esta opção (Atrasados & Ciclo):',
+                texto: 'Prioriza os números que estão há mais tempo sem sair e aqueles que faltam ser sorteados para fechar o ciclo (quando todos os números da loteria saem pelo menos uma vez). <em>Ideal para quem prefere apostar nos números atrasados que estão prestes a voltar.</em>'
+            },
+            equilibrio_classico: {
+                badge: '⚖️ Equilíbrio Tradicional',
+                titulo: '💡 Como funciona esta opção (Equilíbrio Tradicional):',
+                texto: 'Monta jogos bem distribuídos seguindo o padrão mais comum dos sorteios: equilíbrio entre pares e ímpares, números espalhados pelo volante e uma quantidade natural de dezenas repetidas do último concurso. <em>Ideal para quem quer jogos equilibrados e dentro do padrão mais comum.</em>'
+            },
+            hibrida_tradicional: {
+                badge: '⚡ Análise Combinada (Mista)',
+                titulo: '💡 Como funciona esta opção (Análise Combinada):',
+                texto: 'Reúne um pouco de cada estratégia no mesmo palpite: mistura números quentes do momento, dezenas atrasadas, números repetidos do último sorteio e o equilíbrio de faixas. <em>Ideal para quem quer uma aposta completa e variada sem precisar escolher um único estilo.</em>'
+            }
+        };
+
+        function selecionarMetodoAnalise(metodo) {
+            metodoAnaliseSelecionado = metodo;
+            document.querySelectorAll('.metodo-analise-card').forEach(btn => {
+                const ativo = btn.dataset.metodo === metodo;
+                btn.classList.toggle('active', ativo);
+                btn.style.border = ativo ? '2px solid #0046AD' : '2px solid #CBD5E1';
+                btn.style.background = ativo ? 'rgba(0,70,173,0.08)' : '#F8FAFC';
+            });
+
+            const info = EXPLICACOES_BASICAS_METODOS[metodo] || EXPLICACOES_BASICAS_METODOS.canonica_dinamica;
+            const badgeEl = document.getElementById('badge-metodo-ativo');
+            if (badgeEl) badgeEl.textContent = info.badge;
+            const boxExplicacao = document.getElementById('explicacao-metodo-box');
+            if (boxExplicacao) {
+                boxExplicacao.innerHTML = `<strong style="color: #0369A1;">${info.titulo}</strong> <span id="explicacao-metodo-texto">${info.texto}</span>`;
+            }
+
+            if (metodo === 'fechamento') {
+                const temSuporteFechamento = !CONFIG_LOTERIA.colunas && loteriaType !== 'lotomania';
+                if (temSuporteFechamento) {
+                    alternarModoGeracao('manual_pool');
+                    if (numerosBaseSelecionados.size === 0) {
+                        sugerirGrupoVolante('hibrido');
+                    }
+                }
+            }
+        }
+
+        async function sugerirGrupoVolante(estrategia = 'hibrido') {
+            const kJogo = parseInt(document.getElementById('dezenas-jogo')?.value) || CONFIG_LOTERIA.minimo_aposta;
+            const qtdPadrao = loteriaType === 'lotofacil' ? Math.max(kJogo + 3, 18) : Math.min(kJogo + 4, CONFIG_LOTERIA.universo);
+            try {
+                const res = await fetch(`/api/sugerir-grupo-fechamento/${loteriaType}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        tamanho_grupo: qtdPadrao,
+                        estrategia: estrategia
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && Array.isArray(data.numeros)) {
+                    numerosBaseSelecionados.clear();
+                    data.numeros.forEach(n => numerosBaseSelecionados.add(n));
+                    sincronizarVolanteComSet();
+                    return;
+                }
+            } catch (err) {
+                console.warn('Fallback local para sugestão de volante:', err);
+            }
+            selecionarMaisFrequentes();
+        }
+
         function selecionarMaisFrequentes() {
             numerosBaseSelecionados.clear();
             const qtd = Math.min(CONFIG_LOTERIA.minimo_aposta + 6, CONFIG_LOTERIA.universo);
@@ -1484,7 +1646,7 @@ Exemplo para {{ config.nome }}:
             }
             
             if (typeof showLoading === 'function') {
-                showLoading('Gerando combinações com o Modelo Canônico 4.0...');
+                showLoading('Gerando combinações com o método de análise escolhido...');
             }
 
             try {
@@ -1494,6 +1656,7 @@ Exemplo para {{ config.nome }}:
                     body: JSON.stringify({
                         quantidade_jogos: qtdJogos,
                         dezenas_por_jogo: dezenasPorJogo,
+                        metodo_analise: metodoAnaliseSelecionado,
                         trevos_por_jogo: document.getElementById('trevos-jogo') ? parseInt(document.getElementById('trevos-jogo').value) : undefined,
                         filtro_inteligente: document.getElementById('filtro-inteligente').checked,
                         numeros_base: numerosBasePayload.length > 0 ? numerosBasePayload : undefined
@@ -1534,18 +1697,21 @@ Exemplo para {{ config.nome }}:
             lista.innerHTML = '';
 
             const rotuloModo = data.modo === 'fechamento' ? ' [Fechamento com Garantia]'
-                : (data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Gerador Otimizado Oficial Caixa]');
+                : (data.metodo_rotulo ? ` [${data.metodo_rotulo}]`
+                : (data.modo === 'manual_pool' ? ' [A partir dos Seus Números Favoritos]' : ' [Gerador Otimizado Oficial Caixa]'));
 
             document.getElementById('jogos-titulo-resultado').textContent = 
                 `${data.quantidade_jogos} Palpites Gerados (${data.dezenas_por_jogo} dezenas cada)${rotuloModo}`;
 
             document.getElementById('jogos-metricas-resumo').textContent = 
-                'Combinações com distribuição estatística balanceada e fechamento combinatório.';
+                data.metodo_rotulo
+                    ? `Método aplicado: ${data.metodo_rotulo} · distribuição estatística balanceada.`
+                    : 'Combinações com distribuição estatística balanceada e fechamento combinatório.';
 
             if (data.filtro_inteligente) {
                 const aprovados = (data.jogos_aprovados || []).filter(Boolean).length;
                 document.getElementById('jogos-metricas-resumo').textContent =
-                    `🎯 Filtro Inteligente: ${aprovados} de ${data.jogos.length} jogos no perfil típico e sem padrões populares.`;
+                    `🎯 Filtro Inteligente (${data.metodo_rotulo || 'Otimizado'}): ${aprovados} de ${data.jogos.length} jogos no perfil típico e sem padrões populares.`;
             }
 
             if (data.complemento_tipo === 'time') {
@@ -1583,7 +1749,6 @@ Exemplo para {{ config.nome }}:
                         `<option value="${escaparHtml(o)}" ${o === (data.complementos || [])[idx] ? 'selected' : ''}>${escaparHtml(o)}</option>`).join('');
                     bolasHtml += `<label style="${estiloRotulo}">📅 Mês da Sorte: <select class="complemento-jogo" style="${estiloCampo}">${opcoes}</select></label>`;
                 } else if (data.complemento_tipo === 'time') {
-                    // Qualquer um dos 80 clubes pode ser digitado; os já sorteados aparecem como sugestão
                     const sugerido = (data.complementos || [])[idx] || '';
                     bolasHtml += `<label style="${estiloRotulo}">⚽ Time do Coração:
                         <input class="complemento-jogo" list="lista-times-coracao" value="${escaparHtml(sugerido)}" placeholder="Digite seu time (ex.: FLAMENGO/RJ)" maxlength="60" style="${estiloCampo} min-width: 200px;"></label>`;
@@ -1647,7 +1812,7 @@ Exemplo para {{ config.nome }}:
         }
 
         // ==========================================
-        // ANÁLISE CANÔNICA E TABELA
+        // ANÁLISE CANÔNICA E FORMAS TRADICIONAIS
         // ==========================================
 
         async function realizarAnalise() {
@@ -1660,7 +1825,7 @@ Exemplo para {{ config.nome }}:
                 const response = await fetch(`/api/analise/${loteriaType}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: '{}'
+                    body: JSON.stringify({ metodo_analise: metodoAnaliseSelecionado })
                 });
 
                 const result = await response.json();
@@ -1680,6 +1845,164 @@ Exemplo para {{ config.nome }}:
                 erro.style.display = 'block';
                 console.error("Erro na análise:", e);
             }
+        }
+
+        function filtrarVisaoAnalise(visao) {
+            document.querySelectorAll('.visao-analise-btn').forEach(btn => {
+                const ativo = btn.dataset.visao === visao;
+                btn.classList.toggle('active', ativo);
+                btn.style.background = ativo ? '#0046AD' : '';
+                btn.style.color = ativo ? '#FFFFFF' : '';
+            });
+
+            const expVisao = document.getElementById('explicacao-visao-analise');
+            if (expVisao) {
+                if (visao === 'todas') {
+                    expVisao.innerHTML = '💡 <strong>Visão Completa:</strong> Veja lado a lado o movimento recente das dezenas (Expansão e Retração), os números mais sorteados, os mais atrasados, o padrão de equilíbrio e sugestões prontas para jogar.';
+                } else {
+                    const info = EXPLICACOES_BASICAS_METODOS[visao];
+                    if (info) {
+                        expVisao.innerHTML = `<strong>${info.titulo}</strong> ${info.texto}`;
+                    }
+                }
+            }
+
+            const secCanonica = document.getElementById('dinamica-canonica-box');
+            const cardsSec = document.querySelectorAll('.card-opcao-analise-tradicional');
+
+            if (visao === 'todas') {
+                if (secCanonica) secCanonica.style.display = 'block';
+                cardsSec.forEach(el => el.style.display = 'block');
+            } else if (visao === 'canonica_dinamica') {
+                if (secCanonica) secCanonica.style.display = 'block';
+                cardsSec.forEach(el => el.style.display = 'none');
+            } else {
+                if (secCanonica) secCanonica.style.display = 'none';
+                cardsSec.forEach(el => {
+                    el.style.display = el.dataset.secao === visao ? 'block' : 'none';
+                });
+            }
+        }
+
+        function usarMetodoParaGerar(metodo) {
+            selecionarMetodoAnalise(metodo);
+            showTab('jogos');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function exibirOpcoesAnaliseTradicionais(opcoes) {
+            const box = document.getElementById('opcoes-analise-tradicionais-box');
+            if (!box) return;
+            if (!opcoes) {
+                box.innerHTML = '';
+                return;
+            }
+
+            const fmtNum = (n) => CONFIG_LOTERIA && CONFIG_LOTERIA.colunas ? String(n) : String(n).padStart(2, '0');
+            const fmtBolas = (arr, corBg = '#0046AD') => (arr || []).map(n =>
+                `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:999px;background:${corBg};color:#FFF;font-weight:800;font-size:0.82rem;margin:2px;">${fmtNum(n)}</span>`
+            ).join('');
+
+            const freq = opcoes.frequencia_quentes || {};
+            const atraso = opcoes.atraso_frios || {};
+            const ciclo = atraso.ciclo_dezenas || {};
+            const equil = opcoes.equilibrio_classico || {};
+            const fech = opcoes.fechamento || {};
+            const hib = opcoes.hibrida_tradicional || {};
+
+            let html = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px;">`;
+
+            // 1. Frequência Quentes
+            html += `
+                <div class="card-opcao-analise-tradicional" data-secao="frequencia_quentes" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-top: 4px solid #EA580C; border-radius: 12px; padding: 18px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                        <h3 style="margin:0;color:#0A1A3F;font-size:1.05rem;">🔥 Números Quentes (Mais Sorteados)</h3>
+                        <button type="button" class="btn-action" style="padding:5px 10px;font-size:0.78rem;background:#EA580C;" onclick="usarMetodoParaGerar('frequencia_quentes')">Gerar com este Método</button>
+                    </div>
+                    <p style="color:#5B6B82;font-size:0.84rem;margin:0 0 10px;">Mostra os números que estão saindo com mais frequência nos últimos ${freq.janela_curta || 10} sorteios e em toda a história da loteria.</p>
+                    <div style="margin-bottom:8px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#0A1A3F;margin-bottom:4px;">Mais Quentes nos Últimos ${freq.janela_curta || 10} Jogos:</div>
+                        <div>${fmtBolas((freq.top_quentes_curto_prazo || []).slice(0, 10).map(x => x.numero), '#EA580C')}</div>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#0A1A3F;margin-bottom:4px;">Mais Sorteadas na História Global:</div>
+                        <div>${fmtBolas((freq.top_quentes_global || []).slice(0, 10).map(x => x.numero), '#0046AD')}</div>
+                    </div>
+                    <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:8px 10px;font-size:0.82rem;">
+                        <strong>Sugestão Números Quentes:</strong> <span style="font-family:monospace;font-weight:700;color:#9A3412;">${(freq.jogo_sugerido || []).map(fmtNum).join(' - ')}</span>
+                    </div>
+                </div>
+            `;
+
+            // 2. Atrasos e Ciclo das Dezenas
+            html += `
+                <div class="card-opcao-analise-tradicional" data-secao="atraso_frios" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-top: 4px solid #2563EB; border-radius: 12px; padding: 18px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                        <h3 style="margin:0;color:#0A1A3F;font-size:1.05rem;">⏳ Atrasados & Ciclo das Dezenas</h3>
+                        <button type="button" class="btn-action" style="padding:5px 10px;font-size:0.78rem;background:#2563EB;" onclick="usarMetodoParaGerar('atraso_frios')">Gerar com este Método</button>
+                    </div>
+                    <p style="color:#5B6B82;font-size:0.84rem;margin:0 0 10px;">Mostra os números que estão há mais sorteios sem sair e quais faltam para completar o ciclo atual (quando todos os números saem ao menos uma vez).</p>
+                    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:0.82rem;">
+                        <div><strong>Ciclo #${ciclo.ciclos_completos ? ciclo.ciclos_completos + 1 : 1}</strong> · Concursos no ciclo atual: <strong>${ciclo.concursos_no_ciclo_atual || 0}</strong> (Média histórica: ${ciclo.media_concursos_por_ciclo || '-'} jogos)</div>
+                        <div style="margin-top:4px;">Faltam sair no ciclo (${ciclo.quantidade_faltantes || 0}): ${
+                            (ciclo.dezenas_faltantes_ciclo || []).length > 0
+                                ? fmtBolas((ciclo.dezenas_faltantes_ciclo || []).slice(0, 12), '#1D4ED8')
+                                : '<strong style="color:#15803D;">Ciclo recém-fechado!</strong>'
+                        }</div>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <div style="font-size:0.8rem;font-weight:700;color:#0A1A3F;margin-bottom:4px;">Top Dezenas Mais Atrasadas:</div>
+                        <div>${fmtBolas((atraso.top_atrasados || []).slice(0, 10).map(x => x.numero), '#334155')}</div>
+                    </div>
+                    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;font-size:0.82rem;">
+                        <strong>Sugestão Atraso + Ciclo:</strong> <span style="font-family:monospace;font-weight:700;color:#1E40AF;">${(atraso.jogo_sugerido || []).map(fmtNum).join(' - ')}</span>
+                    </div>
+                </div>
+            `;
+
+            // 3. Equilíbrio Clássico
+            const rep = equil.repetidas_ultimo_sorteio || {};
+            html += `
+                <div class="card-opcao-analise-tradicional" data-secao="equilibrio_classico" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-top: 4px solid #16A34A; border-radius: 12px; padding: 18px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                        <h3 style="margin:0;color:#0A1A3F;font-size:1.05rem;">⚖️ Equilíbrio Tradicional & Repetidas</h3>
+                        <button type="button" class="btn-action" style="padding:5px 10px;font-size:0.78rem;background:#16A34A;" onclick="usarMetodoParaGerar('equilibrio_classico')">Gerar com este Método</button>
+                    </div>
+                    <p style="color:#5B6B82;font-size:0.84rem;margin:0 0 10px;">Monta jogos bem distribuídos seguindo o padrão mais comum dos sorteios (equilíbrio entre pares e ímpares, soma típica e repetidas do último concurso).</p>
+                    <div style="font-size:0.83rem;color:#334155;margin-bottom:8px;">
+                        <div>🔁 <strong>Repetidas do Último Sorteio:</strong> Último teve <strong>${rep.ultimo_total || 0}</strong> repetidas · Média comum: <strong>${rep.media_historica || 0}</strong> · Faixa típica: <strong>${(rep.faixa_tipica || [0,0])[0]} a ${(rep.faixa_tipica || [0,0])[1]}</strong></div>
+                        ${(rep.dezenas_repetidas_no_ultimo || []).length > 0 ? `<div style="margin-top:4px;">Dezenas que repetiram no último resultado: ${fmtBolas(rep.dezenas_repetidas_no_ultimo, '#15803D')}</div>` : ''}
+                    </div>
+                    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:8px 10px;font-size:0.82rem;">
+                        <strong>Sugestão Equilíbrio Tradicional:</strong> <span style="font-family:monospace;font-weight:700;color:#166534;">${(equil.jogo_sugerido || []).map(fmtNum).join(' - ')}</span>
+                    </div>
+                </div>
+            `;
+
+            // 4. Fechamentos e Análise Combinada
+            const gruposSug = fech.grupos_sugeridos || {};
+            html += `
+                <div class="card-opcao-analise-tradicional" data-secao="fechamento" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-top: 4px solid #7C3AED; border-radius: 12px; padding: 18px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                        <h3 style="margin:0;color:#0A1A3F;font-size:1.05rem;">🔒 Fechamentos & Análise Combinada</h3>
+                        <button type="button" class="btn-action" style="padding:5px 10px;font-size:0.78rem;background:#7C3AED;" onclick="usarMetodoParaGerar('fechamento')">Abrir Fechamento</button>
+                    </div>
+                    <p style="color:#5B6B82;font-size:0.84rem;margin:0 0 10px;">Permite escolher um grupo maior de números favoritos e distribuí-los em combinações econômicas com garantia condicional de premiação.</p>
+                    ${fech.disponivel ? `
+                        <div style="font-size:0.82rem;margin-bottom:8px;">
+                            <strong>Grupo Base Recomendado (${(gruposSug.canonico_hibrido || []).length} dezenas):</strong>
+                            <div style="margin-top:4px;">${fmtBolas(gruposSug.canonico_hibrido || [], '#7C3AED')}</div>
+                        </div>
+                    ` : `<div style="font-size:0.82rem;color:#64748B;margin-bottom:8px;">Loteria de tamanho fixo ou posicional; utilize a Análise Combinada abaixo.</div>`}
+                    <div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:8px;padding:8px 10px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <div><strong>⚡ Sugestão Combinada (Quentes + Atrasados + Repetidas + Equilíbrio):</strong><br><span style="font-family:monospace;font-weight:700;color:#5B21B6;">${(hib.jogo_sugerido || []).map(fmtNum).join(' - ')}</span></div>
+                        <button type="button" class="btn-action" style="padding:4px 8px;font-size:0.75rem;background:#5B21B6;" onclick="usarMetodoParaGerar('hibrida_tradicional')">Usar Combinada</button>
+                    </div>
+                </div>
+            `;
+
+            html += `</div>`;
+            box.innerHTML = html;
         }
 
         function exibirIndicadoresClassicos(indicadores) {
@@ -1709,36 +2032,55 @@ Exemplo para {{ config.nome }}:
             }
 
             const res = dinamica.resumo_tendencia || {};
+            const verif = dinamica.verificacao_ultimos_jogos || {};
+            let verifHtml = '';
+            if (verif && verif.disponivel) {
+                verifHtml = `
+                <div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <div>
+                            <strong style="color:#0369A1;font-size:0.92rem;">✅ Verificação dos Últimos Jogos com o Último Resultado:</strong>
+                            <p style="margin:3px 0 0 0;font-size:0.84rem;color:#0C4A6E;">${verif.resumo_aprendizado || ''}</p>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <span style="background:#0284C7;color:#FFF;padding:4px 10px;border-radius:14px;font-size:0.8rem;font-weight:700;">Alinhamento Recente: ${verif.indice_assertividade || 0}%</span>
+                            <span style="background:#E0F2FE;color:#0369A1;padding:4px 10px;border-radius:14px;font-size:0.8rem;font-weight:700;">Acertos Diretos: ${verif.acertos_exatos_ultimo || 0} | Números Próximos: ${verif.acertos_proximos_ultimo || 0}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
             let html = `
             <div style="background: #FFFFFF; border: 2px solid #0046AD; border-radius: 14px; padding: 20px; box-shadow: 0 4px 16px rgba(0,70,173,0.08); margin-bottom: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid rgba(0,70,173,0.12); padding-bottom: 12px;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 1.6rem;">🔬</span>
-                            <h3 style="margin: 0; color: #0A1A3F; font-size: 1.25rem;">Dinâmica Canônica dos Últimos Sorteios: Expansão vs Retração por Casa</h3>
+                            <span style="font-size: 1.6rem;">🧭</span>
+                            <h3 style="margin: 0; color: #0A1A3F; font-size: 1.25rem;">Análise Canônica: Expansão e Retração dos Números</h3>
                         </div>
                         <p style="color: #5B6B82; font-size: 0.9rem; margin: 4px 0 0 0;">
-                            Avaliação em tempo real de cada setor canônico. Identifica se a casa expandiu (↗) ou retraiu (↘) e aplica a força restauradora do atrator para buscar a máxima aproximação métrica no próximo sorteio.
+                            Mostra de forma simples se cada faixa de números subiu (↗ Expansão), desceu (↘ Retração) ou ficou em equilíbrio (🎯) no último resultado em comparação com os sorteios anteriores.
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <span style="background: rgba(22,163,74,0.1); color: #16A34A; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">🎯 ${res.equilibrios || 0} no Centro</span>
-                        <span style="background: rgba(234,88,12,0.1); color: #EA580C; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↗ ${res.expansoes || 0} Expansões</span>
-                        <span style="background: rgba(37,99,235,0.1); color: #2563EB; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↘ ${res.retracoes || 0} Retrações</span>
+                        <span style="background: rgba(22,163,74,0.1); color: #16A34A; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">🎯 ${res.equilibrios || 0} em Equilíbrio</span>
+                        <span style="background: rgba(234,88,12,0.1); color: #EA580C; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↗ ${res.expansoes || 0} em Expansão</span>
+                        <span style="background: rgba(37,99,235,0.1); color: #2563EB; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">↘ ${res.retracoes || 0} em Retração</span>
                     </div>
                 </div>
+                ${verifHtml}
 
                 <div style="overflow-x: auto; margin-bottom: 16px;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                         <thead>
                             <tr style="background: #F8FAFC; text-align: left; color: #5B6B82; border-bottom: 2px solid #E2E8F0;">
-                                <th style="padding: 8px 10px;">Casa / Setor</th>
-                                <th style="padding: 8px 10px;">Centro Canônico</th>
-                                <th style="padding: 8px 10px;">Último Sorteado</th>
-                                <th style="padding: 8px 10px;">Tendência</th>
-                                <th style="padding: 8px 10px;">Ajuste de Aproximação</th>
-                                <th style="padding: 8px 10px;">Valor Projetado</th>
-                                <th style="padding: 8px 10px;">Diagnóstico Restaurador</th>
+                                <th style="padding: 8px 10px;">Faixa / Região</th>
+                                <th style="padding: 8px 10px;">Ponto de Equilíbrio</th>
+                                <th style="padding: 8px 10px;">Último Resultado</th>
+                                <th style="padding: 8px 10px;">Movimento</th>
+                                <th style="padding: 8px 10px;">Ajuste Sugerido</th>
+                                <th style="padding: 8px 10px;">Número Sugerido</th>
+                                <th style="padding: 8px 10px;">Explicação Simples</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1754,7 +2096,7 @@ Exemplo para {{ config.nome }}:
                     badgeStyle = "background: #DCFCE7; color: #15803D; font-weight: 700;";
                 }
 
-                const ajStr = c.ajuste_aplicado > 0 ? `+${c.ajuste_aplicado}` : (c.ajuste_aplicado < 0 ? `${c.ajuste_aplicado}` : '0 (Neutro)');
+                const ajStr = c.ajuste_aplicado > 0 ? `+${c.ajuste_aplicado}` : (c.ajuste_aplicado < 0 ? `${c.ajuste_aplicado}` : 'Mantido');
                 const ultFormatado = typeof c.ultimo_sorteado === 'number' ? (CONFIG_LOTERIA && CONFIG_LOTERIA.colunas ? c.ultimo_sorteado : String(Math.round(c.ultimo_sorteado)).padStart(2, '0')) : c.ultimo_sorteado;
                 const valAdjFormatado = CONFIG_LOTERIA && CONFIG_LOTERIA.colunas ? c.valor_ajustado : String(c.valor_ajustado).padStart(2, '0');
 
@@ -1778,12 +2120,12 @@ Exemplo para {{ config.nome }}:
 
                 <div style="background: linear-gradient(135deg, rgba(0,70,173,0.06), rgba(243,146,0,0.08)); border: 1px solid #0046AD; border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
                     <div>
-                        <strong style="color: #0A1A3F; font-size: 1.05rem;">🎯 Palpite Canônico Dinâmico Ajustado (MCO-DYN):</strong>
+                        <strong style="color: #0A1A3F; font-size: 1.05rem;">🎯 Palpite Sugerido pela Análise Canônica:</strong>
                         <div style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #0046AD; margin-top: 4px;">
                             ${dinamica.jogo_ajustado_formatado}
                         </div>
                         <div style="font-size: 0.8rem; color: #5B6B82; margin-top: 2px;">
-                            Combina a memória recente dos últimos sorteios com a restauração de expansões e retrações em cada setor.
+                            Sugestão pronta equilibrando as faixas que subiram ou desceram nos últimos resultados.
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -1819,6 +2161,7 @@ Exemplo para {{ config.nome }}:
         function exibirAnalise(result) {
             document.getElementById('analise-resultado').style.display = 'block';
             exibirDinamicaCanonica(result.dinamica_canonica);
+            exibirOpcoesAnaliseTradicionais(result.opcoes_analise);
             exibirIndicadoresClassicos(result.indicadores_classicos);
             const mcp = result.mcp_md || {};
             document.getElementById('analise-mcp').textContent = mcp.disponivel

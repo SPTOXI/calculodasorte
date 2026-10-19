@@ -734,9 +734,63 @@ class ModeloCanonico40:
                 }
                 for a in sorted(analises, key=lambda x: x.ict)
             ],
-            "dinamica_canonica": self.avaliar_dinamica_expansao_retracao()
+            "dinamica_canonica": self.avaliar_dinamica_expansao_retracao(),
+            "opcoes_analise": self.obter_opcoes_analise()
         }
         return self._memo['resumo']
+
+    def obter_opcoes_analise(self) -> Dict[str, Any]:
+        """Retorna o painel completo das formas de análise disponíveis (Canônica, Fechamentos e Tradicionais)."""
+        if 'opcoes_analise' not in self._memo:
+            from metodos_analise import construir_painel_opcoes_analise
+            self._memo['opcoes_analise'] = construir_painel_opcoes_analise(self)
+        return self._memo['opcoes_analise']
+
+    def _obter_multiplicadores_dinamicos(self) -> Dict[int, float]:
+        """Obtém os multiplicadores de expansão e retração calibrados nos últimos jogos vs último resultado."""
+        if 'pesos_dinamicos' not in self._memo:
+            from dinamica_canonica import AvaliadorDinamicaCanonica
+            lot_slug = self.loteria_type.value if hasattr(self.loteria_type, 'value') else str(self.loteria_type)
+            self._memo['pesos_dinamicos'] = AvaliadorDinamicaCanonica.calcular_pesos_dinamicos_numerais(
+                lot_slug, self.historico, list(self.numeros)
+            )
+        return self._memo['pesos_dinamicos']
+
+    def _peso_canonico_dinamico(self, numero: int) -> float:
+        """Combina o peso canônico multicamada (MCP + ICT + FR) com o ajuste dinâmico de expansão/retração."""
+        base = _peso_canonico(self.analisar_elemento(numero))
+        mult = self._obter_multiplicadores_dinamicos().get(numero, 1.0)
+        return max(0.05, base * mult)
+
+    def gerar_multiplos_jogos(
+        self,
+        quantidade_jogos: int = 5,
+        quantidade_numeros: Optional[int] = None,
+        numeros_base: Optional[List[int]] = None,
+        metodo: Optional[str] = None
+    ) -> List[List[int]]:
+        """Atalho de instância para gerar múltiplos jogos com o método escolhido."""
+        return gerar_multiplos_jogos(
+            self,
+            quantidade_jogos=quantidade_jogos,
+            quantidade_numeros=quantidade_numeros,
+            numeros_base=numeros_base,
+            metodo=metodo
+        )
+
+    def gerar_jogo_sugerido(
+        self,
+        estrategia: str = "equilibrada",
+        quantidade_numeros: Optional[int] = None,
+        metodo: Optional[str] = None
+    ) -> List[int]:
+        """Atalho de instância para gerar um jogo sugerido com a estratégia ou método escolhido."""
+        return gerar_jogo_sugerido(
+            self,
+            estrategia=estrategia,
+            quantidade_numeros=quantidade_numeros,
+            metodo=metodo
+        )
 
     def calcular_dispersao_hexagonal(self, jogo: List[int]) -> Dict:
         """
@@ -782,7 +836,7 @@ class ModeloCanonico40:
 
         setores_cobertos = sum(1 for c in setores if c > 0)
 
-        # 2. Proximidade métrica circular mínima para os centros dos 6 setores
+        # 2. Proximidade métrica circular mínima para os centros dos setores
         distancias_centros = []
         for num in jogo:
             d_min = min(
@@ -825,12 +879,21 @@ class ModeloCanonico40:
 
     def gerar_jogos_hexagonais(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
-        Gera jogos utilizando o reticulado hexagonal regular com perturbações harmônicas,
-        assegurando máxima cobertura espacial e respeito às restrições anti-compartilhamento de prêmio.
+        Gera jogos utilizando o reticulado hexagonal regular com perturbações harmônicas
+        e ajuste dinâmico de expansão/retração dos últimos jogos contra o último resultado.
         """
         import random
         jogos = []
         jogos_set = set()
+
+        if quantidade_numeros == 6 and self.historico:
+            jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+            if len(jogo_din) == 6 and len(set(jogo_din)) == 6:
+                tup_din = tuple(sorted(jogo_din))
+                jogos_set.add(tup_din)
+                jogos.append(list(tup_din))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
 
         num_setores = 6
         largura = self.N / num_setores
@@ -854,7 +917,7 @@ class ModeloCanonico40:
                 fim = min(fim, self.config.numero_final)
                 opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
                 if opcoes:
-                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    pesos = [self._peso_canonico_dinamico(n) for n in opcoes]
                     escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
                     candidatos.append(escolhido)
 
@@ -1248,11 +1311,20 @@ class ModeloCanonico40:
         Gera jogos da Quina utilizando o reticulado pentagonal regular com perturbações harmônicas,
         dividindo o volante de 80 dezenas em 5 setores de 16 dezenas cada:
         Setor 0: 01 a 16 | Setor 1: 17 a 32 | Setor 2: 33 a 48 | Setor 3: 49 a 64 | Setor 4: 65 a 80.
-        Garante equilíbrio de paridade (2P/3I ou 3P/2I) e dispersão espacial em todos os setores.
+        Garante equilíbrio de paridade (2P/3I ou 3P/2I), dispersão espacial e ajuste dinâmico de expansão/retração.
         """
         import random
         jogos = []
         jogos_set = set()
+
+        if quantidade_numeros == 5 and self.historico:
+            jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+            if len(jogo_din) == 5 and len(set(jogo_din)) == 5:
+                tup_din = tuple(sorted(jogo_din))
+                jogos_set.add(tup_din)
+                jogos.append(list(tup_din))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
 
         num_setores = 5
         largura = 16
@@ -1275,7 +1347,7 @@ class ModeloCanonico40:
                 fim = min(1 + (s + 1) * largura - 1, 80)
                 opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
                 if opcoes:
-                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    pesos = [self._peso_canonico_dinamico(n) for n in opcoes]
                     escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
                     candidatos.append(escolhido)
 
@@ -1296,7 +1368,7 @@ class ModeloCanonico40:
         """
         Gera jogos da Lotofácil utilizando o Modelo Canônico Matricial 5x5 e Quintetos (MCOM 4.0),
         balanceando Moldura (16) vs Miolo (9), distribuição uniforme por linhas e colunas (3 por linha/coluna),
-        paridade modal (8I/7P ou 7I/8P) e baricentro de soma (~195).
+        paridade modal (8I/7P ou 7I/8P), baricentro de soma (~195) e ajuste dinâmico de expansão/retração.
         """
         import random
         from modelo_lotofacil import ModeloMatricialLotofacil
@@ -1304,15 +1376,24 @@ class ModeloCanonico40:
         jogos = []
         jogos_set = set()
 
-        # Se for o tamanho padrão de 15 dezenas, inicia com as variantes canônicas ótimas
+        # Se for o tamanho padrão de 15 dezenas, prioriza o jogo ajustado dinamicamente pelos últimos resultados
         if quantidade_numeros == 15:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 15 and len(set(jogo_din)) == 15:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloMatricialLotofacil.gerar_variantes_canonicas()
             ultimo_sorteio = set(self.historico[-1]) if self.historico else set()
             canonicas_ordenadas = sorted(
                 canonicas,
                 key=lambda v: abs(len(set(v["dezenas"]) & ultimo_sorteio) - 9)
             )
-            for v in canonicas_ordenadas:
+            for v in canonicas_ordenadas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v["dezenas"])
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1334,8 +1415,8 @@ class ModeloCanonico40:
                 n_moldura = random.choice([10, 9, 10])
                 n_miolo = 15 - n_moldura
 
-                pesos_mold = [_peso_canonico(self.analisar_elemento(n)) for n in moldura_list]
-                pesos_miol = [_peso_canonico(self.analisar_elemento(n)) for n in miolo_list]
+                pesos_mold = [self._peso_canonico_dinamico(n) for n in moldura_list]
+                pesos_miol = [self._peso_canonico_dinamico(n) for n in miolo_list]
 
                 # Amostragem ponderada sem reposição
                 escolhidos_mold = set()
@@ -1351,7 +1432,7 @@ class ModeloCanonico40:
                 candidato = sorted(list(escolhidos_mold | escolhidos_miol))
             else:
                 universo = list(range(1, 26))
-                pesos = [_peso_canonico(self.analisar_elemento(n)) for n in universo]
+                pesos = [self._peso_canonico_dinamico(n) for n in universo]
                 escolhidos = set()
                 while len(escolhidos) < quantidade_numeros:
                     n = random.choices(universo, weights=pesos, k=1)[0]
@@ -1360,17 +1441,12 @@ class ModeloCanonico40:
 
             # Validação estrutural do candidato
             impares = sum(1 for n in candidato if n % 2 != 0)
-            pares = len(candidato) - impares
             soma = sum(candidato)
 
             linhas = [0] * 5
             for n in candidato:
                 linhas[(n - 1) // 5] += 1
 
-            # Restrições de qualidade:
-            # - Paridade no intervalo aceitável (8I/7P, 7I/8P, 9I/6P ou 6I/9P)
-            # - Soma no intervalo canônico (175 a 215)
-            # - Nenhuma linha vazia ou saturada (> 4 dezenas) quando k=15
             if (6 <= impares <= 9) and (175 <= soma <= 215):
                 if quantidade_numeros != 15 or (min(linhas) >= 2 and max(linhas) <= 4):
                     tup = tuple(candidato)
@@ -1383,10 +1459,8 @@ class ModeloCanonico40:
     def gerar_jogos_decagonais(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
         Gera jogos da Timemania utilizando o Modelo Canônico Decagonal e Time do Coração (MCOD 4.0),
-        dividindo o volante de 80 dezenas em 10 setores regulares de 8 dezenas cada:
-        Setor 0: 01 a 08 | Setor 1: 09 a 16 | Setor 2: 17 a 24 | Setor 3: 25 a 32 | Setor 4: 33 a 40 |
-        Setor 5: 41 a 48 | Setor 6: 49 a 56 | Setor 7: 57 a 64 | Setor 8: 65 a 72 | Setor 9: 73 a 80.
-        Garante equilíbrio de paridade modal (5P/5I, 6P/4I ou 4P/6I), baricentro de soma ~405 e dispersão ampla.
+        dividindo o volante de 80 dezenas em 10 setores regulares de 8 dezenas cada,
+        incorporando o ajuste dinâmico de expansão/retração dos últimos jogos contra o último resultado.
         """
         import random
         from modelo_decagonal_timemania import ModeloDecagonalTimemania
@@ -1394,10 +1468,18 @@ class ModeloCanonico40:
         jogos = []
         jogos_set = set()
 
-        # Se for o tamanho padrão de 10 dezenas, inicia com as variantes canônicas ótimas
         if quantidade_numeros == 10:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 10 and len(set(jogo_din)) == 10:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloDecagonalTimemania.gerar_variantes_canonicas()
-            for v in canonicas:
+            for v in canonicas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v["dezenas"])
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1426,7 +1508,7 @@ class ModeloCanonico40:
                 fim = min(1 + (s + 1) * largura - 1, 80)
                 opcoes = [n for n in range(inicio, fim + 1) if n not in candidatos]
                 if opcoes:
-                    pesos = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes]
+                    pesos = [self._peso_canonico_dinamico(n) for n in opcoes]
                     escolhido = random.choices(opcoes, weights=pesos, k=1)[0]
                     candidatos.append(escolhido)
 
@@ -1447,8 +1529,8 @@ class ModeloCanonico40:
     def gerar_jogos_lotomania(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
         Gera jogos da Lotomania utilizando o Modelo Canônico Centesimal e Matricial 10x10 (MCOC 4.0),
-        dividindo o volante de 100 dezenas em 4 quadrantes 5x5, distribuindo 5 por linha e coluna,
-        assegurando moldura (~18/36), miolo (~32/64) e paridade modal estocástica (25P/25I).
+        dividindo o volante de 100 dezenas em 10 linhas de 10 dezenas, distribuindo 5 por linha
+        e incorporando a inteligência dinâmica de expansão e retração sobre os últimos resultados.
         """
         import random
         from modelo_lotomania import ModeloCentesimalLotomania
@@ -1457,8 +1539,17 @@ class ModeloCanonico40:
         jogos_set = set()
 
         if quantidade_numeros == 50:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 50 and len(set(jogo_din)) == 50:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloCentesimalLotomania.gerar_variantes_canonicas()
-            for v in canonicas:
+            for v in canonicas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v["dezenas"])
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1466,7 +1557,7 @@ class ModeloCanonico40:
                 if len(jogos) >= quantidade_jogos:
                     return jogos[:quantidade_jogos]
 
-        # Gerador estocástico centesimal 10x10 ponderado por scores MCP
+        # Gerador estocástico centesimal 10x10 ponderado por scores MCP + expansão/retração dinâmica
         tentativas = 0
         max_tentativas = quantidade_jogos * 200
 
@@ -1476,7 +1567,7 @@ class ModeloCanonico40:
 
             for r in range(10):
                 opcoes_linha = [r * 10 + c for c in range(10)]
-                pesos_linha = [_peso_canonico(self.analisar_elemento(n)) for n in opcoes_linha]
+                pesos_linha = [self._peso_canonico_dinamico(n) for n in opcoes_linha]
                 escolhidos_linha = []
                 while len(escolhidos_linha) < 5:
                     n = random.choices(opcoes_linha, weights=pesos_linha, k=1)[0]
@@ -1499,8 +1590,8 @@ class ModeloCanonico40:
     def gerar_jogos_maismilionaria(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
         Gera jogos da +Milionária utilizando o Modelo Canônico Biparamétrico Hexa-Trevo (MCOMIL 4.0),
-        otimizando a dispersão nos 6 setores regulares do anel modular Z_50 com cota determinística <= 4
-        e paridade modal 3P/3I.
+        otimizando a dispersão nos 6 setores regulares do anel modular Z_50 com ajuste dinâmico
+        de expansão e retração sobre os últimos sorteios.
         """
         import random
         from modelo_mais_milionaria import ModeloHexaTrevoMaisMilionaria
@@ -1509,8 +1600,17 @@ class ModeloCanonico40:
         jogos_set = set()
 
         if quantidade_numeros == 6:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 6 and len(set(jogo_din)) == 6:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloHexaTrevoMaisMilionaria.gerar_variantes_canonicas()
-            for v in canonicas:
+            for v in canonicas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v["dezenas"])
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1518,7 +1618,7 @@ class ModeloCanonico40:
                 if len(jogos) >= quantidade_jogos:
                     return jogos[:quantidade_jogos]
 
-        # Gerador estocástico biparamétrico no anel Z_50 ponderado por scores MCP
+        # Gerador estocástico biparamétrico no anel Z_50 ponderado por scores MCP + expansão/retração
         tentativas = 0
         max_tentativas = quantidade_jogos * 200
 
@@ -1529,7 +1629,7 @@ class ModeloCanonico40:
             for s_idx in range(6):
                 s_info = ModeloHexaTrevoMaisMilionaria.SETORES[s_idx]
                 dezenas_setor = s_info["dezenas"]
-                pesos_setor = [_peso_canonico(self.analisar_elemento(n)) for n in dezenas_setor]
+                pesos_setor = [self._peso_canonico_dinamico(n) for n in dezenas_setor]
                 n = random.choices(dezenas_setor, weights=pesos_setor, k=1)[0]
                 candidatos.append(n)
 
@@ -1548,8 +1648,8 @@ class ModeloCanonico40:
     def gerar_jogos_diadesorte(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
         Gera jogos do Dia de Sorte utilizando o Modelo Canônico Heptagonal de Calendário (MCODS 4.0),
-        otimizando a dispersão nos 7 setores regulares do anel modular Z_31 com cota determinística <= 2
-        e paridade modal 3P/4I ou 4P/3I.
+        otimizando a dispersão nos 7 setores regulares do anel modular Z_31 com ajuste dinâmico
+        de expansão e retração sobre os últimos sorteios.
         """
         import random
         from modelo_dia_de_sorte import ModeloHeptagonalDiaDeSorte
@@ -1558,8 +1658,17 @@ class ModeloCanonico40:
         jogos_set = set()
 
         if quantidade_numeros == 7:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 7 and len(set(jogo_din)) == 7:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloHeptagonalDiaDeSorte.gerar_variantes_canonicas()
-            for v in canonicas:
+            for v in canonicas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v["dezenas"])
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1567,7 +1676,7 @@ class ModeloCanonico40:
                 if len(jogos) >= quantidade_jogos:
                     return jogos[:quantidade_jogos]
 
-        # Gerador estocástico heptagonal no anel Z_31 ponderado por scores MCP
+        # Gerador estocástico heptagonal no anel Z_31 ponderado por scores MCP + expansão/retração
         tentativas = 0
         max_tentativas = quantidade_jogos * 200
 
@@ -1578,7 +1687,7 @@ class ModeloCanonico40:
             for s_idx in range(7):
                 s_info = ModeloHeptagonalDiaDeSorte.SETORES[s_idx]
                 dezenas_setor = s_info["dezenas"]
-                pesos_setor = [_peso_canonico(self.analisar_elemento(n)) for n in dezenas_setor]
+                pesos_setor = [self._peso_canonico_dinamico(n) for n in dezenas_setor]
                 n = random.choices(dezenas_setor, weights=pesos_setor, k=1)[0]
                 candidatos.append(n)
 
@@ -1597,8 +1706,8 @@ class ModeloCanonico40:
     def gerar_jogos_duplasena(self, quantidade_jogos: int, quantidade_numeros: int) -> List[List[int]]:
         """
         Gera jogos da Dupla Sena utilizando o Modelo Canônico Hexagonal Bivariado (MCODSen 4.0),
-        otimizando a dispersão nos 6 setores regulares do anel modular Z_50 com cota determinística <= 4
-        e paridade modal 3P/3I com baricentro de soma ótimo ~153.
+        otimizando a dispersão nos 6 setores regulares do anel modular Z_50 com ajuste dinâmico
+        de expansão e retração sobre os últimos sorteios.
         """
         import random
         from modelo_dupla_sena import ModeloBivariadoDuplaSena
@@ -1607,8 +1716,17 @@ class ModeloCanonico40:
         jogos_set = set()
 
         if quantidade_numeros == 6:
+            if self.historico:
+                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+                if len(jogo_din) == 6 and len(set(jogo_din)) == 6:
+                    tup_din = tuple(sorted(jogo_din))
+                    jogos_set.add(tup_din)
+                    jogos.append(list(tup_din))
+                    if len(jogos) >= quantidade_jogos:
+                        return jogos[:quantidade_jogos]
+
             canonicas = ModeloBivariadoDuplaSena.gerar_variantes_canonicas()
-            for v in canonicas:
+            for v in canonicas[:min(2, quantidade_jogos - len(jogos))]:
                 tup = tuple(v.dezenas)
                 if tup not in jogos_set:
                     jogos_set.add(tup)
@@ -1616,7 +1734,7 @@ class ModeloCanonico40:
                 if len(jogos) >= quantidade_jogos:
                     return jogos[:quantidade_jogos]
 
-        # Gerador estocástico bivariado no anel Z_50 ponderado por scores MCP
+        # Gerador estocástico bivariado no anel Z_50 ponderado por scores MCP + expansão/retração
         tentativas = 0
         max_tentativas = quantidade_jogos * 200
 
@@ -1627,7 +1745,7 @@ class ModeloCanonico40:
             for s_idx in range(6):
                 s_info = ModeloBivariadoDuplaSena.SETORES[s_idx]
                 dezenas_setor = list(s_info.dezenas)
-                pesos_setor = [_peso_canonico(self.analisar_elemento(n)) for n in dezenas_setor]
+                pesos_setor = [self._peso_canonico_dinamico(n) for n in dezenas_setor]
                 n = random.choices(dezenas_setor, weights=pesos_setor, k=1)[0]
                 candidatos.append(n)
 
@@ -1645,18 +1763,37 @@ class ModeloCanonico40:
 
     def gerar_jogos_supersete(self, quantidade_jogos: int) -> List[List[int]]:
         """
-        Gera jogos do Super Sete utilizando o Modelo Canônico Heptacolunar Independente (MCOSS 4.0),
-        otimizando a dispersão vetorial em Z_10^7 com paridade modal 3P/4I ou 4P/3I,
-        baricentro de soma ~31,5 e alta diversidade de dígitos entre as 7 colunas.
+        Gera jogos do Super Sete utilizando o Modelo Canônico Heptacolunar Independente (MCOSS 4.0)
+        combinado ao ajuste dinâmico coluna a coluna de expansão/retração dos últimos sorteios.
         """
         from modelo_super_sete import ModeloHeptacolunarSuperSete
-        return ModeloHeptacolunarSuperSete.gerar_jogos(quantidade=quantidade_jogos)
+        jogos: List[List[int]] = []
+        vistos = set()
+
+        if self.historico:
+            jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
+            if len(jogo_din) == 7:
+                vistos.add(tuple(jogo_din))
+                jogos.append(list(jogo_din))
+                if len(jogos) >= quantidade_jogos:
+                    return jogos[:quantidade_jogos]
+
+        for j in ModeloHeptacolunarSuperSete.gerar_jogos(quantidade=quantidade_jogos):
+            tup = tuple(j)
+            if tup not in vistos:
+                vistos.add(tup)
+                jogos.append(list(j))
+            if len(jogos) >= quantidade_jogos:
+                return jogos[:quantidade_jogos]
+
+        return jogos[:quantidade_jogos]
 
     def avaliar_dinamica_expansao_retracao(self) -> Dict[str, Any]:
         """
-        Avalia os últimos sorteios oficiais pelo Modelo Canônico 4.0, identificando
-        se a tendência de cada casa/setor é de Expansão (↗), Retração (↘) ou Equilíbrio (🎯),
-        calculando o ajuste da força restauradora para buscar a máxima aproximação.
+        Avalia os últimos sorteios oficiais pelo Modelo Canônico 4.0, verificando
+        os últimos jogos contra o último resultado, identificando se a tendência de cada
+        casa/setor é de Expansão (↗), Retração (↘) ou Equilíbrio (🎯) e auto-calibrando
+        a força restauradora para máxima assertividade.
         """
         from dinamica_canonica import AvaliadorDinamicaCanonica
         lot_slug = self.loteria_type.value if hasattr(self.loteria_type, 'value') else str(self.loteria_type)
@@ -1686,6 +1823,12 @@ class ModeloCanonico40:
                     "ajuste_aplicado": c.ajuste_aplicado,
                     "valor_ajustado": c.valor_ajustado,
                     "diagnostico": c.diagnostico,
+                    "media_ultimos_jogos": c.media_ultimos_jogos,
+                    "fator_calibrado": c.fator_calibrado,
+                    "tendencia_numeral": c.tendencia_numeral,
+                    "acertos_recentes_casa": c.acertos_recentes_casa,
+                    "proximidade_ultimo_resultado": c.proximidade_ultimo_resultado,
+                    "dezenas_ajustadas_casa": c.dezenas_ajustadas_casa,
                 }
                 for c in res.casas
             ],
@@ -1693,6 +1836,7 @@ class ModeloCanonico40:
             "jogo_ajustado_formatado": res.jogo_ajustado_formatado,
             "resumo_tendencia": res.resumo_tendencia,
             "complemento": res.complemento,
+            "verificacao_ultimos_jogos": res.verificacao_ultimos_jogos,
         }
 
 
@@ -1713,11 +1857,22 @@ def gerar_jogo_dinamico_ajustado(modelo: ModeloCanonico40) -> List[int]:
     return din.get("jogo_ajustado", [])
 
 
-def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> List[int]:
+def gerar_jogo_sugerido(
+    modelo: ModeloCanonico40,
+    quantidade_numeros: int,
+    metodo: Optional[str] = None
+) -> List[int]:
     """
-    Gerar sugestão de jogo baseada no Modelo Canônico 4.0.
-    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial Matricial/Pentagonal/Hexagonal/Decagonal/Centesimal.
+    Gerar sugestão de jogo baseada no Modelo Canônico 4.0 ou na forma de análise escolhida pelo usuário.
+    Combina a análise estatística multicamada (score MCP, ICT, FR) com a Otimização Espacial
+    e o ajuste dinâmico de expansão/retração dos últimos jogos contra o último resultado.
     """
+    if metodo and metodo.lower() not in ("canonica", "canonica_dinamica", "padrao", "automatico"):
+        from metodos_analise import gerar_jogos_por_metodo
+        jogos_m = gerar_jogos_por_metodo(modelo, 1, quantidade_numeros, metodo=metodo)
+        if jogos_m:
+            return jogos_m[0]
+
     if modelo.config.colunas == 7 or modelo.config.nome == 'Super Sete' or getattr(modelo, 'loteria_type', None) == LoteriaType.SUPER_SETE:
         jogos_ss = modelo.gerar_jogos_supersete(1)
         if jogos_ss:
@@ -1776,58 +1931,58 @@ def gerar_jogo_sugerido(modelo: ModeloCanonico40, quantidade_numeros: int) -> Li
             return jogos_hex[0]
 
     analises = modelo.analisar_todos_elementos()
-    
-    # Estratégia balanceada:
-    # - 40% números com melhor score MCP (Classe A/B)
-    # - 30% números com menor ICT (mais estáveis)
-    # - 20% números com FR próximo de 1 (equilibrados)
-    # - 10% números aleatórios para diversificação
-    
+    mults_din = modelo._obter_multiplicadores_dinamicos()
+
     n_mcp = int(quantidade_numeros * 0.4)
     n_ict = int(quantidade_numeros * 0.3)
     n_fr = int(quantidade_numeros * 0.2)
-    n_aleatorio = quantidade_numeros - n_mcp - n_ict - n_fr
-    
+
     sugeridos = set()
-    
-    # Top por score MCP
-    por_mcp = sorted(analises, key=lambda x: x.score_mcp, reverse=True)
+
+    # Top por score MCP ponderado pela expansão/retração dinâmica
+    por_mcp = sorted(analises, key=lambda x: x.score_mcp * mults_din.get(x.numero, 1.0), reverse=True)
     for a in por_mcp[:n_mcp]:
         sugeridos.add(a.numero)
-    
+
     # Top por ICT (menor é melhor)
-    por_ict = sorted(analises, key=lambda x: x.ict)
+    por_ict = sorted(analises, key=lambda x: x.ict / max(0.2, mults_din.get(x.numero, 1.0)))
     for a in por_ict[:n_ict]:
         if len(sugeridos) < n_mcp + n_ict:
             sugeridos.add(a.numero)
-    
+
     # Top por FR próximo de 1
     por_fr = sorted(analises, key=lambda x: abs(x.fr - 1))
     for a in por_fr[:n_fr]:
         if len(sugeridos) < n_mcp + n_ict + n_fr:
             sugeridos.add(a.numero)
-    
-    # Aleatórios para completar
+
     import random
     while len(sugeridos) < quantidade_numeros:
         num = random.choice(modelo.numeros)
         sugeridos.add(num)
-    
+
     return sorted(list(sugeridos))[:quantidade_numeros]
 
 
 def gerar_multiplos_jogos(
-    modelo: ModeloCanonico40, 
-    quantidade_jogos: int, 
+    modelo: ModeloCanonico40,
+    quantidade_jogos: int,
     quantidade_numeros: int,
-    numeros_base: Optional[List[int]] = None
+    numeros_base: Optional[List[int]] = None,
+    metodo: Optional[str] = None
 ) -> List[List[int]]:
     """
-    Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 4.0.
-    Garante que não haja jogos duplicados e aplica otimização de dispersão espacial (Pentagonal para Quina, Hexagonal para Mega-Sena).
+    Gera N combinações distintas e balanceadas baseadas no Modelo Canônico 4.0 ou no método escolhido pelo usuário.
+    Garante que não haja jogos duplicados e aplica otimização de dispersão espacial e ajuste de expansão/retração.
     Se numeros_base for fornecido, restringe a geração ao subconjunto de números escolhido pelo usuário.
     """
     import random
+
+    if metodo and metodo.lower() not in ("canonica", "canonica_dinamica", "padrao", "automatico", "dinamico", "expansao_retracao"):
+        from metodos_analise import gerar_jogos_por_metodo
+        return gerar_jogos_por_metodo(
+            modelo, quantidade_jogos, quantidade_numeros, metodo=metodo, numeros_base=numeros_base
+        )
 
     if (modelo.config.colunas == 7 or modelo.config.nome == 'Super Sete' or getattr(modelo, 'loteria_type', None) == LoteriaType.SUPER_SETE) and not numeros_base:
         jogos_ss = modelo.gerar_jogos_supersete(quantidade_jogos)
@@ -1837,7 +1992,7 @@ def gerar_multiplos_jogos(
     if modelo.config.colunas:
         return _gerar_multiplos_por_coluna(modelo, quantidade_jogos, numeros_base)
 
-    # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0
+    # Se não houver pool restrito e for o tamanho padrão de sorteio, utiliza o gerador espacial 4.0 com expansão/retração
     if not numeros_base:
         if (modelo.config.nome == 'Dupla Sena' or getattr(modelo, 'loteria_type', None) == LoteriaType.DUPLA_SENA or (modelo.N == 50 and modelo.config.sorteios_por_concurso == 2)):
             jogos_dupla = modelo.gerar_jogos_duplasena(quantidade_jogos, quantidade_numeros)
@@ -1873,7 +2028,7 @@ def gerar_multiplos_jogos(
                 return jogos_hex
 
     analises = modelo.analisar_todos_elementos()
-    
+
     # Se o usuário definiu um pool de números base, valida e filtra
     if numeros_base and len(numeros_base) >= quantidade_numeros:
         universo_disponivel = sorted(list({n for n in numeros_base if n in modelo.contagens_total}))
@@ -1881,30 +2036,29 @@ def gerar_multiplos_jogos(
             universo_disponivel = list(modelo.numeros)
     else:
         universo_disponivel = list(modelo.numeros)
-    
-    # Calcular pesos estatísticos para cada número
-    pesos = {a.numero: _peso_canonico(a) for a in analises}
+
+    # Calcular pesos estatísticos combinados com expansão e retração dinâmica
+    pesos = {a.numero: modelo._peso_canonico_dinamico(a.numero) for a in analises}
 
     jogos_gerados = []
     jogos_set = set()
     tentativas = 0
     max_tentativas = quantidade_jogos * 150
 
-    # Candidatos disponíveis dentro do universo selecionado
     candidatos_analises = [a for a in analises if a.numero in universo_disponivel]
 
     while len(jogos_gerados) < quantidade_jogos and tentativas < max_tentativas:
         tentativas += 1
         jogo = set()
-        
+
         # 1. 40% dos números vindos dos melhores scores do grupo disponível
         if len(candidatos_analises) > quantidade_numeros:
             top_candidatos = sorted(candidatos_analises, key=lambda x: pesos[x.numero], reverse=True)[:max(quantidade_numeros * 2, 10)]
             qtd_top = min(len(top_candidatos), max(1, int(quantidade_numeros * 0.4)))
             amostra_top = random.sample([c.numero for c in top_candidatos], qtd_top)
             jogo.update(amostra_top)
-        
-        # 2. Completar com amostragem ponderada pelos pesos canônicos no universo disponível
+
+        # 2. Completar com amostragem ponderada pelos pesos canônicos dinâmicos no universo disponível
         while len(jogo) < quantidade_numeros:
             candidatos_restantes = [n for n in universo_disponivel if n not in jogo]
             if not candidatos_restantes:

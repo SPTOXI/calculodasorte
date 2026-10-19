@@ -1665,7 +1665,7 @@ def api_admin_importar_excluir(loteria_type: str):
 
 @app.route('/api/analise/<loteria_type>', methods=['POST'])
 def api_analise(loteria_type: str):
-    """API para realizar análise estatística completa"""
+    """API para realizar análise estatística completa (Canônica Dinâmica, Fechamentos e Tradicionais)"""
     try:
         loteria = LoteriaType(loteria_type)
     except ValueError:
@@ -1680,6 +1680,9 @@ def api_analise(loteria_type: str):
             'erro': 'Histórico insuficiente. Mínimo de 10 concursos necessários para a análise descritiva.'
         }), 400
 
+    dados_req = request.get_json(silent=True) or {}
+    metodo_escolhido = (dados_req.get('metodo_analise') or 'canonica_dinamica').strip().lower()
+
     resumo = dict(modelo.obter_resumo_analise())
 
     # Validações da Camada 7 (Monte Carlo etc.): também calculadas uma vez por concurso
@@ -1691,16 +1694,58 @@ def api_analise(loteria_type: str):
     config = LOTERIAS_CONFIG[loteria]
     dinamica = resumo.get('dinamica_canonica') or modelo.avaliar_dinamica_expansao_retracao()
     resumo['dinamica_canonica'] = dinamica
+    opcoes_analise = resumo.get('opcoes_analise') or modelo.obter_opcoes_analise()
+    resumo['opcoes_analise'] = opcoes_analise
+    resumo['metodo_analise_ativo'] = metodo_escolhido
+
     resumo['sugestoes'] = {
-        'jogo_simples': gerar_jogo_sugerido(modelo, config.minimo_aposta),
-        'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta)),
+        'jogo_simples': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo=metodo_escolhido),
+        'jogo_medio': gerar_jogo_sugerido(modelo, min(config.minimo_aposta + 2, config.maximo_aposta), metodo=metodo_escolhido),
         'jogo_dinamico_ajustado': dinamica.get('jogo_ajustado') if isinstance(dinamica, dict) else None,
+        'por_metodo': {
+            'canonica_dinamica': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo='canonica_dinamica'),
+            'frequencia_quentes': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo='frequencia_quentes'),
+            'atraso_frios': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo='atraso_frios'),
+            'equilibrio_classico': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo='equilibrio_classico'),
+            'hibrida_tradicional': gerar_jogo_sugerido(modelo, config.minimo_aposta, metodo='hibrida_tradicional'),
+        }
     }
     if config.colunas:
         resumo['analise_por_coluna'] = analise_por_coluna(modelo)
     resumo['indicadores_classicos'] = avaliacao.resumo_indicadores(modelo)
     
     return jsonify(resumo)
+
+
+@app.route('/api/sugerir-grupo-fechamento/<loteria_type>', methods=['POST'])
+def api_sugerir_grupo_fechamento(loteria_type: str):
+    """Sugere automaticamente um grupo de dezenas para Fechamento com base na análise escolhida pelo usuário"""
+    try:
+        loteria = LoteriaType(loteria_type)
+        config = LOTERIAS_CONFIG[loteria]
+    except ValueError:
+        return jsonify({'erro': 'Loteria inválida'}), 400
+
+    modelo = modelo_canonico(loteria_type)
+    if modelo is None:
+        return jsonify({'erro': 'Histórico insuficiente para sugerir grupo.'}), 400
+
+    dados = request.get_json(silent=True) or {}
+    estrategia = (dados.get('estrategia') or 'canonica_dinamica').strip().lower()
+    try:
+        tamanho = int(dados.get('tamanho_grupo', config.minimo_aposta + 3))
+    except (TypeError, ValueError):
+        tamanho = config.minimo_aposta + 3
+
+    from metodos_analise import sugerir_grupo_para_fechamento
+    grupo = sugerir_grupo_para_fechamento(modelo, tamanho, estrategia=estrategia)
+    return jsonify({
+        'sucesso': True,
+        'loteria': config.nome,
+        'estrategia': estrategia,
+        'tamanho_grupo': len(grupo),
+        'grupo': grupo
+    })
 
 
 @app.route('/api/dinamica-canonica/<loteria_type>', methods=['GET', 'POST'])
@@ -1994,13 +2039,13 @@ def api_sincronizar_publica(loteria_type: str):
 
 @app.route('/gerar-jogo/<loteria_type>', methods=['POST'])
 def gerar_jogo(loteria_type: str):
-    """Gerar sugestão de jogo baseado na análise"""
+    """Gerar sugestão de jogo baseado na análise escolhida pelo usuário"""
     try:
         loteria = LoteriaType(loteria_type)
     except ValueError:
         return jsonify({'erro': 'Loteria inválida'}), 400
     
-    dados = request.get_json() or {}
+    dados = request.get_json(silent=True) or {}
     config = LOTERIAS_CONFIG[loteria]
     try:
         quantidade = int(dados.get('quantidade', config.minimo_aposta))
@@ -2012,15 +2057,16 @@ def gerar_jogo(loteria_type: str):
     if modelo is None:
         return jsonify({'erro': 'Histórico insuficiente para análise'}), 400
 
-    modo = dados.get('modo')
+    modo = (dados.get('modo') or dados.get('metodo_analise') or 'canonica_dinamica').strip().lower()
     if modo in ('dinamico', 'dinamico_ajustado', 'expansao_retracao'):
         jogo = gerar_jogo_dinamico_ajustado(modelo)
     else:
-        jogo = gerar_jogo_sugerido(modelo, quantidade)
+        jogo = gerar_jogo_sugerido(modelo, quantidade, metodo=modo)
     
     return jsonify({
         'jogo': jogo,
         'quantidade': len(jogo),
+        'metodo_analise': modo,
         'analise_resumo': {
             'ict_medio': modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'],
             'entropia': modelo.obter_resumo_analise()['camada_informacional']['entropia']
@@ -2038,10 +2084,20 @@ def _acesso_bloqueado(user_id):
     return None
 
 
+ROTULOS_METODO_ANALISE = {
+    'canonica_dinamica': 'Fórmula Canônica 4.0 (Expansão e Retração)',
+    'fechamento': 'Fechamento Matemático com Garantia',
+    'frequencia_quentes': 'Tradicional: Frequência e Dezenas Quentes',
+    'atraso_frios': 'Tradicional: Atrasados e Ciclo das Dezenas',
+    'equilibrio_classico': 'Tradicional: Equilíbrio Clássico (Soma/Primos/Repetidas)',
+    'hibrida_tradicional': 'Análise Híbrida (Quentes + Atrasados + Canônica)',
+}
+
+
 @app.route('/api/gerar-multiplos-jogos/<loteria_type>', methods=['POST'])
 @login_required
 def api_gerar_multiplos_jogos(loteria_type: str):
-    """Gera múltiplos palpites estatísticos baseados no Modelo Canônico 4.0 com verificação de plano/créditos"""
+    """Gera múltiplos palpites estatísticos segundo a forma de análise escolhida pelo usuário"""
     try:
         loteria = LoteriaType(loteria_type)
         config = LOTERIAS_CONFIG[loteria]
@@ -2053,12 +2109,17 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     if bloqueio:
         return bloqueio
 
-    dados = request.get_json() or {}
+    dados = request.get_json(silent=True) or {}
     quantidade_jogos = int(dados.get('quantidade_jogos', 5))
     quantidade_jogos = max(1, min(100, quantidade_jogos))
 
     dezenas = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
     dezenas = max(config.minimo_aposta, min(config.maximo_aposta, dezenas))
+
+    metodo_analise = (dados.get('metodo_analise') or dados.get('metodo') or 'canonica_dinamica').strip().lower()
+    if metodo_analise not in ROTULOS_METODO_ANALISE:
+        metodo_analise = 'canonica_dinamica'
+    rotulo_metodo = ROTULOS_METODO_ANALISE[metodo_analise]
 
     numeros_base = dados.get('numeros_base', [])
     if numeros_base and len(numeros_base) < dezenas:
@@ -2071,33 +2132,34 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         return jsonify({'erro': 'Histórico insuficiente para cálculo estatístico'}), 400
 
     filtro_inteligente = dados.get('filtro_inteligente', True) is not False
-    if filtro_inteligente:
+    if filtro_inteligente and metodo_analise not in ('frequencia_quentes', 'atraso_frios', 'fechamento'):
         # Gera candidatos extras e prioriza os que passam no filtro; completa com os demais se faltar
-        candidatos = gerar_multiplos_jogos(modelo, min(quantidade_jogos * 6, 300), dezenas, numeros_base=numeros_base or None)
+        candidatos = gerar_multiplos_jogos(
+            modelo, min(quantidade_jogos * 6, 300), dezenas,
+            numeros_base=numeros_base or None, metodo=metodo_analise
+        )
         aprovados = [j for j in candidatos if avaliacao.jogo_aprovado(j, modelo)]
         restantes = [j for j in candidatos if j not in aprovados]
         jogos = (aprovados + restantes)[:quantidade_jogos]
     else:
-        jogos = gerar_multiplos_jogos(modelo, quantidade_jogos, dezenas, numeros_base=numeros_base or None)
+        jogos = gerar_multiplos_jogos(
+            modelo, quantidade_jogos, dezenas,
+            numeros_base=numeros_base or None, metodo=metodo_analise
+        )
     jogos_aprovados = [avaliacao.jogo_aprovado(j, modelo) for j in jogos]
 
-    # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 4.0,
-    # aplicado separadamente sobre o histórico de trevos. Um par por jogo, podendo repetir entre
-    # os jogos (o universo de apenas 6 números não permite pares exclusivos para dezenas de jogos).
+    # +Milionária: sorteia também os 2 "trevos" (universo 1-6) com o mesmo Modelo Canônico 4.0
     trevos = None
     if loteria == LoteriaType.MAIS_MILIONARIA:
-        # O volante aceita de 2 a 6 trevos por jogo
         qtd_trevos = max(2, min(6, int(dados.get('trevos_por_jogo', 2) or 2)))
         trevos_historico = [t for t in updater.carregar_trevos_local('mais_milionaria') if t and len(t) == 2]
         if len(trevos_historico) >= 10 and qtd_trevos < 6:
             modelo_trevo = ModeloCanonico40(trevos_historico, loteria, config_override=TREVO_CONFIG)
             trevos = [sorted(gerar_jogo_sugerido(modelo_trevo, qtd_trevos)) for _ in range(len(jogos))]
         else:
-            # Sem histórico de trevos (ou com os 6 marcados): todos têm a mesma chance
             trevos = [sorted(secrets.SystemRandom().sample(range(1, 7), qtd_trevos)) for _ in range(len(jogos))]
 
     # Timemania e Dia de Sorte: o volante exige escolher um Time do Coração / Mês da Sorte.
-    # Qualquer opção tem a mesma chance, então a sugestão é um sorteio uniforme.
     complementos = opcoes_complemento(loteria_type)
     if complementos:
         sorteador = secrets.SystemRandom()
@@ -2111,12 +2173,12 @@ def api_gerar_multiplos_jogos(loteria_type: str):
     # Todo jogo gerado vai direto para "Meus Jogos Salvos" e entra na conferência automática
     aposta_id = database.salvar_aposta(
         loteria_type=loteria_type,
-        modalidade='fechamento' if numeros_base else 'automatico',
+        modalidade='fechamento' if (numeros_base or metodo_analise == 'fechamento') else 'automatico',
         jogos=jogos,
         dezenas_por_jogo=dezenas,
         user_id=user_id,
-        titulo=(f'Jogos a partir dos seus {len(numeros_base)} números - {len(jogos)} jogo(s)' if numeros_base
-                else f'Geração Automática Canônica - {len(jogos)} jogo(s)'),
+        titulo=(f'Jogos ({rotulo_metodo}) a partir de {len(numeros_base)} números - {len(jogos)} jogo(s)' if numeros_base
+                else f'{rotulo_metodo} - {len(jogos)} jogo(s)'),
         concurso_alvo=conferencia.proximo_concurso(loteria_type),
         trevos=trevos,
         complementos=complementos,
@@ -2138,6 +2200,8 @@ def api_gerar_multiplos_jogos(loteria_type: str):
         'filtro_inteligente': filtro_inteligente,
         'jogos_aprovados': jogos_aprovados,
         'modo': 'manual_pool' if numeros_base else 'caixa_automatico',
+        'metodo_analise': metodo_analise,
+        'metodo_rotulo': rotulo_metodo,
         'metricas_gerais': {
             'ict_medio': round(modelo.obter_resumo_analise()['estatisticas_gerais']['ict_medio'], 4),
             'entropia': round(modelo.obter_resumo_analise()['camada_informacional']['entropia'], 4)
