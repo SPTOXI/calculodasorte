@@ -57,7 +57,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=20,
         custo_minimo=6.0,
-        dias_sorteio=["quarta", "domingo"],
+        dias_sorteio=["terça", "quinta", "sábado"],
         faixas_premiacao=[4, 5, 6]
     ),
     LoteriaType.QUINA: LoteriaConfig(
@@ -67,7 +67,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=5,
         maximo_aposta=15,
         custo_minimo=3.0,
-        dias_sorteio=["terça", "quarta", "quinta", "sexta", "sábado"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[2, 3, 4, 5]
     ),
     LoteriaType.LOTOFACIL: LoteriaConfig(
@@ -77,7 +77,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=15,
         maximo_aposta=20,
         custo_minimo=3.5,
-        dias_sorteio=["terça", "quarta", "quinta", "sexta", "sábado"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[11, 12, 13, 14, 15]
     ),
     LoteriaType.LOTOMANIA: LoteriaConfig(
@@ -87,7 +87,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=50,
         maximo_aposta=50,
         custo_minimo=3.0,
-        dias_sorteio=["quarta", "sexta"],
+        dias_sorteio=["segunda", "quarta", "sexta"],
         faixas_premiacao=[0, 15, 16, 17, 18, 19, 20],
         numero_inicial=0
     ),
@@ -98,7 +98,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=12,
         custo_minimo=6.0,
-        dias_sorteio=["quarta", "domingo"],
+        dias_sorteio=["quarta", "sábado"],
         faixas_premiacao=list(range(1, 11))
     ),
     LoteriaType.DIA_DE_SORTE: LoteriaConfig(
@@ -108,7 +108,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=7,
         maximo_aposta=15,
         custo_minimo=2.5,
-        dias_sorteio=["terça", "quarta", "quinta", "sexta", "sábado"],
+        dias_sorteio=["segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         faixas_premiacao=[4, 5, 6, 7]
     ),
     LoteriaType.SUPER_SETE: LoteriaConfig(
@@ -118,7 +118,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=7,
         maximo_aposta=7,
         custo_minimo=3.0,
-        dias_sorteio=["quarta", "sexta"],
+        dias_sorteio=["segunda", "quarta", "sexta"],
         faixas_premiacao=[3, 4, 5, 6, 7],
         numero_inicial=0,
         colunas=7
@@ -130,7 +130,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=10,
         maximo_aposta=10,
         custo_minimo=3.5,
-        dias_sorteio=["terça", "quinta", "domingo"],
+        dias_sorteio=["terça", "quinta", "sábado"],
         faixas_premiacao=[3, 4, 5, 6, 7]
     ),
     LoteriaType.DUPLA_SENA: LoteriaConfig(
@@ -140,7 +140,7 @@ LOTERIAS_CONFIG = {
         minimo_aposta=6,
         maximo_aposta=15,
         custo_minimo=3.0,
-        dias_sorteio=["quarta", "sexta"],
+        dias_sorteio=["segunda", "quarta", "sexta"],
         faixas_premiacao=[3, 4, 5, 6],
         sorteios_por_concurso=2
     )
