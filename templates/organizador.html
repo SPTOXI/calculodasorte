@@ -1,0 +1,90 @@
+{% extends 'dashboard_base.html' %}
+{% block title %}Painel do Organizador — Cálculo da Sorte{% endblock %}
+{% block head_extra %}{% include '_bolao_css.html' %}{% endblock %}
+{% block content %}
+<div class="bl-wrap">
+    <div class="bl-head">
+        <h1>🧑‍💼 Painel do Organizador</h1>
+        <p>Transforme um fechamento salvo em bolão. O custo oficial é calculado pela tabela da Caixa e a taxa de serviço é definida pela plataforma{% if cfg.taxa_tipo == 'percentual' %} ({{ cfg.taxa_valor|replace('.00', '') }}% sobre o custo dos jogos){% else %} (R$ {{ cfg.taxa_valor }} por bolão){% endif %}.</p>
+    </div>
+    {% if not cfg.ativo %}<div class="bl-aviso">O módulo de bolões está desativado para o público. Como administrador, você pode criar bolões de teste.</div>{% endif %}
+
+    <div class="bl-box">
+        <h2>➕ Novo bolão</h2>
+        {% if fechamentos %}
+        <div class="bl-form">
+            <div style="grid-column:1/-1;">
+                <label for="org-aposta">Jogos salvos (gere um fechamento na ferramenta e salve antes)</label>
+                <select id="org-aposta" onchange="previewBolao()">
+                    {% for a in fechamentos %}<option value="{{ a.id }}">{{ loterias.get(a.loteria_type, a.loteria_type) }} · {{ a.titulo }}</option>{% endfor %}
+                </select>
+            </div>
+            <div><label for="org-cotas">Total de cotas ({{ cfg.min_cotas }} a {{ cfg.max_cotas }})</label><input type="number" id="org-cotas" min="{{ cfg.min_cotas }}" max="{{ cfg.max_cotas }}" value="{{ [10, cfg.max_cotas]|min }}" oninput="previewBolao()"></div>
+            <div><label for="org-titulo">Título (opcional)</label><input type="text" id="org-titulo" maxlength="120" placeholder="Ex.: Bolão da Firma"></div>
+        </div>
+        <div id="org-preview" class="bl-meta"></div>
+        <button class="bl-btn" id="org-criar" onclick="criarBolao()" disabled>Criar bolão</button>
+        {% else %}
+        <p class="bl-meta">Você ainda não tem jogos salvos. Gere um fechamento numa das <a href="/dashboard" style="color:#0046AD;">ferramentas</a> e salve-o para criar um bolão.</p>
+        {% endif %}
+    </div>
+
+    <div class="bl-box">
+        <h2>📋 Meus bolões</h2>
+        <table class="bl-tabela">
+            <thead><tr><th>Bolão</th><th>Concurso</th><th>Cotas vendidas</th><th>Valor cota</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            {% for b in boloes %}
+            <tr>
+                <td data-label="Bolão"><a href="{{ url_for('pagina_bolao', bolao_id=b.id) }}" style="color:#0046AD;">{{ b.titulo }}</a></td>
+                <td data-label="Concurso">{{ loterias.get(b.loteria_type, b.loteria_type) }} {{ b.concurso }}</td>
+                <td data-label="Cotas vendidas">{{ b.cotas_vendidas }} / {{ b.total_cotas }}</td>
+                <td data-label="Valor cota">R$ {{ '%.2f'|format(b.valor_cota|float) }}</td>
+                <td data-label="Status">{{ b.status|capitalize }}</td>
+                <td data-label="">{% if b.status == 'aberto' %}<button class="bl-btn bl-btn-ghost" onclick="fecharBolao({{ b.id }})">Encerrar vendas</button>{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="bl-meta">Nenhum bolão criado ainda.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function dadosBolao() {
+    return { aposta_id: document.getElementById('org-aposta').value, total_cotas: document.getElementById('org-cotas').value,
+             titulo: document.getElementById('org-titulo').value };
+}
+let previewSeq = 0;
+async function previewBolao() {
+    const box = document.getElementById('org-preview'), btn = document.getElementById('org-criar');
+    if (!box) return;
+    const seq = ++previewSeq;
+    const res = await fetch('/api/boloes/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosBolao()) });
+    const d = await res.json();
+    if (seq !== previewSeq) return;
+    btn.disabled = !res.ok;
+    if (!res.ok) { box.innerHTML = `<div class="bl-aviso">${d.erro || 'Não foi possível calcular.'}</div>`; return; }
+    box.innerHTML = `<div class="bl-resumo">
+        <div><small>${d.loteria} · concurso</small><strong>${d.concurso}</strong></div>
+        <div><small>${d.quantidade_jogos} jogo(s) · custo Caixa</small><strong>${brl(d.custo_caixa)}</strong></div>
+        <div><small>Taxa de serviço</small><strong>${brl(d.taxa_servico)}</strong></div>
+        <div><small>Total do bolão</small><strong>${brl(d.custo_total)}</strong></div>
+        <div><small>Valor da cota</small><strong>${brl(d.valor_cota)}</strong></div></div>`;
+}
+async function criarBolao() {
+    const btn = document.getElementById('org-criar'); btn.disabled = true;
+    const res = await fetch('/api/boloes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosBolao()) });
+    const d = await res.json();
+    if (res.ok) { window.location.href = d.url; return; }
+    alert(d.erro || 'Erro ao criar bolão'); btn.disabled = false;
+}
+async function fecharBolao(id) {
+    if (!confirm('Encerrar as vendas deste bolão? Não será possível reabrir.')) return;
+    const res = await fetch(`/api/boloes/${id}/fechar`, { method: 'POST' });
+    if (res.ok) location.reload(); else alert((await res.json()).erro || 'Erro');
+}
+previewBolao();
+</script>
+{% endblock %}

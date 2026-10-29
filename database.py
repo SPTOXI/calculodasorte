@@ -304,6 +304,8 @@ def init_db():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bolao_cotas_status ON bolao_cotas (bolao_id, status)")
+        conn.execute("ALTER TABLE bolao_jogos ADD COLUMN IF NOT EXISTS complemento TEXT")
+        conn.execute("ALTER TABLE boloes ADD COLUMN IF NOT EXISTS aposta_origem_id INTEGER")
         conn.commit()
 
     seed_admin()
@@ -439,8 +441,8 @@ def update_user(
         values.append(generate_password_hash(password.strip()))
 
     if role is not None:
-        if role not in ('admin', 'user'):
-            raise ValueError("Perfil inválido (deve ser admin ou user)")
+        if role not in ('admin', 'user', 'organizador'):
+            raise ValueError("Perfil inválido (deve ser admin, organizador ou user)")
         fields.append("role = %s")
         values.append(role)
 
@@ -1397,4 +1399,77 @@ def update_bolao_status(bolao_id: int, status: str) -> bool:
         raise ValueError('Status inválido.')
     with get_db_connection() as conn:
         cur = conn.execute('UPDATE boloes SET status = %s WHERE id = %s', (status, bolao_id))
+        return cur.rowcount > 0
+
+
+_SELECT_BOLAO = """
+    SELECT b.*, u.name AS organizador_nome,
+           COUNT(c.id) FILTER (WHERE c.status IN ('paga', 'reservada')) AS cotas_vendidas,
+           COUNT(c.id) FILTER (WHERE c.status = 'paga') AS cotas_pagas,
+           COUNT(c.id) FILTER (WHERE c.status = 'disponivel') AS cotas_disponiveis
+    FROM boloes b
+    JOIN users u ON u.id = b.organizador_id
+    LEFT JOIN bolao_cotas c ON c.bolao_id = b.id
+"""
+
+
+def create_bolao(organizador_id: int, loteria_type: str, concurso: int, titulo: str,
+                 jogos: List[List[int]], custos: List, precos: Dict,
+                 complementos: Optional[List[Optional[str]]] = None,
+                 aposta_origem_id: Optional[int] = None) -> int:
+    """Cria bolão, jogos e as N cotas numa única transação."""
+    with get_db_connection() as conn:
+        bolao_id = conn.execute("""
+            INSERT INTO boloes (organizador_id, loteria_type, concurso, titulo, custo_caixa, taxa_tipo,
+                                taxa_valor, taxa_servico, total_cotas, valor_cota, aposta_origem_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+        """, (organizador_id, loteria_type, concurso, titulo, precos['custo_caixa'], precos['taxa_tipo'],
+              precos['taxa_valor'], precos['taxa_servico'], precos['total_cotas'], precos['valor_cota'],
+              aposta_origem_id)).fetchone()['id']
+        complementos = complementos or [None] * len(jogos)
+        for jogo, custo, comp in zip(jogos, custos, complementos):
+            conn.execute('INSERT INTO bolao_jogos (bolao_id, dezenas_json, custo, complemento) VALUES (%s, %s, %s, %s)',
+                         (bolao_id, json.dumps(jogo), custo, comp))
+        conn.execute("""
+            INSERT INTO bolao_cotas (bolao_id, numero)
+            SELECT %s, n FROM generate_series(1, %s) AS n
+        """, (bolao_id, precos['total_cotas']))
+    return bolao_id
+
+
+def get_bolao(bolao_id: int, com_jogos: bool = False) -> Optional[Dict]:
+    with get_db_connection() as conn:
+        row = conn.execute(_SELECT_BOLAO + ' WHERE b.id = %s GROUP BY b.id, u.name', (bolao_id,)).fetchone()
+        if not row:
+            return None
+        bolao = dict(row)
+        if com_jogos:
+            jogos = conn.execute('SELECT dezenas_json, custo, complemento FROM bolao_jogos WHERE bolao_id = %s ORDER BY id',
+                                 (bolao_id,)).fetchall()
+            bolao['jogos'] = [{'dezenas': json.loads(j['dezenas_json']), 'custo': j['custo'],
+                               'complemento': j['complemento']} for j in jogos]
+        return bolao
+
+
+def listar_boloes_abertos(limit: int = 100) -> List[Dict]:
+    with get_db_connection() as conn:
+        rows = conn.execute(_SELECT_BOLAO + """
+            WHERE b.status = 'aberto' GROUP BY b.id, u.name ORDER BY b.created_at DESC LIMIT %s
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def listar_boloes_organizador(organizador_id: int) -> List[Dict]:
+    with get_db_connection() as conn:
+        rows = conn.execute(_SELECT_BOLAO + """
+            WHERE b.organizador_id = %s GROUP BY b.id, u.name ORDER BY b.created_at DESC
+        """, (organizador_id,)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def fechar_vendas_bolao(bolao_id: int, organizador_id: int) -> bool:
+    """O organizador encerra as vendas de um bolão aberto que é dele."""
+    with get_db_connection() as conn:
+        cur = conn.execute("UPDATE boloes SET status = 'fechado' WHERE id = %s AND organizador_id = %s AND status = 'aberto'",
+                           (bolao_id, organizador_id))
         return cur.rowcount > 0

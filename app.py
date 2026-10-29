@@ -77,6 +77,8 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
+_NOMES_LOTERIAS = {t.value: c.nome for t, c in LOTERIAS_CONFIG.items()}
+
 # Inicializar Banco de Dados e Agendador de Loterias
 database.init_db()
 updater.iniciar_agendador()
@@ -1385,7 +1387,7 @@ def admin_dashboard():
         api_keys_config=ui_api_keys_config,
         boloes=database.get_all_boloes(),
         bolao_config=database.get_bolao_config(),
-        loterias_bolao={t.value: c.nome for t, c in LOTERIAS_CONFIG.items()},
+        loterias_bolao=_NOMES_LOTERIAS,
     )
 
 
@@ -2704,6 +2706,151 @@ def api_admin_bolao_status(bolao_id: int):
         return jsonify({'erro': str(e)}), 400
     if not ok:
         return jsonify({'erro': 'Bolão não encontrado'}), 404
+    return jsonify({'sucesso': True})
+
+
+# ==========================================
+# BOLÕES (ORGANIZADOR E VITRINE)
+# ==========================================
+
+def _usuario_logado():
+    return database.get_user_by_id(session['user_id']) if session.get('user_id') else None
+
+
+def _vitrine_visivel(cfg) -> bool:
+    user = _usuario_logado()
+    return cfg['ativo'] or bool(user and user.get('role') == 'admin')
+
+
+def _montar_bolao(user_id: int, dados: dict):
+    """Valida o fechamento salvo escolhido pelo organizador e calcula os preços com a taxa do admin."""
+    try:
+        aposta_id = int(dados.get('aposta_id'))
+        total_cotas = int(dados.get('total_cotas'))
+    except (TypeError, ValueError):
+        raise ValueError('Escolha um jogo salvo e informe o número de cotas.')
+    aposta = database.obter_aposta(aposta_id)
+    if not aposta or aposta.get('user_id') != user_id:
+        raise LookupError('Jogo salvo não encontrado.')
+    loteria_type = aposta['loteria_type']
+    if loteria_type not in bolao.LOTERIAS_SUPORTADAS:
+        raise ValueError('Esta loteria ainda não está disponível para bolões.')
+    config = LOTERIAS_CONFIG[LoteriaType(loteria_type)]
+    jogos = bolao.validar_jogos(config, aposta['jogos'])
+
+    proximo = conferencia.proximo_concurso(loteria_type)
+    concurso = aposta.get('concurso_alvo') or proximo
+    if not concurso:
+        raise ValueError('Não foi possível identificar o próximo concurso desta loteria.')
+    if proximo and concurso < proximo:
+        raise ValueError(f'O concurso {concurso} já foi sorteado. Gere um novo fechamento para o concurso {proximo}.')
+
+    precos = bolao.calcular_precos(config, jogos, total_cotas, database.get_bolao_config())
+    return aposta, config, jogos, concurso, precos
+
+
+def _organizador_ou_erro():
+    user = _usuario_logado()
+    if not bolao.pode_organizar(user, database.get_bolao_config()):
+        return None, (jsonify({'erro': 'Seu perfil não pode organizar bolões. Fale com o administrador.'}), 403)
+    return user, None
+
+
+@app.route('/boloes')
+def pagina_boloes():
+    """Vitrine pública de bolões abertos"""
+    cfg = database.get_bolao_config()
+    if not _vitrine_visivel(cfg):
+        return redirect(url_for('index'))
+    return render_template('boloes.html', boloes=database.listar_boloes_abertos(),
+                           loterias=_NOMES_LOTERIAS, modulo_ativo=cfg['ativo'], current_user=_usuario_logado())
+
+
+@app.route('/boloes/<int:bolao_id>')
+def pagina_bolao(bolao_id: int):
+    cfg = database.get_bolao_config()
+    if not _vitrine_visivel(cfg):
+        return redirect(url_for('index'))
+    b = database.get_bolao(bolao_id, com_jogos=True)
+    if not b:
+        return redirect(url_for('pagina_boloes'))
+    return render_template('bolao_detalhe.html', b=b, loterias=_NOMES_LOTERIAS, cfg=cfg, current_user=_usuario_logado())
+
+
+@app.route('/organizador')
+@login_required
+def pagina_organizador():
+    user = _usuario_logado()
+    cfg = database.get_bolao_config()
+    if not bolao.pode_organizar(user, cfg):
+        return redirect(url_for('dashboard'))
+    fechamentos = [a for a in database.listar_apostas(user_id=user['id'], session_id=session.get('session_id'), limit=100)
+                   if a.get('user_id') == user['id'] and a['loteria_type'] in bolao.LOTERIAS_SUPORTADAS]
+    return render_template('organizador.html', user=user, current_user=user, cfg=cfg, fechamentos=fechamentos,
+                           boloes=database.listar_boloes_organizador(user['id']), loterias=_NOMES_LOTERIAS)
+
+
+@app.route('/api/boloes', methods=['GET'])
+def api_listar_boloes():
+    cfg = database.get_bolao_config()
+    if not _vitrine_visivel(cfg):
+        return jsonify({'erro': 'Bolões indisponíveis no momento.'}), 404
+    return jsonify({'sucesso': True, 'boloes': database.listar_boloes_abertos()})
+
+
+@app.route('/api/boloes/preview', methods=['POST'])
+@login_required
+def api_preview_bolao():
+    """Mostra ao organizador o custo e o valor da cota antes de criar o bolão"""
+    user, erro = _organizador_ou_erro()
+    if erro:
+        return erro
+    try:
+        aposta, config, jogos, concurso, precos = _montar_bolao(user['id'], request.get_json(silent=True) or {})
+    except LookupError as e:
+        return jsonify({'erro': str(e)}), 404
+    except ValueError as e:
+        return jsonify({'erro': str(e)}), 400
+    return jsonify({'sucesso': True, 'loteria': config.nome, 'concurso': concurso,
+                    'quantidade_jogos': len(jogos), **bolao.precos_para_json(precos)})
+
+
+@app.route('/api/boloes', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, window_seconds=60)
+def api_criar_bolao():
+    """Cria um bolão a partir de um fechamento salvo; preços sempre recalculados no servidor"""
+    user, erro = _organizador_ou_erro()
+    if erro:
+        return erro
+    dados = request.get_json(silent=True) or {}
+    try:
+        aposta, config, jogos, concurso, precos = _montar_bolao(user['id'], dados)
+    except LookupError as e:
+        return jsonify({'erro': str(e)}), 404
+    except ValueError as e:
+        return jsonify({'erro': str(e)}), 400
+
+    titulo = str(dados.get('titulo') or '').strip()[:120] or f'Bolão {config.nome} - Concurso {concurso}'
+    complementos = aposta.get('complementos') if isinstance(aposta.get('complementos'), list) else None
+    bolao_id = database.create_bolao(
+        organizador_id=user['id'], loteria_type=aposta['loteria_type'], concurso=concurso, titulo=titulo,
+        jogos=jogos, custos=[bolao.custo_jogo(config, len(j)) for j in jogos], precos=precos,
+        complementos=complementos if complementos and len(complementos) == len(jogos) else None,
+        aposta_origem_id=aposta['id'],
+    )
+    return jsonify({'sucesso': True, 'bolao_id': bolao_id, 'url': url_for('pagina_bolao', bolao_id=bolao_id),
+                    **bolao.precos_para_json(precos)}), 201
+
+
+@app.route('/api/boloes/<int:bolao_id>/fechar', methods=['POST'])
+@login_required
+def api_fechar_bolao(bolao_id: int):
+    user, erro = _organizador_ou_erro()
+    if erro:
+        return erro
+    if not database.fechar_vendas_bolao(bolao_id, user['id']):
+        return jsonify({'erro': 'Bolão não encontrado, não é seu ou já está fechado.'}), 404
     return jsonify({'sucesso': True})
 
 

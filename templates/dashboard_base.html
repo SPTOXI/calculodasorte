@@ -90,6 +90,9 @@
                 {% if current_user and current_user.role == 'admin' %}
                     <a href="/admin" class="btn-top btn-top-ghost" style="color: var(--primary); border-color: rgba(0, 70, 173, 0.35);">⚙️ Admin</a>
                 {% endif %}
+                {% if current_user and current_user.role in ('admin', 'organizador') %}
+                    <a href="/organizador" class="btn-top btn-top-ghost">🎟️ Meus Bolões</a>
+                {% endif %}
                 {% if not access or not access.is_vip %}
                     {% if not access or access.credits == 0 %}
                     <a href="/planos?plano=analise" class="btn-top btn-top-promo" title="Ativar 1 Análise Completa por apenas R$ 1,00">⚡ Análise por R$ 1,00</a>

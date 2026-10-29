@@ -1,0 +1,38 @@
+{% extends 'dashboard_base.html' %}
+{% block title %}{{ b.titulo }} — Bolões | Cálculo da Sorte{% endblock %}
+{% block head_extra %}{% include '_bolao_css.html' %}{% endblock %}
+{% block content %}
+{% set restantes = b.total_cotas - b.cotas_vendidas %}
+<div class="bl-wrap">
+    <p style="margin-bottom:12px;"><a href="{{ url_for('pagina_boloes') }}" style="color:#0046AD;">← Todos os bolões</a></p>
+    <div class="bl-head">
+        <h1>{{ b.titulo }}</h1>
+        <p>{{ loterias.get(b.loteria_type, b.loteria_type) }} · Concurso {{ b.concurso }} · Organizado por {{ b.organizador_nome }} · Status: <strong>{{ b.status|capitalize }}</strong></p>
+    </div>
+
+    <div class="bl-box">
+        <h2>💰 Prestação de contas</h2>
+        <div class="bl-resumo">
+            <div><small>Custo oficial Caixa</small><strong>R$ {{ '%.2f'|format(b.custo_caixa|float) }}</strong></div>
+            <div><small>Taxa de serviço</small><strong>R$ {{ '%.2f'|format(b.taxa_servico|float) }}</strong></div>
+            <div><small>Total de cotas</small><strong>{{ b.total_cotas }}</strong></div>
+            <div><small>Valor da cota</small><strong>R$ {{ '%.2f'|format(b.valor_cota|float) }}</strong></div>
+        </div>
+        <div class="bl-bar"><span style="width: {{ (100 * b.cotas_vendidas / b.total_cotas)|round|int }}%"></span></div>
+        <p class="bl-meta" style="margin:8px 0 14px;"><strong>{{ restantes }} de {{ b.total_cotas }}</strong> cotas restantes</p>
+        <div class="bl-aviso">O comprovante do registro na lotérica será anexado aqui até {{ cfg.horas_comprovante }} hora(s) antes do sorteio. A plataforma presta serviço de tecnologia e gestão; a custódia do bilhete é do organizador.</div>
+        <button class="bl-btn" disabled title="Pagamento das cotas chega na próxima etapa">🛒 Comprar cota (em breve)</button>
+        {% if b.comprovante_url %}<a class="bl-btn bl-btn-ghost" href="{{ b.comprovante_url }}" target="_blank" rel="noopener">📄 Ver comprovante</a>{% endif %}
+    </div>
+
+    <div class="bl-box">
+        <h2>🎯 Jogos do bolão ({{ b.jogos|length }})</h2>
+        {% for j in b.jogos %}
+        <div class="bl-jogo">
+            {% for n in j.dezenas %}<span class="bl-num">{{ '%02d'|format(n) }}</span>{% endfor %}
+            {% if j.complemento %}<span class="bl-meta" style="align-self:center;">· {{ j.complemento }}</span>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
