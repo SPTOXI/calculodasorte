@@ -42,29 +42,29 @@
 </style>
 <div class="bh" id="boloes">
     <div class="bh-top">
-        <span class="bh-badge">🎟️ Novidade: Bolões Cálculo da Sorte</span>
+        <span class="bh-badge">🎟️ Novidade: Gestão de Bolões</span>
         {% if boloes_destaque.total_abertos %}
         <span class="bh-live"><i></i>{{ boloes_destaque.total_abertos }} {{ 'bolões abertos' if boloes_destaque.total_abertos > 1 else 'bolão aberto' }} · {{ boloes_destaque.cotas_restantes }} cotas disponíveis</span>
         {% endif %}
     </div>
 
-    <h2>Jogue com <em>muito mais jogos</em> pagando só a sua cota</h2>
-    <p class="bh-sub">Entre em bolões montados com os nossos <strong>fechamentos com garantia matemática</strong>. O grupo divide o custo, você paga apenas a sua parte no Pix e concorre com <strong>todos os jogos do bolão</strong>.{% if boloes_destaque.menor_cota %} Cotas a partir de <strong>{{ boloes_destaque.menor_cota|brl }}</strong>.{% endif %}</p>
+    <h2><em>Gerenciamos</em> o seu grupo de bolão, ou <em>gerencie você mesmo</em></h2>
+    <p class="bh-sub">Monte o grupo com os nossos <strong>fechamentos com garantia matemática</strong>, controle as cotas e os pagamentos no Pix e preste contas a todos os participantes em um só lugar. O grupo divide o custo, cada um paga a sua parte e todos concorrem com <strong>todos os jogos do bolão</strong>. O registro dos bilhetes é feito em <strong>lotéricas parceiras</strong>.{% if boloes_destaque.menor_cota %} Cotas a partir de <strong>{{ boloes_destaque.menor_cota|brl }}</strong>.{% endif %}</p>
 
     <div class="bh-passos">
-        <div class="bh-passo"><span class="bh-num">1</span><div><strong>Escolha um bolão</strong><span>Veja a loteria, os jogos e quanto custa cada cota antes de entrar.</span></div></div>
-        <div class="bh-passo"><span class="bh-num">2</span><div><strong>Pague sua cota no Pix</strong><span>Confirmação na hora. Sua cota fica reservada enquanto você paga.</span></div></div>
-        <div class="bh-passo"><span class="bh-num">3</span><div><strong>Receba o bilhete digital</strong><span>Com código de segurança. Acompanhe o comprovante e o resultado pelo site.</span></div></div>
+        <div class="bh-passo"><span class="bh-num">1</span><div><strong>Monte ou entre em um grupo</strong><span>Jogos, loteria e valor de cada cota à vista antes de participar.</span></div></div>
+        <div class="bh-passo"><span class="bh-num">2</span><div><strong>Cotas e pagamentos no Pix</strong><span>Cada participante paga a sua parte; o controle de quem pagou é automático.</span></div></div>
+        <div class="bh-passo"><span class="bh-num">3</span><div><strong>Prestação de contas completa</strong><span>Comprovante da lotérica parceira, cota digital com código de segurança e resultado conferido.</span></div></div>
     </div>
 
     <div class="bh-confianca">
         <span>💰 <b>Preço aberto:</b> custo oficial da Caixa + taxa, tudo à vista</span>
-        <span>📄 <b>Comprovante da lotérica</b> publicado antes do sorteio</span>
+        <span>📄 <b>Comprovante da lotérica parceira</b> publicado antes do sorteio</span>
         <span>↩️ <b>Sem comprovante no prazo?</b> Seu dinheiro de volta</span>
     </div>
 
     <div class="bh-ctas">
-        <a class="bh-cta" href="{{ url_for('pagina_boloes') }}">🎟️ {% if boloes_destaque.total_abertos %}Ver bolões abertos{% else %}Conhecer os bolões{% endif %} &rarr;</a>
+        <a class="bh-cta" href="{{ url_for('pagina_boloes') }}">🎟️ {% if boloes_destaque.total_abertos %}Ver grupos de bolão abertos{% else %}Conhecer a gestão de bolões{% endif %} &rarr;</a>
         <a class="bh-cta2" href="/termos#boloes">Como funciona e regras</a>
     </div>
 
@@ -83,5 +83,5 @@
     </div>
     {% endif %}
 
-    <p class="bh-nota">O Cálculo da Sorte é a plataforma de tecnologia e prestação de contas do bolão; o registro das apostas é feito pelo organizador em lotérica credenciada. Jogue com responsabilidade. Proibido para menores de 18 anos.</p>
+    <p class="bh-nota">O Cálculo da Sorte gerencia os grupos de bolão (tecnologia, controle de cotas e prestação de contas) e não vende bilhetes: o registro das apostas é feito em lotéricas parceiras. Jogue com responsabilidade. Proibido para menores de 18 anos.</p>
 </div>

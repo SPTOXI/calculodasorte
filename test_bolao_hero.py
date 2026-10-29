@@ -45,33 +45,34 @@ class TestHeroBoloes(unittest.TestCase):
     def test_modulo_desligado_nao_anuncia_e_mantem_rodape(self):
         self._ativar(False)
         html = self.client.get('/').get_data(as_text=True)
-        self.assertNotIn('Novidade: Bolões', html)
+        self.assertNotIn('Novidade: Gestão de Bolões', html)
         self.assertIn('NÃO comercializamos bilhetes ou bolões', html)
 
     def test_modulo_ativo_anuncia_com_destaques_e_ajusta_rodape(self):
         self._ativar(True)
         html = self.client.get('/').get_data(as_text=True)
-        self.assertIn('Novidade: Bolões', html)
+        self.assertIn('Novidade: Gestão de Bolões', html)
         self.assertIn('class="bh-card"', html)  # cartões dos bolões mais perto de esgotar
         self.assertIn('por cota', html)
-        self.assertIn('Ver bolões abertos', html)
+        self.assertIn('Ver grupos de bolão abertos', html)
         self.assertIn('href="/boloes"', html)
         self.assertNotIn('NÃO comercializamos bilhetes ou bolões', html)
-        self.assertIn('plataforma de tecnologia, gestão e prestação de contas', html)
+        self.assertIn('gerenciamos grupos de bolão', html)
+        self.assertIn('lotéricas parceiras', html)
 
     def test_painel_do_usuario_mostra_anuncio_quando_ativo(self):
         self._logar(self.user['id'])
         self._ativar(False)
-        self.assertNotIn('Novidade: Bolões', self.client.get('/dashboard').get_data(as_text=True))
+        self.assertNotIn('Novidade: Gestão de Bolões', self.client.get('/dashboard').get_data(as_text=True))
         self._ativar(True)
-        self.assertIn('Novidade: Bolões', self.client.get('/dashboard').get_data(as_text=True))
+        self.assertIn('Novidade: Gestão de Bolões', self.client.get('/dashboard').get_data(as_text=True))
 
     def test_admin_pre_visualiza_landing_com_modulo_desligado(self):
         self._ativar(False)
         self._logar(self.admin['id'])
         self.assertEqual(self.client.get('/').status_code, 302)  # sem o parâmetro, vai para o painel
         html = self.client.get('/?preview=boloes').get_data(as_text=True)
-        self.assertIn('Novidade: Bolões', html)
+        self.assertIn('Novidade: Gestão de Bolões', html)
 
     def test_usuario_comum_nao_usa_pre_visualizacao(self):
         self._ativar(False)

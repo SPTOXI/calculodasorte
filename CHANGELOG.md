@@ -6,15 +6,16 @@ Todas as alterações, adições de recursos, correções e versões deste softw
 ### [v5.1.0] - 2026-10-29 — Anúncio de Bolões na Hero e Aviso Legal Condicional
 #### 🎟️ Hero de bolões (`templates/_bolao_hero.html`, `templates/landing.html`, `templates/index.html`, `app.py`)
 - Bloco de destaque no topo da landing (dentro da Hero, acima dos prêmios acumulados) e do painel do usuário logado:
-  - chamada principal ("Jogue com muito mais jogos pagando só a sua cota") e explicação em 3 passos (escolher, pagar no Pix, receber o bilhete digital);
-  - selos de confiança (preço aberto, comprovante da lotérica, dinheiro de volta sem comprovante);
+  - posicionamento como **gestão de grupos de bolão**: "Gerenciamos o seu grupo de bolão, ou gerencie você mesmo"; o registro dos bilhetes é feito em **lotéricas parceiras** (a plataforma não vende bilhetes);
+  - explicação em 3 passos (montar ou entrar em um grupo, cotas e pagamentos no Pix, prestação de contas completa);
+  - selos de confiança (preço aberto, comprovante da lotérica parceira, dinheiro de volta sem comprovante);
   - contador ao vivo de bolões abertos e cotas disponíveis, "cotas a partir de R$ X" e os 3 bolões mais perto de esgotar ("🔥 Última cota!"), com 1 cartão no celular;
-  - botões "Ver bolões abertos" e "Como funciona e regras" (`/termos#boloes`).
+  - botões "Ver grupos de bolão abertos" e "Como funciona e regras" (`/termos#boloes`).
 - Só aparece com o módulo ativo. O admin pode pré-visualizar a landing com `/?preview=boloes` mesmo com o módulo desligado; no painel, o admin sempre vê o anúncio.
 - Configuração dos bolões lida com cache de 60s (`_bolao_config_cache`) e exposta a todos os templates (`boloes_ativos`).
 
 #### ⚖️ Aviso legal condicional
-- Nos rodapés da landing, do painel, dos resultados e do blog, o texto "NÃO comercializamos bilhetes ou bolões" passa, **apenas com o módulo ativo**, a dizer que a plataforma atua como tecnologia, gestão e prestação de contas e que o registro das apostas é feito pelo organizador em lotérica credenciada. Com o módulo desligado, o texto original continua.
+- Nos rodapés da landing, do painel, dos resultados e do blog, o texto "NÃO comercializamos bilhetes ou bolões" passa, **apenas com o módulo ativo**, a dizer que a plataforma gerencia grupos de bolão (tecnologia, controle de cotas e prestação de contas) e que o registro das apostas é feito em lotéricas parceiras. Com o módulo desligado, o texto original continua.
 
 #### 🧪 Testes
 - `test_bolao_hero.py` (5 testes); 54 testes de bolões passando.
