@@ -3,6 +3,51 @@
 
 Todas as alterações, adições de recursos, correções e versões deste software são registradas de forma contínua neste documento e versionadas no repositório GitHub oficial: [`https://github.com/SPTOXI/calculodasorte.git`](https://github.com/SPTOXI/calculodasorte.git).
 
+### [v5.0.0] - 2026-10-29 — Módulo de Bolões: Precificação, Organizadores, Venda de Cotas via Pix, Comprovante, Conferência e Rateio
+Documentação completa e lista de pendências em [`BOLOES.md`](BOLOES.md).
+
+#### 🧮 Etapa 1 — Precificação e painel do admin (#67)
+- **`bolao.py`**: cálculo do custo oficial (tabela da Caixa em `core.py`), taxa de serviço **definida exclusivamente pelo admin** (percentual ou fixa) e valor da cota com `Decimal`, arredondado para cima em centavos.
+- **Banco**: tabelas `boloes`, `bolao_jogos` e `bolao_cotas`; configuração em `system_settings['bolao_config']` (taxa, mín./máx. de cotas, prazo do comprovante, tempo de reserva e liga/desliga, desligado por padrão).
+- **Admin › aba Bolões**: configuração da taxa e das regras, simulador de preço da cota e listagem com alteração de status.
+- Rotas `GET/POST /api/admin/boloes/config`, `POST /api/admin/boloes/simular`, `GET /api/admin/boloes` e `POST /api/admin/boloes/<id>/status`.
+
+#### 🧑‍💼 Etapa 2 — Organizador e vitrine (#68)
+- Novo perfil **`organizador`**, atribuído pelo admin na aba Usuários.
+- **`/organizador`**: cria o bolão a partir de um fechamento salvo, com prévia de custo, taxa e cota; permite encerrar as vendas.
+- O preço é sempre recalculado no servidor. Os jogos são validados, só jogos salvos pelo próprio usuário podem ser usados e concursos já sorteados são recusados.
+- **`/boloes`** (vitrine com cotas restantes) e **`/boloes/<id>`** (jogos e prestação de contas).
+- Loterias aceitas: Mega-Sena, Lotofácil, Quina, Lotomania, Dupla Sena, Timemania e Dia de Sorte.
+
+#### 💳 Etapa 3 — Compra de cotas via Pix (#68)
+- **Checkbox obrigatório** de aceite antes da compra (custódia do organizador e prazo do comprovante).
+- Reserva da cota com `FOR UPDATE SKIP LOCKED` (sem venda dupla) e prazo configurável; reservas vencidas voltam à venda.
+- Checkout **InfinitePay** com o valor da cota. O webhook só aprova depois de confirmar o pagamento na própria InfinitePay.
+- **Bilhete digital** `/bilhete/<hash>` com hash de segurança e impressão SHA-256 dos jogos; página **`/minhas-cotas`**.
+- **Termos de Uso**: nova seção 6, "Bolões: Gestão, Custódia e Prestação de Contas".
+- Geração do link InfinitePay extraída para `_criar_link_infinitepay`; filtro de template `brl`.
+
+#### 📄 Etapa 4 — Comprovante, rotina diária, reembolsos e rateio
+- **Prazo do comprovante** calculado a partir da data do próximo sorteio informada pela Caixa (20h de Brasília menos as horas configuradas), gravado em UTC e exibido em horário de Brasília (filtro `data_brt`).
+- **Envio do comprovante** pelo organizador (JPG, PNG ou PDF de até 4 MB, tipo verificado pelos bytes do arquivo), guardado na tabela `bolao_comprovantes`. O bolão passa a `registrado`, as vendas são encerradas e o SHA-256 do arquivo é publicado. Rotas `POST /api/boloes/<id>/comprovante` e `GET /boloes/<id>/comprovante`.
+- **Rotina diária** (`boloes_rotina.py`), chamada pelo cron `/api/cron/atualizar` e pelo botão "Rodar rotina agora" do admin:
+  - define prazos ainda em aberto;
+  - envia um **alerta por e-mail** ao organizador quando faltam menos de 24h, uma única vez;
+  - **cancela** bolões sem comprovante após o prazo: as cotas pagas viram `estornada`, os pagamentos vão para `reembolso_pendente` e os compradores recebem aviso por e-mail;
+  - **confere o resultado** dos bolões registrados e marca `premiado` ou `nao_premiado`, gravando acertos por jogo e faixas.
+- **Admin**: colunas de arrecadação e prazo, botão "Informar prêmio" (o valor líquido gera o **rateio por cota**, arredondado para baixo), fila de **Reembolsos Pendentes** com "Marcar reembolsado", e cancelamento pelo status que também gera os reembolsos.
+- Pagamento confirmado depois do cancelamento, ou sem cota disponível, vai para `reembolso_pendente` em vez de gerar bilhete.
+- Página do bolão mostra o prazo, o comprovante com o hash, o resultado com os acertos destacados, o prêmio por cota e o aviso de cancelamento.
+- Novo status de bolão `nao_premiado`; novo status de cota `estornada`; novos status de pagamento `reembolso_pendente` e `reembolsado`.
+
+#### 🧪 Cobertura de testes
+- `test_bolao.py`, `test_bolao_etapa2.py`, `test_bolao_etapa3.py` e `test_bolao_etapa4.py`: **49 testes passando**.
+
+#### ⚠️ Pendências
+- Registradas em [`BOLOES.md` › Pendências](BOLOES.md#9--pendências-registradas): validação jurídica, revisão do rodapé "NÃO comercializamos bilhetes", configuração de e-mail e `CRON_SECRET`, reembolso e repasse de prêmios manuais, cálculo automático do valor do prêmio, Super Sete e +Milionária, entre outras.
+
+---
+
 ### [v4.9.0] - 2026-10-06 — Dinâmica Canônica MCO-DYN: Expansão vs Retração por Casa com Ajuste de Aproximação em Todas as 9 Loterias
 #### 🔬 Motor de Dinâmica Canônica Restauradora (`dinamica_canonica.py`, `core.py`, `app.py`, `templates/analise.html`)
 - **Implementação do Módulo MCO-DYN para Todas as 9 Loterias da Caixa:**

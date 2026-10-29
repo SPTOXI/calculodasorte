@@ -20,7 +20,13 @@
         </div>
         <div class="bl-bar"><span style="width: {{ (100 * b.cotas_vendidas / b.total_cotas)|round|int }}%"></span></div>
         <p class="bl-meta" style="margin:8px 0 14px;"><strong>{{ restantes }} de {{ b.total_cotas }}</strong> cotas restantes</p>
-        <div class="bl-aviso">O comprovante do registro na lotérica será anexado aqui até {{ cfg.horas_comprovante }} hora(s) antes do sorteio. A plataforma presta serviço de tecnologia e gestão; a custódia do bilhete é do organizador.</div>
+        {% if b.status == 'cancelado' %}
+        <div class="bl-aviso" style="border-left-color:#dc2626;background:#FEF2F2;color:#991B1B;">❌ Bolão cancelado{% if b.cancelado_motivo %}: {{ b.cancelado_motivo }}{% endif %} As cotas pagas serão reembolsadas.</div>
+        {% elif b.comprovante_url %}
+        <div class="bl-aviso" style="border-left-color:#16a34a;background:#F0FDF4;color:#166534;">✅ Apostas registradas na lotérica. <a href="{{ b.comprovante_url }}" target="_blank" rel="noopener" style="color:#166534;font-weight:700;">Ver comprovante</a><br><small style="word-break:break-all;">SHA-256 do arquivo: {{ b.comprovante_hash }}</small></div>
+        {% else %}
+        <div class="bl-aviso">O comprovante do registro na lotérica será anexado aqui {% if b.prazo_comprovante %}até <strong>{{ b.prazo_comprovante|data_brt }}</strong> (horário de Brasília){% else %}até {{ cfg.horas_comprovante }} hora(s) antes do sorteio{% endif %}. Sem o comprovante no prazo, o bolão é cancelado e as cotas reembolsadas. A plataforma presta serviço de tecnologia e gestão; a custódia do bilhete é do organizador.</div>
+        {% endif %}
         {% if b.status == 'aberto' and restantes > 0 %}
             {% if current_user %}
             <label style="display:flex;gap:10px;align-items:flex-start;font-size:0.9rem;color:#334155;margin-bottom:12px;">
@@ -37,10 +43,27 @@
         {% else %}
             <span class="bl-meta"><strong>Vendas encerradas.</strong></span>
         {% endif %}
-        {% if b.comprovante_url %}<a class="bl-btn bl-btn-ghost" href="{{ b.comprovante_url }}" target="_blank" rel="noopener">📄 Ver comprovante</a>{% endif %}
     </div>
 
     <div id="aviso-pagamento"></div>
+    {% if resultado %}
+    <div class="bl-box">
+        <h2>🏁 Resultado do concurso {{ resultado.concurso }}{% if resultado.data_apuracao %} ({{ resultado.data_apuracao }}){% endif %}</h2>
+        <div class="bl-jogo">{% for n in resultado.dezenas %}<span class="bl-num" style="background:#0046AD;color:#fff;">{{ '%02d'|format(n) }}</span>{% endfor %}</div>
+        {% if resultado.segundo_sorteio %}<div class="bl-jogo"><span class="bl-meta" style="align-self:center;">2º sorteio:</span>{% for n in resultado.segundo_sorteio %}<span class="bl-num" style="background:#0046AD;color:#fff;">{{ '%02d'|format(n) }}</span>{% endfor %}</div>{% endif %}
+        {% if b.status == 'premiado' %}
+        <p style="margin:12px 0 6px;font-weight:700;color:#15803d;">🎉 Bolão premiado: {% for rotulo, qtd in resultado.premiacoes.items() %}{{ qtd }}x {{ rotulo }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% if b.premio_por_cota %}
+        <div class="bl-resumo">
+            <div><small>Prêmio líquido recebido</small><strong>{{ b.valor_premio|brl }}</strong></div>
+            <div><small>Valor por cota</small><strong>{{ b.premio_por_cota|brl }}</strong></div>
+        </div>
+        {% else %}<p class="bl-meta">O valor por cota será publicado aqui assim que o prêmio for resgatado.</p>{% endif %}
+        {% else %}
+        <p class="bl-meta" style="margin-top:10px;">Nenhum jogo do bolão foi premiado neste concurso.</p>
+        {% endif %}
+    </div>
+    {% endif %}
     {% if minhas_cotas %}
     <div class="bl-box">
         <h2>🎫 Suas cotas neste bolão</h2>
@@ -61,7 +84,7 @@
         <h2>🎯 Jogos do bolão ({{ b.jogos|length }})</h2>
         {% for j in b.jogos %}
         <div class="bl-jogo">
-            {% for n in j.dezenas %}<span class="bl-num">{{ '%02d'|format(n) }}</span>{% endfor %}
+            {% for n in j.dezenas %}<span class="bl-num"{% if resultado and n in resultado.dezenas %} style="background:#16a34a;color:#fff;"{% endif %}>{{ '%02d'|format(n) }}</span>{% endfor %}
             {% if j.complemento %}<span class="bl-meta" style="align-self:center;">· {{ j.complemento }}</span>{% endif %}
         </div>
         {% endfor %}

@@ -21,6 +21,7 @@ import updater
 import ai_agent
 import avaliacao
 import bolao
+import boloes_rotina
 import conferencia
 import fechamento
 import importador
@@ -78,6 +79,12 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 _NOMES_LOTERIAS = {t.value: c.nome for t, c in LOTERIAS_CONFIG.items()}
+
+
+@app.template_filter('data_brt')
+def formatar_data_brt(valor) -> str:
+    """Prazos são gravados em UTC; exibe em horário de Brasília (UTC-3, sem horário de verão)."""
+    return (valor - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M') if valor else ''
 
 
 @app.template_filter('brl')
@@ -1393,6 +1400,7 @@ def admin_dashboard():
         api_keys_config=ui_api_keys_config,
         boloes=database.get_all_boloes(),
         bolao_config=database.get_bolao_config(),
+        reembolsos=database.listar_reembolsos_pendentes(),
         loterias_bolao=_NOMES_LOTERIAS,
     )
 
@@ -2708,6 +2716,10 @@ def api_admin_boloes():
 @admin_required
 def api_admin_bolao_status(bolao_id: int):
     status = (request.get_json(silent=True) or {}).get('status')
+    if status == 'cancelado':
+        # Cancelar estorna as cotas pagas e manda os pagamentos para a fila de reembolso
+        afetados = database.cancelar_bolao(bolao_id, 'Cancelado pelo administrador.')
+        return jsonify({'sucesso': True, 'reembolsos': len(afetados)})
     try:
         ok = database.update_bolao_status(bolao_id, status)
     except ValueError as e:
@@ -2784,7 +2796,9 @@ def pagina_bolao(bolao_id: int):
         return redirect(url_for('pagina_boloes'))
     user = _usuario_logado()
     minhas = database.listar_cotas_usuario(user['id'], bolao_id) if user else []
-    return render_template('bolao_detalhe.html', b=b, loterias=_NOMES_LOTERIAS, cfg=cfg, current_user=user, minhas_cotas=minhas)
+    resultado = json.loads(b['resultado_json']) if b.get('resultado_json') else None
+    return render_template('bolao_detalhe.html', b=b, loterias=_NOMES_LOTERIAS, cfg=cfg, current_user=user,
+                           minhas_cotas=minhas, resultado=resultado)
 
 
 @app.route('/organizador')
@@ -2849,6 +2863,10 @@ def api_criar_bolao():
         complementos=complementos if complementos and len(complementos) == len(jogos) else None,
         aposta_origem_id=aposta['id'],
     )
+    sorteio = bolao.data_do_sorteio(updater.carregar_ultimo_resultado_local(aposta['loteria_type']), concurso)
+    prazo = bolao.calcular_prazo_comprovante(sorteio, database.get_bolao_config()['horas_comprovante'])
+    if prazo:
+        database.definir_prazo_bolao(bolao_id, sorteio, prazo)
     return jsonify({'sucesso': True, 'bolao_id': bolao_id, 'url': url_for('pagina_bolao', bolao_id=bolao_id),
                     **bolao.precos_para_json(precos)}), 201
 
@@ -2918,6 +2936,77 @@ def pagina_minhas_cotas():
     user = _usuario_logado()
     return render_template('minhas_cotas.html', cotas=database.listar_cotas_usuario(user['id']),
                            loterias=_NOMES_LOTERIAS, current_user=user)
+
+
+@app.route('/api/boloes/<int:bolao_id>/comprovante', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, window_seconds=60)
+def api_enviar_comprovante(bolao_id: int):
+    """O organizador anexa a foto/PDF do comprovante da lotérica; o bolão passa a 'registrado'"""
+    user = _usuario_logado()
+    b = database.get_bolao(bolao_id)
+    if not b or not user or (b['organizador_id'] != user['id'] and user.get('role') != 'admin'):
+        return jsonify({'erro': 'Bolão não encontrado.'}), 404
+    if b['status'] not in ('aberto', 'fechado', 'registrado'):
+        return jsonify({'erro': 'Este bolão não aceita mais comprovante.'}), 400
+    arquivo = request.files.get('arquivo')
+    if not arquivo:
+        return jsonify({'erro': 'Envie a foto ou o PDF do comprovante.'}), 400
+    conteudo = arquivo.read(bolao.TAMANHO_MAX_COMPROVANTE + 1)
+    if len(conteudo) > bolao.TAMANHO_MAX_COMPROVANTE:
+        return jsonify({'erro': 'Arquivo maior que 4 MB. Reduza a foto ou o PDF.'}), 400
+    mime = bolao.tipo_do_comprovante(conteudo)
+    if not mime:
+        return jsonify({'erro': 'Formato não aceito. Use JPG, PNG ou PDF.'}), 400
+    sha = database.salvar_comprovante(bolao_id, conteudo, mime, arquivo.filename or 'comprovante', user['id'])
+    if not sha:
+        return jsonify({'erro': 'Não foi possível registrar o comprovante.'}), 400
+    return jsonify({'sucesso': True, 'comprovante_hash': sha, 'url': url_for('ver_comprovante', bolao_id=bolao_id)})
+
+
+@app.route('/boloes/<int:bolao_id>/comprovante')
+def ver_comprovante(bolao_id: int):
+    comp = database.get_comprovante(bolao_id)
+    if not comp:
+        return redirect(url_for('pagina_bolao', bolao_id=bolao_id))
+    ext = {'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf'}[comp['mime']]
+    resp = Response(comp['conteudo'], mimetype=comp['mime'])
+    resp.headers['Content-Disposition'] = f'inline; filename="comprovante-bolao-{bolao_id}.{ext}"'
+    resp.headers['Content-Security-Policy'] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+    resp.headers['Cache-Control'] = 'private, max-age=300'
+    return resp
+
+
+@app.route('/api/admin/boloes/rotina', methods=['POST'])
+@admin_required
+def api_admin_bolao_rotina():
+    """Roda agora a rotina diária (prazos, alertas, cancelamentos e conferência)"""
+    return jsonify({'sucesso': True, **boloes_rotina.executar()})
+
+
+@app.route('/api/admin/boloes/<int:bolao_id>/premio', methods=['POST'])
+@admin_required
+def api_admin_bolao_premio(bolao_id: int):
+    """Registra o prêmio líquido recebido e calcula o rateio por cota"""
+    b = database.get_bolao(bolao_id)
+    if not b:
+        return jsonify({'erro': 'Bolão não encontrado'}), 404
+    try:
+        valor = str((request.get_json(silent=True) or {}).get('valor_premio', '')).replace(',', '.')
+        por_cota = bolao.rateio_por_cota(valor, b['total_cotas'])
+    except Exception:
+        return jsonify({'erro': 'Informe um valor de prêmio válido.'}), 400
+    if not database.registrar_premio_bolao(bolao_id, valor, por_cota):
+        return jsonify({'erro': 'Só é possível registrar prêmio em bolão com status premiado.'}), 400
+    return jsonify({'sucesso': True, 'premio_por_cota': float(por_cota)})
+
+
+@app.route('/api/admin/reembolsos/<int:payment_id>/concluir', methods=['POST'])
+@admin_required
+def api_admin_concluir_reembolso(payment_id: int):
+    if not database.marcar_reembolsado(payment_id):
+        return jsonify({'erro': 'Reembolso não encontrado ou já concluído'}), 404
+    return jsonify({'sucesso': True})
 
 
 # ==========================================
@@ -3129,6 +3218,7 @@ def cron_atualizar():
     agora_str = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     print(f"[CRON] Executando sincronização diária oficial da Caixa às 23:00h BRT ({agora_str})...")
     res = updater.sincronizar_todas(n_historico=50)
+    res['boloes'] = boloes_rotina.executar()
     return jsonify(res)
 
 

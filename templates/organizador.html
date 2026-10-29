@@ -32,7 +32,7 @@
     <div class="bl-box">
         <h2>📋 Meus bolões</h2>
         <table class="bl-tabela">
-            <thead><tr><th>Bolão</th><th>Concurso</th><th>Cotas vendidas</th><th>Valor cota</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Bolão</th><th>Concurso</th><th>Cotas vendidas</th><th>Valor cota</th><th>Status</th><th>Prazo do comprovante</th><th></th></tr></thead>
             <tbody>
             {% for b in boloes %}
             <tr>
@@ -40,11 +40,19 @@
                 <td data-label="Concurso">{{ loterias.get(b.loteria_type, b.loteria_type) }} {{ b.concurso }}</td>
                 <td data-label="Cotas vendidas">{{ b.cotas_vendidas }} / {{ b.total_cotas }}</td>
                 <td data-label="Valor cota">{{ b.valor_cota|brl }}</td>
-                <td data-label="Status">{{ b.status|capitalize }}</td>
-                <td data-label="">{% if b.status == 'aberto' %}<button class="bl-btn bl-btn-ghost" onclick="fecharBolao({{ b.id }})">Encerrar vendas</button>{% endif %}</td>
+                <td data-label="Status">{{ b.status|replace('_', ' ')|capitalize }}</td>
+                <td data-label="Prazo do comprovante">{% if b.comprovante_url %}✅ <a href="{{ b.comprovante_url }}" target="_blank" rel="noopener" style="color:#0046AD;">Enviado</a>{% elif b.prazo_comprovante %}{{ b.prazo_comprovante|data_brt }}{% else %}A definir{% endif %}</td>
+                <td data-label="" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    {% if b.status == 'aberto' %}<button class="bl-btn bl-btn-ghost" onclick="fecharBolao({{ b.id }})">Encerrar vendas</button>{% endif %}
+                    {% if b.status in ('aberto', 'fechado', 'registrado') %}
+                    <label class="bl-btn" style="margin:0;">📄 {% if b.comprovante_url %}Trocar{% else %}Enviar{% endif %} comprovante
+                        <input type="file" accept="image/jpeg,image/png,application/pdf" style="display:none;" onchange="enviarComprovante({{ b.id }}, this)">
+                    </label>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="bl-meta">Nenhum bolão criado ainda.</td></tr>
+            <tr><td colspan="7" class="bl-meta">Nenhum bolão criado ainda.</td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -84,6 +92,16 @@ async function fecharBolao(id) {
     if (!confirm('Encerrar as vendas deste bolão? Não será possível reabrir.')) return;
     const res = await fetch(`/api/boloes/${id}/fechar`, { method: 'POST' });
     if (res.ok) location.reload(); else alert((await res.json()).erro || 'Erro');
+}
+async function enviarComprovante(id, input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+    if (arquivo.size > 4 * 1024 * 1024) { alert('Arquivo maior que 4 MB. Reduza a foto ou o PDF.'); input.value = ''; return; }
+    if (!confirm('Enviar este comprovante? As vendas do bolão serão encerradas e o bolão ficará como Registrado.')) { input.value = ''; return; }
+    const fd = new FormData(); fd.append('arquivo', arquivo);
+    const res = await fetch(`/api/boloes/${id}/comprovante`, { method: 'POST', body: fd });
+    const d = await res.json();
+    if (res.ok) location.reload(); else { alert(d.erro || 'Erro ao enviar'); input.value = ''; }
 }
 previewBolao();
 </script>

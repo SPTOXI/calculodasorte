@@ -80,6 +80,11 @@ python scripts/submit_indexnow.py --dry-run
 
 ## 🎯 Funcionalidades
 
+### 🎟️ Bolões (gestão de grupos e cotas)
+- Admin define a taxa de serviço; organizadores criam bolões a partir dos fechamentos; apostadores compram cotas via Pix com bilhete digital.
+- Comprovante da lotérica, rotina diária de prazos, cancelamento com reembolso, conferência e rateio do prêmio.
+- Documentação completa e pendências: [`BOLOES.md`](BOLOES.md).
+
 ### Página Inicial
 - Seleção de loteria
 - Informações detalhadas de cada loteria
@@ -127,6 +132,8 @@ python scripts/submit_indexnow.py --dry-run
 ```
 /workspace
 ├── core.py                 # Núcleo matemático do Modelo Canônico
+├── bolao.py                # Bolões: preço da cota, validações, prazos e rateio
+├── boloes_rotina.py        # Bolões: rotina diária (alertas, cancelamentos, conferência)
 ├── app.py                  # Aplicação Flask (API + Rotas)
 ├── templates/
 │   ├── index.html          # Página inicial
