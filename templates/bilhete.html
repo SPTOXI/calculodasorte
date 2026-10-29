@@ -1,0 +1,33 @@
+{% extends 'dashboard_base.html' %}
+{% block title %}Bilhete Digital — Bolões | Cálculo da Sorte{% endblock %}
+{% block meta_robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block head_extra %}{% include '_bolao_css.html' %}{% endblock %}
+{% block content %}
+<div class="bl-wrap" style="max-width:640px;">
+    {% if not bilhete %}
+    <div class="bl-box"><h2>Bilhete não encontrado</h2><p class="bl-meta">Confira se o link está completo. Bilhetes só existem para cotas com pagamento confirmado.</p></div>
+    {% else %}
+    <div class="bl-box" style="border:2px solid #0046AD;">
+        <p class="bl-meta" style="text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">🎫 Bilhete digital de bolão</p>
+        <h1 style="font-size:1.4rem;color:#0A1A3F;margin:6px 0 14px;">{{ bilhete.titulo }}</h1>
+        <div class="bl-resumo">
+            <div><small>Loteria</small><strong>{{ loterias.get(bilhete.loteria_type, bilhete.loteria_type) }}</strong></div>
+            <div><small>Concurso</small><strong>{{ bilhete.concurso }}</strong></div>
+            <div><small>Cota</small><strong>{{ bilhete.numero }} de {{ bilhete.total_cotas }}</strong></div>
+            <div><small>Titular</small><strong>{{ bilhete.titular.split(' ')[0] }}</strong></div>
+            <div><small>Valor pago</small><strong>{{ bilhete.valor_cota|brl }}</strong></div>
+            <div><small>Pago em</small><strong>{{ bilhete.pago_em.strftime('%d/%m/%Y %H:%M') if bilhete.pago_em else '-' }}</strong></div>
+        </div>
+        <p class="bl-meta" style="margin-top:10px;"><strong>Hash de segurança</strong></p>
+        <code style="display:block;word-break:break-all;background:#F8FAFC;padding:10px;border-radius:8px;font-size:0.8rem;">{{ bilhete.hash_bilhete }}</code>
+        <p class="bl-meta" style="margin-top:10px;"><strong>Impressão digital dos jogos (SHA-256)</strong></p>
+        <code style="display:block;word-break:break-all;background:#F8FAFC;padding:10px;border-radius:8px;font-size:0.8rem;">{{ bilhete.impressao_jogos }}</code>
+        <p class="bl-meta" style="margin-top:12px;">Os jogos do bolão não podem ser trocados depois da venda: se mudassem, esta impressão digital também mudaria.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+            <a class="bl-btn" href="{{ url_for('pagina_bolao', bolao_id=bilhete.bolao_id) }}">Ver jogos e prestação de contas</a>
+            {% if bilhete.comprovante_url %}<a class="bl-btn bl-btn-ghost" href="{{ bilhete.comprovante_url }}" target="_blank" rel="noopener">📄 Comprovante da lotérica</a>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

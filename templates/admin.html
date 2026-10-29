@@ -426,6 +426,8 @@
                                     <td data-label="Perfil">
                                         {% if u.role == 'admin' %}
                                             <span class="badge badge-info">Admin</span>
+                                        {% elif u.role == 'organizador' %}
+                                            <span class="badge badge-warning">Organizador</span>
                                         {% else %}
                                             <span class="badge" style="background:#f1f5f9; color:#475569;">Usuário</span>
                                         {% endif %}
@@ -688,7 +690,14 @@
             </div>
 
             <div class="card fade-in">
-                <div class="card-header"><h3>🎟️ Bolões Cadastrados</h3></div>
+                <div class="card-header">
+                    <h3>🎟️ Bolões Cadastrados</h3>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a class="btn-secondary" href="/organizador" style="text-decoration:none;">🧑‍💼 Criar bolão</a>
+                        <a class="btn-secondary" href="/boloes" style="text-decoration:none;">👀 Ver vitrine</a>
+                    </div>
+                </div>
+                <p style="color:#64748b;margin-bottom:14px;font-size:0.9rem;">Para liberar alguém como organizador, edite o usuário na aba Usuários e escolha o perfil "Organizador de Bolões".</p>
                 <div class="table-responsive">
                     <table class="responsive-card-table">
                         <thead><tr><th>#</th><th>Loteria / Concurso</th><th>Organizador</th><th>Cotas pagas</th><th>Valor cota</th><th>Custo Caixa</th><th>Taxa</th><th>Comprovante</th><th>Status</th></tr></thead>
@@ -967,6 +976,7 @@
                     <label for="novo-role">Perfil de Acesso</label>
                     <select id="novo-role">
                         <option value="user">Usuário Padrão</option>
+                        <option value="organizador">Organizador de Bolões</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
@@ -999,6 +1009,7 @@
                     <label for="edit-role">Perfil de Acesso</label>
                     <select id="edit-role">
                         <option value="user">Usuário Padrão</option>
+                        <option value="organizador">Organizador de Bolões</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
@@ -1538,6 +1549,8 @@
 
                     const roleBadge = u.role === 'admin'
                         ? '<span class="badge badge-info">Admin</span>'
+                        : u.role === 'organizador'
+                        ? '<span class="badge badge-warning">Organizador</span>'
                         : '<span class="badge" style="background:#f1f5f9; color:#475569;">Usuário</span>';
 
                     const isSelf = u.id === currentUserId;

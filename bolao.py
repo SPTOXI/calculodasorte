@@ -115,3 +115,33 @@ def calcular_precos(config: LoteriaConfig, jogos: List[List[int]], total_cotas: 
 
 def precos_para_json(precos: Dict) -> Dict:
     return {k: (float(v) if isinstance(v, Decimal) else v) for k, v in precos.items()}
+
+
+# Super Sete (colunas) e +Milionária (trevos alteram o preço) ficam para uma etapa futura
+LOTERIAS_SUPORTADAS = ('mega_sena', 'lotofacil', 'quina', 'lotomania', 'dupla_sena', 'timemania', 'dia_de_sorte')
+PAPEIS_ORGANIZADOR = ('admin', 'organizador')
+
+
+def pode_organizar(user: Optional[dict], cfg: dict) -> bool:
+    """Admin sempre pode (inclusive para testar com o módulo desligado); organizador só com o módulo ativo."""
+    if not user or user.get('is_blocked'):
+        return False
+    if user.get('role') == 'admin':
+        return True
+    return user.get('role') == 'organizador' and cfg['ativo']
+
+
+def validar_jogos(config: LoteriaConfig, jogos) -> List[List[int]]:
+    """Confere formato, tamanho e faixa de cada jogo; devolve os jogos ordenados."""
+    if not isinstance(jogos, list) or not jogos:
+        raise ValueError('O bolão precisa de pelo menos um jogo.')
+    validos = []
+    for jogo in jogos:
+        if not isinstance(jogo, list) or not all(isinstance(n, int) and not isinstance(n, bool) for n in jogo):
+            raise ValueError('Jogo em formato inválido.')
+        if len(set(jogo)) != len(jogo):
+            raise ValueError('Jogo com números repetidos.')
+        if any(n < config.numero_inicial or n > config.numero_final for n in jogo):
+            raise ValueError(f'Número fora do volante da {config.nome}.')
+        validos.append(sorted(jogo))
+    return validos

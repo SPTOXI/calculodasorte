@@ -1,0 +1,28 @@
+{% extends 'dashboard_base.html' %}
+{% block title %}Bolões Abertos — Cálculo da Sorte{% endblock %}
+{% block head_extra %}{% include '_bolao_css.html' %}{% endblock %}
+{% block content %}
+<div class="bl-wrap">
+    <div class="bl-head">
+        <h1>🎟️ Bolões Abertos</h1>
+        <p>Grupos montados com o motor de fechamentos do Cálculo da Sorte. Preço transparente: custo oficial da Caixa + taxa de serviço, dividido pelas cotas.</p>
+        {% if current_user %}<p><a href="{{ url_for('pagina_minhas_cotas') }}" class="bl-btn bl-btn-ghost">🎫 Minhas cotas</a></p>{% endif %}
+    </div>
+    {% if not modulo_ativo %}<div class="bl-aviso">Pré-visualização do administrador: o módulo de bolões está desativado para o público.</div>{% endif %}
+    <div class="bl-grid">
+        {% for b in boloes %}
+        {% set restantes = b.total_cotas - b.cotas_vendidas %}
+        <div class="bl-card">
+            <h3>{{ b.titulo }}</h3>
+            <div class="bl-meta">{{ loterias.get(b.loteria_type, b.loteria_type) }} · Concurso {{ b.concurso }} · por {{ b.organizador_nome }}</div>
+            <div class="bl-preco">{{ b.valor_cota|brl }} <small style="font-size:0.8rem;color:#64748b;font-weight:600;">por cota</small></div>
+            <div class="bl-bar"><span style="width: {{ (100 * b.cotas_vendidas / b.total_cotas)|round|int }}%"></span></div>
+            <div class="bl-meta"><strong>{{ restantes }} de {{ b.total_cotas }}</strong> cotas restantes</div>
+            <a class="bl-btn" href="{{ url_for('pagina_bolao', bolao_id=b.id) }}">Ver jogos e detalhes</a>
+        </div>
+        {% else %}
+        <p class="bl-meta">Nenhum bolão aberto no momento. Volte em breve!</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
