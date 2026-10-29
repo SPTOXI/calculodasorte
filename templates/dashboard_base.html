@@ -132,7 +132,7 @@
         <!-- Rodapé de Conformidade Legal -->
         <footer style="margin-top: 45px; border-top: 1px solid var(--card-border); padding: 25px 16px; text-align: center; font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
             <div style="max-width: 900px; margin: 0 auto; background: rgba(10,26,63,0.03); border: 1px solid rgba(10,26,63,0.08); padding: 14px 18px; border-radius: 10px; margin-bottom: 15px; text-align: left;">
-                <strong style="color: var(--primary);">⚖️ AVISO LEGAL & CONFORMIDADE:</strong> O Cálculo da Sorte é uma plataforma tecnológica de análise estatística e simulação combinatória sobre dados públicos oficiais da Caixa Econômica Federal. NÃO somos casa de apostas, NÃO comercializamos bilhetes e NÃO realizamos jogos de azar. Finalidade exclusivamente analítica e matemática.
+                <strong style="color: var(--primary);">⚖️ AVISO LEGAL & CONFORMIDADE:</strong> O Cálculo da Sorte é uma plataforma tecnológica de análise estatística e simulação combinatória sobre dados públicos oficiais da Caixa Econômica Federal. {% if boloes_ativos %}NÃO somos casa de apostas nem lotérica: no módulo de bolões atuamos como plataforma de tecnologia, gestão e prestação de contas, e o registro das apostas é feito pelo organizador em lotérica credenciada e NÃO realizamos jogos de azar.{% else %}NÃO somos casa de apostas, NÃO comercializamos bilhetes e NÃO realizamos jogos de azar.{% endif %} Finalidade exclusivamente analítica e matemática.
             </div>
             <p>© 2026 Cálculo da Sorte — Tecnologia de Análise Estatística. Todos os direitos reservados.</p>
         </footer>
