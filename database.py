@@ -306,6 +306,8 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bolao_cotas_status ON bolao_cotas (bolao_id, status)")
         conn.execute("ALTER TABLE bolao_jogos ADD COLUMN IF NOT EXISTS complemento TEXT")
         conn.execute("ALTER TABLE boloes ADD COLUMN IF NOT EXISTS aposta_origem_id INTEGER")
+        conn.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS bolao_id INTEGER")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bolao_cotas_payment ON bolao_cotas (payment_id)")
         conn.commit()
 
     seed_admin()
@@ -1223,6 +1225,8 @@ def approve_payment(payment_id: int) -> bool:
         activate_vip_plan(user_id, days=1, plan_name='vip_24h')
     elif tipo in ['analise', 'analise_1', 'credito']:
         add_user_credits(user_id, amount=1)
+    elif tipo == 'cota_bolao':
+        confirmar_cota_paga(payment)
         
     sync_db_to_cloud()
     return True
@@ -1439,6 +1443,7 @@ def create_bolao(organizador_id: int, loteria_type: str, concurso: int, titulo: 
 
 def get_bolao(bolao_id: int, com_jogos: bool = False) -> Optional[Dict]:
     with get_db_connection() as conn:
+        _liberar_reservas_vencidas(conn)
         row = conn.execute(_SELECT_BOLAO + ' WHERE b.id = %s GROUP BY b.id, u.name', (bolao_id,)).fetchone()
         if not row:
             return None
@@ -1453,6 +1458,7 @@ def get_bolao(bolao_id: int, com_jogos: bool = False) -> Optional[Dict]:
 
 def listar_boloes_abertos(limit: int = 100) -> List[Dict]:
     with get_db_connection() as conn:
+        _liberar_reservas_vencidas(conn)
         rows = conn.execute(_SELECT_BOLAO + """
             WHERE b.status = 'aberto' GROUP BY b.id, u.name ORDER BY b.created_at DESC LIMIT %s
         """, (limit,)).fetchall()
@@ -1473,3 +1479,115 @@ def fechar_vendas_bolao(bolao_id: int, organizador_id: int) -> bool:
         cur = conn.execute("UPDATE boloes SET status = 'fechado' WHERE id = %s AND organizador_id = %s AND status = 'aberto'",
                            (bolao_id, organizador_id))
         return cur.rowcount > 0
+
+
+# ---------- Compra de cotas ----------
+
+def _liberar_reservas_vencidas(conn) -> None:
+    """Devolve à venda as cotas reservadas cujo prazo de pagamento acabou."""
+    conn.execute("""
+        UPDATE bolao_cotas SET status = 'disponivel', user_id = NULL, payment_id = NULL,
+               reservada_ate = NULL, aceite_termos_at = NULL
+        WHERE status = 'reservada' AND reservada_ate < NOW()
+    """)
+
+
+def reservar_cota(bolao_id: int, user_id: int, minutos: int) -> Optional[Dict]:
+    """Reserva uma cota livre para o usuário (ou devolve a reserva ainda válida que ele já tem).
+    FOR UPDATE SKIP LOCKED impede que duas compras simultâneas peguem a mesma cota."""
+    with get_db_connection() as conn:
+        _liberar_reservas_vencidas(conn)
+        existente = conn.execute("""
+            SELECT * FROM bolao_cotas
+            WHERE bolao_id = %s AND user_id = %s AND status = 'reservada'
+            ORDER BY numero LIMIT 1
+        """, (bolao_id, user_id)).fetchone()
+        if existente:
+            return dict(existente)
+        row = conn.execute("""
+            UPDATE bolao_cotas
+            SET status = 'reservada', user_id = %s, aceite_termos_at = NOW(),
+                reservada_ate = NOW() + make_interval(mins => %s)
+            WHERE id = (
+                SELECT c.id FROM bolao_cotas c JOIN boloes b ON b.id = c.bolao_id
+                WHERE c.bolao_id = %s AND c.status = 'disponivel' AND b.status = 'aberto'
+                ORDER BY c.numero LIMIT 1 FOR UPDATE OF c SKIP LOCKED
+            )
+            RETURNING *
+        """, (user_id, minutos, bolao_id)).fetchone()
+        return dict(row) if row else None
+
+
+def vincular_pagamento_cota(cota_id: int, payment_id: int, bolao_id: int) -> None:
+    with get_db_connection() as conn:
+        conn.execute('UPDATE bolao_cotas SET payment_id = %s WHERE id = %s', (payment_id, cota_id))
+        conn.execute('UPDATE payments SET bolao_id = %s WHERE id = %s', (bolao_id, payment_id))
+
+
+def _impressao_jogos(conn, bolao_id: int) -> str:
+    """SHA-256 público dos jogos do bolão: qualquer um pode recalcular e conferir."""
+    import hashlib
+    jogos = [json.loads(r['dezenas_json']) for r in conn.execute(
+        'SELECT dezenas_json FROM bolao_jogos WHERE bolao_id = %s ORDER BY id', (bolao_id,)).fetchall()]
+    return hashlib.sha256(json.dumps(jogos, separators=(',', ':')).encode()).hexdigest()
+
+
+def confirmar_cota_paga(payment: Dict) -> Optional[Dict]:
+    """Marca como paga a cota do pagamento e gera o hash do bilhete.
+    Se a reserva venceu antes da confirmação, tenta outra cota livre do mesmo bolão."""
+    import hashlib
+    with get_db_connection() as conn:
+        cota = conn.execute("SELECT * FROM bolao_cotas WHERE payment_id = %s FOR UPDATE", (payment['id'],)).fetchone()
+        if not cota and payment.get('bolao_id'):
+            cota = conn.execute("""
+                SELECT * FROM bolao_cotas WHERE bolao_id = %s AND status = 'disponivel'
+                ORDER BY numero LIMIT 1 FOR UPDATE SKIP LOCKED
+            """, (payment['bolao_id'],)).fetchone()
+        if not cota:
+            conn.execute("INSERT INTO system_errors (module, error_message) VALUES (%s, %s)",
+                         ('boloes', f"Pagamento #{payment['id']} aprovado sem cota disponível: estorno necessário."))
+            return None
+        if cota['status'] == 'paga':
+            return dict(cota)
+        impressao = _impressao_jogos(conn, cota['bolao_id'])
+        hash_bilhete = hashlib.sha256(
+            f"{cota['bolao_id']}|{cota['numero']}|{payment['user_id']}|{impressao}|{secrets.token_hex(16)}".encode()
+        ).hexdigest()
+        row = conn.execute("""
+            UPDATE bolao_cotas SET status = 'paga', user_id = %s, payment_id = %s, pago_em = NOW(),
+                   reservada_ate = NULL, hash_bilhete = %s
+            WHERE id = %s RETURNING *
+        """, (payment['user_id'], payment['id'], hash_bilhete, cota['id'])).fetchone()
+        return dict(row)
+
+
+def listar_cotas_usuario(user_id: int, bolao_id: Optional[int] = None) -> List[Dict]:
+    with get_db_connection() as conn:
+        _liberar_reservas_vencidas(conn)
+        query = """
+            SELECT c.*, b.titulo, b.loteria_type, b.concurso, b.status AS bolao_status, b.valor_cota
+            FROM bolao_cotas c JOIN boloes b ON b.id = c.bolao_id
+            WHERE c.user_id = %s AND c.status IN ('reservada', 'paga')
+        """
+        params = [user_id]
+        if bolao_id:
+            query += ' AND c.bolao_id = %s'
+            params.append(bolao_id)
+        rows = conn.execute(query + ' ORDER BY c.bolao_id DESC, c.numero', tuple(params)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_bilhete(hash_bilhete: str) -> Optional[Dict]:
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT c.numero, c.pago_em, c.hash_bilhete, c.bolao_id, u.name AS titular,
+                   b.titulo, b.loteria_type, b.concurso, b.total_cotas, b.valor_cota, b.status AS bolao_status,
+                   b.comprovante_url
+            FROM bolao_cotas c JOIN boloes b ON b.id = c.bolao_id JOIN users u ON u.id = c.user_id
+            WHERE c.hash_bilhete = %s AND c.status = 'paga'
+        """, (hash_bilhete,)).fetchone()
+        if not row:
+            return None
+        bilhete = dict(row)
+        bilhete['impressao_jogos'] = _impressao_jogos(conn, bilhete['bolao_id'])
+        return bilhete

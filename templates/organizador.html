@@ -39,7 +39,7 @@
                 <td data-label="Bolão"><a href="{{ url_for('pagina_bolao', bolao_id=b.id) }}" style="color:#0046AD;">{{ b.titulo }}</a></td>
                 <td data-label="Concurso">{{ loterias.get(b.loteria_type, b.loteria_type) }} {{ b.concurso }}</td>
                 <td data-label="Cotas vendidas">{{ b.cotas_vendidas }} / {{ b.total_cotas }}</td>
-                <td data-label="Valor cota">R$ {{ '%.2f'|format(b.valor_cota|float) }}</td>
+                <td data-label="Valor cota">{{ b.valor_cota|brl }}</td>
                 <td data-label="Status">{{ b.status|capitalize }}</td>
                 <td data-label="">{% if b.status == 'aberto' %}<button class="bl-btn bl-btn-ghost" onclick="fecharBolao({{ b.id }})">Encerrar vendas</button>{% endif %}</td>
             </tr>

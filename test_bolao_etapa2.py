@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import bolao
 import database
+import app as app_module
 from app import app
 from core import LOTERIAS_CONFIG, LoteriaType
 
@@ -50,6 +51,7 @@ class TestFluxoOrganizador(unittest.TestCase):
         database.save_bolao_config({'ativo': False})
 
     def setUp(self):
+        app_module._rate_limits.clear()
         self.client = app.test_client()
         self._logar(self.org['id'])
         self.proximo = patch('conferencia.proximo_concurso', return_value=3000)

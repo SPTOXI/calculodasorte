@@ -79,6 +79,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 _NOMES_LOTERIAS = {t.value: c.nome for t, c in LOTERIAS_CONFIG.items()}
 
+
+@app.template_filter('brl')
+def formatar_brl(valor) -> str:
+    """1234.5 -> 'R$ 1.234,50'"""
+    return 'R$ ' + f'{float(valor or 0):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
 # Inicializar Banco de Dados e Agendador de Loterias
 database.init_db()
 updater.iniciar_agendador()
@@ -2436,6 +2442,31 @@ def infinitepay_pagamento_confirmado(pagamento: dict, transaction_nsu, slug) -> 
     return bool(dados.get('success') and dados.get('paid') and int(pago) >= valor_centavos)
 
 
+def _criar_link_infinitepay(payment_id: int, valor, descricao: str, user, redirect_path: str):
+    """Pede à InfinitePay um link de checkout para o pagamento; devolve a resposta HTTP."""
+    base_url = request.host_url.rstrip('/')
+    sep = '&' if '?' in redirect_path else '?'
+    payload = {
+        "handle": INFINITEPAY_HANDLE,
+        "order_nsu": str(payment_id),
+        "webhook_url": f"{base_url}/api/webhook/infinitepay",
+        "redirect_url": f"{base_url}{redirect_path}{sep}checkout=sucesso&payment_id={payment_id}",
+        "items": [
+            {
+                "quantity": 1,
+                "price": int(round(float(valor) * 100)),
+                "description": descricao
+            }
+        ]
+    }
+    if user:
+        payload["customer"] = {
+            "name": user.get('name') or 'Apostador',
+            "email": user.get('email') or ''
+        }
+    return requests.post("https://api.checkout.infinitepay.io/links", json=payload, timeout=12)
+
+
 @app.route('/api/checkout/infinitepay', methods=['POST'])
 @login_required
 def api_checkout_infinitepay():
@@ -2462,34 +2493,11 @@ def api_checkout_infinitepay():
         pagamento = database.create_payment(user_id=user_id, tipo=tipo, valor=valor, loteria_type=loteria_type)
         payment_id = pagamento['id']
 
-        base_url = request.host_url.rstrip('/')
         redirect_path = dados.get('redirect_path', '/planos')
         if not isinstance(redirect_path, str) or not redirect_path.startswith('/') or redirect_path.startswith('//'):
             redirect_path = '/planos'
-        
-        sep = '&' if '?' in redirect_path else '?'
-        target_redirect = f"{base_url}{redirect_path}{sep}checkout=sucesso&payment_id={payment_id}"
 
-        payload = {
-            "handle": INFINITEPAY_HANDLE,
-            "order_nsu": str(payment_id),
-            "webhook_url": f"{base_url}/api/webhook/infinitepay",
-            "redirect_url": target_redirect,
-            "items": [
-                {
-                    "quantity": 1,
-                    "price": int(round(valor * 100)),
-                    "description": descricao
-                }
-            ]
-        }
-        if user:
-            payload["customer"] = {
-                "name": user.get('name') or 'Apostador',
-                "email": user.get('email') or ''
-            }
-
-        resp = requests.post("https://api.checkout.infinitepay.io/links", json=payload, timeout=12)
+        resp = _criar_link_infinitepay(payment_id, valor, descricao, user, redirect_path)
         if resp.status_code == 200:
             data_inf = resp.json()
             checkout_url = data_inf.get('url')
@@ -2774,7 +2782,9 @@ def pagina_bolao(bolao_id: int):
     b = database.get_bolao(bolao_id, com_jogos=True)
     if not b:
         return redirect(url_for('pagina_boloes'))
-    return render_template('bolao_detalhe.html', b=b, loterias=_NOMES_LOTERIAS, cfg=cfg, current_user=_usuario_logado())
+    user = _usuario_logado()
+    minhas = database.listar_cotas_usuario(user['id'], bolao_id) if user else []
+    return render_template('bolao_detalhe.html', b=b, loterias=_NOMES_LOTERIAS, cfg=cfg, current_user=user, minhas_cotas=minhas)
 
 
 @app.route('/organizador')
@@ -2852,6 +2862,62 @@ def api_fechar_bolao(bolao_id: int):
     if not database.fechar_vendas_bolao(bolao_id, user['id']):
         return jsonify({'erro': 'Bolão não encontrado, não é seu ou já está fechado.'}), 404
     return jsonify({'sucesso': True})
+
+
+@app.route('/api/boloes/<int:bolao_id>/comprar', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, window_seconds=60)
+def api_comprar_cota(bolao_id: int):
+    """Reserva uma cota e gera o checkout Pix; a cota só vira 'paga' quando a InfinitePay confirma"""
+    cfg = database.get_bolao_config()
+    if not _vitrine_visivel(cfg):
+        return jsonify({'erro': 'Bolões indisponíveis no momento.'}), 404
+    if not (request.get_json(silent=True) or {}).get('aceite_termos'):
+        return jsonify({'erro': 'Confirme que leu e aceita os termos do bolão para continuar.'}), 400
+    b = database.get_bolao(bolao_id)
+    if not b or b['status'] != 'aberto':
+        return jsonify({'erro': 'Este bolão não está aberto para vendas.'}), 400
+
+    user = _usuario_logado()
+    cota = database.reservar_cota(bolao_id, user['id'], cfg['minutos_reserva'])
+    if not cota:
+        return jsonify({'erro': 'As cotas deste bolão esgotaram.'}), 409
+
+    pagamento = database.get_payment_by_id(cota['payment_id']) if cota.get('payment_id') else None
+    if not pagamento or pagamento.get('status') != 'pendente':
+        pagamento = database.create_payment(user_id=user['id'], tipo='cota_bolao', valor=float(b['valor_cota']),
+                                            loteria_type=b['loteria_type'])
+        database.vincular_pagamento_cota(cota['id'], pagamento['id'], bolao_id)
+
+    descricao = f"Cota {cota['numero']} - {b['titulo']}"[:100]
+    try:
+        resp = _criar_link_infinitepay(pagamento['id'], b['valor_cota'], descricao, user, f'/boloes/{bolao_id}')
+        checkout_url = resp.json().get('url') if resp.status_code == 200 else None
+    except Exception as e:
+        print(f"[BOLOES] Falha ao gerar checkout da cota #{cota['id']}: {e}")
+        checkout_url = None
+    if not checkout_url:
+        return jsonify({'erro': 'Não foi possível gerar o pagamento agora. Sua cota segue reservada; tente de novo.'}), 502
+    return jsonify({'sucesso': True, 'checkout_url': checkout_url, 'payment_id': pagamento['id'],
+                    'cota_numero': cota['numero'], 'reservada_ate': cota['reservada_ate'].isoformat(),
+                    'valor': float(b['valor_cota'])})
+
+
+@app.route('/bilhete/<hash_bilhete>')
+def pagina_bilhete(hash_bilhete: str):
+    """Bilhete digital público, verificável pelo hash"""
+    bilhete = database.get_bilhete(hash_bilhete) if re.fullmatch(r'[0-9a-f]{64}', hash_bilhete) else None
+    if not bilhete:
+        return render_template('bilhete.html', bilhete=None, loterias=_NOMES_LOTERIAS), 404
+    return render_template('bilhete.html', bilhete=bilhete, loterias=_NOMES_LOTERIAS, current_user=_usuario_logado())
+
+
+@app.route('/minhas-cotas')
+@login_required
+def pagina_minhas_cotas():
+    user = _usuario_logado()
+    return render_template('minhas_cotas.html', cotas=database.listar_cotas_usuario(user['id']),
+                           loterias=_NOMES_LOTERIAS, current_user=user)
 
 
 # ==========================================
