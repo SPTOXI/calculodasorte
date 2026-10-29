@@ -308,6 +308,20 @@ def init_db():
         conn.execute("ALTER TABLE boloes ADD COLUMN IF NOT EXISTS aposta_origem_id INTEGER")
         conn.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS bolao_id INTEGER")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bolao_cotas_payment ON bolao_cotas (payment_id)")
+        for coluna in ('data_sorteio TIMESTAMP', 'alerta_prazo_em TIMESTAMP', 'resultado_json TEXT',
+                       'conferido_em TIMESTAMP', 'valor_premio NUMERIC(14,2)', 'premio_por_cota NUMERIC(14,2)',
+                       'cancelado_motivo TEXT'):
+            conn.execute(f"ALTER TABLE boloes ADD COLUMN IF NOT EXISTS {coluna}")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bolao_comprovantes (
+                bolao_id INTEGER PRIMARY KEY REFERENCES boloes (id) ON DELETE CASCADE,
+                conteudo BYTEA NOT NULL,
+                mime TEXT NOT NULL,
+                nome_arquivo TEXT,
+                enviado_por INTEGER REFERENCES users (id),
+                enviado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
 
     seed_admin()
@@ -1543,9 +1557,14 @@ def confirmar_cota_paga(payment: Dict) -> Optional[Dict]:
                 SELECT * FROM bolao_cotas WHERE bolao_id = %s AND status = 'disponivel'
                 ORDER BY numero LIMIT 1 FOR UPDATE SKIP LOCKED
             """, (payment['bolao_id'],)).fetchone()
-        if not cota:
+        bolao_status = conn.execute('SELECT status FROM boloes WHERE id = %s',
+                                    (cota['bolao_id'] if cota else payment.get('bolao_id'),)).fetchone()
+        if not cota or not bolao_status or bolao_status['status'] not in ('aberto', 'fechado'):
+            if cota and cota['status'] == 'paga':
+                return dict(cota)
+            conn.execute("UPDATE payments SET status = 'reembolso_pendente' WHERE id = %s", (payment['id'],))
             conn.execute("INSERT INTO system_errors (module, error_message) VALUES (%s, %s)",
-                         ('boloes', f"Pagamento #{payment['id']} aprovado sem cota disponível: estorno necessário."))
+                         ('boloes', f"Pagamento #{payment['id']} confirmado sem cota disponível (esgotado ou bolão encerrado): reembolso necessário."))
             return None
         if cota['status'] == 'paga':
             return dict(cota)
@@ -1567,7 +1586,7 @@ def listar_cotas_usuario(user_id: int, bolao_id: Optional[int] = None) -> List[D
         query = """
             SELECT c.*, b.titulo, b.loteria_type, b.concurso, b.status AS bolao_status, b.valor_cota
             FROM bolao_cotas c JOIN boloes b ON b.id = c.bolao_id
-            WHERE c.user_id = %s AND c.status IN ('reservada', 'paga')
+            WHERE c.user_id = %s AND c.status IN ('reservada', 'paga', 'estornada')
         """
         params = [user_id]
         if bolao_id:
@@ -1591,3 +1610,127 @@ def get_bilhete(hash_bilhete: str) -> Optional[Dict]:
         bilhete = dict(row)
         bilhete['impressao_jogos'] = _impressao_jogos(conn, bilhete['bolao_id'])
         return bilhete
+
+
+# ---------- Etapa 4: comprovante, rotina diária e resultado ----------
+
+def definir_prazo_bolao(bolao_id: int, data_sorteio, prazo) -> None:
+    with get_db_connection() as conn:
+        conn.execute('UPDATE boloes SET data_sorteio = %s, prazo_comprovante = %s WHERE id = %s',
+                     (data_sorteio, prazo, bolao_id))
+
+
+def salvar_comprovante(bolao_id: int, conteudo: bytes, mime: str, nome_arquivo: str, user_id: int) -> Optional[str]:
+    """Grava o comprovante, encerra as vendas e marca o bolão como registrado. Devolve o SHA-256 do arquivo."""
+    import hashlib
+    from psycopg2 import Binary
+    sha = hashlib.sha256(conteudo).hexdigest()
+    with get_db_connection() as conn:
+        cur = conn.execute("""
+            UPDATE boloes SET status = 'registrado', comprovante_url = %s, comprovante_hash = %s
+            WHERE id = %s AND status IN ('aberto', 'fechado', 'registrado')
+        """, (f'/boloes/{bolao_id}/comprovante', sha, bolao_id))
+        if cur.rowcount == 0:
+            return None
+        conn.execute("""
+            INSERT INTO bolao_comprovantes (bolao_id, conteudo, mime, nome_arquivo, enviado_por, enviado_em)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (bolao_id) DO UPDATE SET conteudo = excluded.conteudo, mime = excluded.mime,
+                nome_arquivo = excluded.nome_arquivo, enviado_por = excluded.enviado_por, enviado_em = NOW()
+        """, (bolao_id, Binary(conteudo), mime, nome_arquivo[:200], user_id))
+        # Reservas em aberto não podem mais ser pagas: devolve as cotas
+        conn.execute("""
+            UPDATE bolao_cotas SET status = 'disponivel', user_id = NULL, payment_id = NULL,
+                   reservada_ate = NULL, aceite_termos_at = NULL
+            WHERE bolao_id = %s AND status = 'reservada'
+        """, (bolao_id,))
+    return sha
+
+
+def get_comprovante(bolao_id: int) -> Optional[Dict]:
+    with get_db_connection() as conn:
+        row = conn.execute('SELECT conteudo, mime, nome_arquivo, enviado_em FROM bolao_comprovantes WHERE bolao_id = %s',
+                           (bolao_id,)).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d['conteudo'] = bytes(d['conteudo'])
+        return d
+
+
+def boloes_em_andamento() -> List[Dict]:
+    """Bolões que a rotina diária ainda precisa acompanhar."""
+    with get_db_connection() as conn:
+        _liberar_reservas_vencidas(conn)
+        rows = conn.execute(_SELECT_BOLAO + """
+            WHERE b.status IN ('aberto', 'fechado', 'registrado') GROUP BY b.id, u.name ORDER BY b.id
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def marcar_alerta_prazo(bolao_id: int) -> None:
+    with get_db_connection() as conn:
+        conn.execute('UPDATE boloes SET alerta_prazo_em = NOW() WHERE id = %s', (bolao_id,))
+
+
+def cancelar_bolao(bolao_id: int, motivo: str) -> List[Dict]:
+    """Cancela o bolão, estorna as cotas pagas e marca os pagamentos para reembolso.
+    Devolve os compradores afetados (para aviso por e-mail)."""
+    with get_db_connection() as conn:
+        cur = conn.execute("""
+            UPDATE boloes SET status = 'cancelado', cancelado_motivo = %s
+            WHERE id = %s AND status IN ('aberto', 'fechado', 'registrado')
+        """, (motivo, bolao_id))
+        if cur.rowcount == 0:
+            return []
+        afetados = conn.execute("""
+            UPDATE bolao_cotas c SET status = 'estornada'
+            FROM users u
+            WHERE c.bolao_id = %s AND c.status = 'paga' AND u.id = c.user_id
+            RETURNING c.numero, c.payment_id, u.email, u.name
+        """, (bolao_id,)).fetchall()
+        conn.execute("""
+            UPDATE bolao_cotas SET status = 'disponivel', user_id = NULL, payment_id = NULL,
+                   reservada_ate = NULL, aceite_termos_at = NULL
+            WHERE bolao_id = %s AND status = 'reservada'
+        """, (bolao_id,))
+        ids = [a['payment_id'] for a in afetados if a['payment_id']]
+        if ids:
+            conn.execute("UPDATE payments SET status = 'reembolso_pendente' WHERE id = ANY(%s)", (ids,))
+        return [dict(a) for a in afetados]
+
+
+def salvar_resultado_bolao(bolao_id: int, resultado: Dict, premiado: bool) -> None:
+    with get_db_connection() as conn:
+        conn.execute("""
+            UPDATE boloes SET resultado_json = %s, conferido_em = NOW(), status = %s
+            WHERE id = %s AND status = 'registrado'
+        """, (json.dumps(resultado), 'premiado' if premiado else 'nao_premiado', bolao_id))
+
+
+def registrar_premio_bolao(bolao_id: int, valor_premio, premio_por_cota) -> bool:
+    with get_db_connection() as conn:
+        cur = conn.execute("""
+            UPDATE boloes SET valor_premio = %s, premio_por_cota = %s WHERE id = %s AND status = 'premiado'
+        """, (valor_premio, premio_por_cota, bolao_id))
+        return cur.rowcount > 0
+
+
+def listar_reembolsos_pendentes() -> List[Dict]:
+    with get_db_connection() as conn:
+        rows = conn.execute("""
+            SELECT p.id, p.valor, p.created_at, p.bolao_id, u.email, u.name, b.titulo, b.cancelado_motivo
+            FROM payments p
+            JOIN users u ON u.id = p.user_id
+            LEFT JOIN boloes b ON b.id = p.bolao_id
+            WHERE p.status = 'reembolso_pendente'
+            ORDER BY p.id
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def marcar_reembolsado(payment_id: int) -> bool:
+    with get_db_connection() as conn:
+        cur = conn.execute("UPDATE payments SET status = 'reembolsado' WHERE id = %s AND status = 'reembolso_pendente'",
+                           (payment_id,))
+        return cur.rowcount > 0

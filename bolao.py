@@ -10,7 +10,8 @@ para que a soma das cotas nunca fique abaixo do custo total.
 """
 
 import json
-from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
+from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_CEILING, ROUND_DOWN, ROUND_HALF_UP
 from math import comb
 from typing import Dict, List, Optional
 
@@ -18,7 +19,7 @@ from core import LoteriaConfig
 
 CENTAVO = Decimal('0.01')
 
-STATUS_BOLAO = ('aberto', 'fechado', 'registrado', 'premiado', 'cancelado')
+STATUS_BOLAO = ('aberto', 'fechado', 'registrado', 'premiado', 'nao_premiado', 'cancelado')
 STATUS_COTA = ('disponivel', 'reservada', 'paga', 'estornada')
 TIPOS_TAXA = ('percentual', 'fixa')
 
@@ -145,3 +146,49 @@ def validar_jogos(config: LoteriaConfig, jogos) -> List[List[int]]:
             raise ValueError(f'Número fora do volante da {config.nome}.')
         validos.append(sorted(jogo))
     return validos
+
+
+
+# ---------- Etapa 4: comprovante, prazos e rateio ----------
+
+# Os sorteios da Caixa acontecem às 20h de Brasília (23h UTC); prazos são gravados em UTC
+HORA_SORTEIO_UTC = 23
+TAMANHO_MAX_COMPROVANTE = 4 * 1024 * 1024  # o corpo de requisição da Vercel é limitado a ~4,5 MB
+TIPOS_COMPROVANTE = {
+    b'\xff\xd8\xff': 'image/jpeg',
+    b'\x89PNG\r\n\x1a\n': 'image/png',
+    b'%PDF-': 'application/pdf',
+}
+
+
+def data_do_sorteio(dados_ultimo_resultado: Optional[dict], concurso: int) -> Optional[datetime]:
+    """Data/hora (UTC) do sorteio do concurso, quando a Caixa já a divulgou (só para o próximo concurso)."""
+    if not dados_ultimo_resultado or dados_ultimo_resultado.get('numero') != concurso - 1:
+        return None
+    try:
+        dia = datetime.strptime(dados_ultimo_resultado.get('dataProximoConcurso') or '', '%d/%m/%Y')
+    except ValueError:
+        return None
+    return dia.replace(hour=HORA_SORTEIO_UTC)
+
+
+def calcular_prazo_comprovante(sorteio_utc: Optional[datetime], horas_antes: int) -> Optional[datetime]:
+    return sorteio_utc - timedelta(hours=horas_antes) if sorteio_utc else None
+
+
+def tipo_do_comprovante(conteudo: bytes) -> Optional[str]:
+    """Identifica o arquivo pelos primeiros bytes (a extensão e o Content-Type do navegador não são confiáveis)."""
+    for assinatura, mime in TIPOS_COMPROVANTE.items():
+        if conteudo.startswith(assinatura):
+            return mime
+    return None
+
+
+def rateio_por_cota(valor_premio, total_cotas: int) -> Decimal:
+    """Divide o prêmio líquido recebido igualmente entre as cotas, arredondando para baixo (sobra fica registrada)."""
+    if total_cotas <= 0:
+        raise ValueError('Total de cotas inválido.')
+    valor = _dec(valor_premio)
+    if valor < 0:
+        raise ValueError('Valor do prêmio não pode ser negativo.')
+    return (valor / total_cotas).quantize(CENTAVO, rounding=ROUND_DOWN)

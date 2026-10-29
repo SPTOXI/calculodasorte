@@ -15,7 +15,7 @@
                 <td data-label="Concurso">{{ loterias.get(c.loteria_type, c.loteria_type) }} {{ c.concurso }}</td>
                 <td data-label="Cota">nº {{ c.numero }}</td>
                 <td data-label="Valor">{{ c.valor_cota|brl }}</td>
-                <td data-label="Situação">{% if c.status == 'paga' %}<a href="{{ url_for('pagina_bilhete', hash_bilhete=c.hash_bilhete) }}" style="color:#15803d;font-weight:700;">✅ Ver bilhete</a>{% else %}⏳ Aguardando pagamento{% endif %}</td>
+                <td data-label="Situação">{% if c.status == 'paga' %}<a href="{{ url_for('pagina_bilhete', hash_bilhete=c.hash_bilhete) }}" style="color:#15803d;font-weight:700;">✅ Ver bilhete</a>{% elif c.status == 'estornada' %}↩️ Bolão cancelado: reembolso{% else %}⏳ Aguardando pagamento{% endif %}</td>
             </tr>
             {% else %}
             <tr><td colspan="5" class="bl-meta">Você ainda não tem cotas.</td></tr>

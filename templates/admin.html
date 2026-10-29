@@ -695,12 +695,13 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <a class="btn-secondary" href="/organizador" style="text-decoration:none;">🧑‍💼 Criar bolão</a>
                         <a class="btn-secondary" href="/boloes" style="text-decoration:none;">👀 Ver vitrine</a>
+                        <button class="btn-secondary" onclick="rodarRotinaBoloes(this)">🔄 Rodar rotina agora</button>
                     </div>
                 </div>
                 <p style="color:#64748b;margin-bottom:14px;font-size:0.9rem;">Para liberar alguém como organizador, edite o usuário na aba Usuários e escolha o perfil "Organizador de Bolões".</p>
                 <div class="table-responsive">
                     <table class="responsive-card-table">
-                        <thead><tr><th>#</th><th>Loteria / Concurso</th><th>Organizador</th><th>Cotas pagas</th><th>Valor cota</th><th>Custo Caixa</th><th>Taxa</th><th>Comprovante</th><th>Status</th></tr></thead>
+                        <thead><tr><th>#</th><th>Loteria / Concurso</th><th>Organizador</th><th>Cotas pagas</th><th>Valor cota</th><th>Arrecadado</th><th>Custo Caixa</th><th>Taxa</th><th>Comprovante</th><th>Status</th><th>Prêmio</th></tr></thead>
                         <tbody>
                             {% for b in boloes %}
                             <tr>
@@ -709,17 +710,42 @@
                                 <td data-label="Organizador">{{ b.organizador_email }}</td>
                                 <td data-label="Cotas pagas">{{ b.cotas_pagas }} / {{ b.total_cotas }}</td>
                                 <td data-label="Valor cota">R$ {{ '%.2f'|format(b.valor_cota|float) }}</td>
+                                <td data-label="Arrecadado">{{ (b.cotas_pagas * b.valor_cota|float)|brl }}</td>
                                 <td data-label="Custo Caixa">R$ {{ '%.2f'|format(b.custo_caixa|float) }}</td>
                                 <td data-label="Taxa">R$ {{ '%.2f'|format(b.taxa_servico|float) }}</td>
-                                <td data-label="Comprovante">{% if b.comprovante_url %}<a href="{{ b.comprovante_url }}" target="_blank" rel="noopener">Ver</a>{% else %}<span class="badge badge-warning">Pendente</span>{% endif %}</td>
+                                <td data-label="Comprovante">{% if b.comprovante_url %}<a href="{{ b.comprovante_url }}" target="_blank" rel="noopener">Ver</a>{% elif b.status in ('aberto', 'fechado') %}<span class="badge badge-warning">Até {{ b.prazo_comprovante|data_brt if b.prazo_comprovante else 'data a definir' }}</span>{% else %}-{% endif %}</td>
                                 <td data-label="Status">
                                     <select onchange="alterarStatusBolao({{ b.id }}, this.value)">
-                                        {% for st in ['aberto','fechado','registrado','premiado','cancelado'] %}<option value="{{ st }}" {% if b.status == st %}selected{% endif %}>{{ st|capitalize }}</option>{% endfor %}
+                                        {% for st in ['aberto','fechado','registrado','premiado','nao_premiado','cancelado'] %}<option value="{{ st }}" {% if b.status == st %}selected{% endif %}>{{ st|replace('_', ' ')|capitalize }}</option>{% endfor %}
                                     </select>
                                 </td>
+                                <td data-label="Prêmio">{% if b.status == 'premiado' %}{% if b.premio_por_cota %}{{ b.premio_por_cota|brl }}/cota{% else %}<button class="btn-sm btn-sync-sm" onclick="registrarPremio({{ b.id }})">Informar prêmio</button>{% endif %}{% else %}-{% endif %}</td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="9" style="text-align:center;color:#64748b;">Nenhum bolão criado ainda. A criação pelos organizadores chega na próxima etapa.</td></tr>
+                            <tr><td colspan="11" style="text-align:center;color:#64748b;">Nenhum bolão criado ainda.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card fade-in">
+                <div class="card-header"><h3>↩️ Reembolsos Pendentes ({{ reembolsos|length }})</h3></div>
+                <p style="color:#64748b;margin-bottom:14px;font-size:0.9rem;">Cotas de bolões cancelados e pagamentos confirmados sem cota disponível. Faça a devolução pela InfinitePay (ou Pix) e marque como concluído.</p>
+                <div class="table-responsive">
+                    <table class="responsive-card-table">
+                        <thead><tr><th>Pagamento</th><th>Comprador</th><th>Bolão</th><th>Valor</th><th>Motivo</th><th>Ações</th></tr></thead>
+                        <tbody>
+                            {% for r in reembolsos %}
+                            <tr>
+                                <td data-label="Pagamento">#{{ r.id }}</td>
+                                <td data-label="Comprador">{{ r.name }}<br><small>{{ r.email }}</small></td>
+                                <td data-label="Bolão">{{ r.titulo or '-' }}</td>
+                                <td data-label="Valor">{{ r.valor|brl }}</td>
+                                <td data-label="Motivo" class="col-detalhes">{{ r.cancelado_motivo or 'Pagamento sem cota disponível' }}</td>
+                                <td data-label="Ações"><button class="btn-sm btn-sync-sm" onclick="concluirReembolso({{ r.id }}, this)">✅ Marcar reembolsado</button></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" style="text-align:center;color:#64748b;">Nenhum reembolso pendente.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -1138,7 +1164,35 @@
             </div>`;
         }
 
+        async function rodarRotinaBoloes(btn) {
+            btn.disabled = true;
+            const res = await fetch('/api/admin/boloes/rotina', { method: 'POST' });
+            const d = await res.json();
+            btn.disabled = false;
+            if (!res.ok || d.erro) return showToast(d.erro || 'Erro na rotina', 'error');
+            showToast(`Prazos: ${d.prazos_definidos} · Alertas: ${d.alertas} · Cancelados: ${d.cancelados} · Conferidos: ${d.conferidos}`, 'success');
+            setTimeout(() => location.href = '/admin?aba=tab-boloes', 1500);
+        }
+
+        async function registrarPremio(id) {
+            const valor = prompt('Valor líquido do prêmio recebido (R$), já descontado o imposto retido:');
+            if (!valor) return;
+            const res = await fetch(`/api/admin/boloes/${id}/premio`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor_premio: valor }) });
+            const d = await res.json();
+            if (!res.ok) return showToast(d.erro || 'Erro', 'error');
+            showToast(`Rateio: ${_brl(d.premio_por_cota)} por cota`, 'success');
+            setTimeout(() => location.href = '/admin?aba=tab-boloes', 1200);
+        }
+
+        async function concluirReembolso(id, btn) {
+            if (!confirm(`Confirma que o pagamento #${id} já foi devolvido ao comprador?`)) return;
+            const res = await fetch(`/api/admin/reembolsos/${id}/concluir`, { method: 'POST' });
+            if (res.ok) { btn.closest('tr').remove(); showToast('Reembolso concluído', 'success'); }
+            else showToast((await res.json()).erro || 'Erro', 'error');
+        }
+
         async function alterarStatusBolao(id, status) {
+            if (status === 'cancelado' && !confirm('Cancelar este bolão? As cotas pagas irão para a fila de reembolso.')) return location.reload();
             const res = await fetch(`/api/admin/boloes/${id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
             const d = await res.json();
             showToast(res.ok ? `Bolão #${id} agora está "${status}"` : (d.erro || 'Erro'), res.ok ? 'success' : 'error');
