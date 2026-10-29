@@ -258,6 +258,52 @@ def init_db():
                 PRIMARY KEY (loteria_type, concurso)
             )
         """)
+
+        # Bolões: o organizador monta os jogos; a taxa vem da configuração do admin
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS boloes (
+                id SERIAL PRIMARY KEY,
+                organizador_id INTEGER NOT NULL REFERENCES users (id),
+                loteria_type TEXT NOT NULL,
+                concurso INTEGER NOT NULL,
+                titulo TEXT,
+                status TEXT NOT NULL DEFAULT 'aberto',
+                custo_caixa NUMERIC(12,2) NOT NULL,
+                taxa_tipo TEXT NOT NULL,
+                taxa_valor NUMERIC(12,2) NOT NULL,
+                taxa_servico NUMERIC(12,2) NOT NULL,
+                total_cotas INTEGER NOT NULL CHECK (total_cotas > 0),
+                valor_cota NUMERIC(12,2) NOT NULL,
+                prazo_comprovante TIMESTAMP,
+                comprovante_url TEXT,
+                comprovante_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bolao_jogos (
+                id SERIAL PRIMARY KEY,
+                bolao_id INTEGER NOT NULL REFERENCES boloes (id) ON DELETE CASCADE,
+                dezenas_json TEXT NOT NULL,
+                custo NUMERIC(12,2) NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bolao_cotas (
+                id SERIAL PRIMARY KEY,
+                bolao_id INTEGER NOT NULL REFERENCES boloes (id) ON DELETE CASCADE,
+                numero INTEGER NOT NULL,
+                user_id INTEGER REFERENCES users (id),
+                payment_id INTEGER REFERENCES payments (id),
+                status TEXT NOT NULL DEFAULT 'disponivel',
+                reservada_ate TIMESTAMP,
+                hash_bilhete TEXT UNIQUE,
+                aceite_termos_at TIMESTAMP,
+                pago_em TIMESTAMP,
+                UNIQUE (bolao_id, numero)
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bolao_cotas_status ON bolao_cotas (bolao_id, status)")
         conn.commit()
 
     seed_admin()
@@ -1305,3 +1351,50 @@ def get_system_errors(limit: int = 50) -> list:
     except Exception as e:
         print(f"Erro ao listar erros do sistema: {e}")
         return []
+
+
+# ==========================================
+# BOLÕES
+# ==========================================
+
+def get_bolao_config() -> dict:
+    import bolao
+    return bolao.carregar_config(get_setting('bolao_config'))
+
+
+def save_bolao_config(dados: dict) -> dict:
+    """Valida e salva a configuração de bolões definida pelo admin (ValueError se inválida)."""
+    import bolao
+    cfg = bolao.normalizar_config({**get_bolao_config(), **(dados or {})})
+    if not set_setting('bolao_config', json.dumps(cfg)):
+        raise RuntimeError('Falha ao salvar configuração de bolões.')
+    return cfg
+
+
+def get_all_boloes() -> List[Dict]:
+    """Lista bolões com organizador e progresso de cotas para o painel admin."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute("""
+                SELECT b.*, u.email AS organizador_email,
+                       COUNT(c.id) FILTER (WHERE c.status = 'paga') AS cotas_pagas,
+                       COUNT(c.id) FILTER (WHERE c.status = 'reservada') AS cotas_reservadas
+                FROM boloes b
+                JOIN users u ON u.id = b.organizador_id
+                LEFT JOIN bolao_cotas c ON c.bolao_id = b.id
+                GROUP BY b.id, u.email
+                ORDER BY b.created_at DESC
+            """).fetchall()
+            return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[BOLOES] Erro ao listar bolões: {e}")
+        return []
+
+
+def update_bolao_status(bolao_id: int, status: str) -> bool:
+    import bolao
+    if status not in bolao.STATUS_BOLAO:
+        raise ValueError('Status inválido.')
+    with get_db_connection() as conn:
+        cur = conn.execute('UPDATE boloes SET status = %s WHERE id = %s', (status, bolao_id))
+        return cur.rowcount > 0

@@ -167,6 +167,11 @@
                 <span>Pagamentos PIX</span>
                 <span class="tab-counter" id="badge-total-pagamentos">{{ pagamentos|length }}</span>
             </button>
+            <button class="tab-btn {% if aba_ativa == 'tab-boloes' %}active{% endif %}" onclick="ativarAba('tab-boloes')">
+                <span>🎟️</span>
+                <span>Bolões</span>
+                <span class="tab-counter">{{ boloes|length }}</span>
+            </button>
                         <button class="tab-btn {% if aba_ativa == 'tab-sistema' %}active{% endif %}" onclick="ativarAba('tab-sistema')">
                 <span>🛠️</span>
                 <span>Sistema & Logs</span>
@@ -620,6 +625,99 @@
              ABA 4: MINHA CONTA / SEGURANÇA
              ========================================== -->
         
+        <!-- TAB BOLÕES: taxa de serviço, regras, simulador e acompanhamento -->
+        <div id="tab-boloes" class="tab-content {% if aba_ativa == 'tab-boloes' %}active{% endif %}">
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h3>⚙️ Taxa de Serviço e Regras dos Bolões</h3>
+                    <span class="badge {% if bolao_config.ativo %}badge-success{% else %}badge-warning{% endif %}" id="bolao-status-modulo">{% if bolao_config.ativo %}Módulo ativo{% else %}Módulo desativado{% endif %}</span>
+                </div>
+                <p style="color:#64748b;margin-bottom:18px;font-size:0.92rem;">Valor da cota = (custo oficial dos jogos na Caixa + taxa de serviço) ÷ total de cotas. A taxa é definida somente aqui; organizadores não podem alterá-la.</p>
+                <form id="form-bolao-config" onsubmit="salvarConfigBolao(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="bc-taxa-tipo">Tipo de taxa</label>
+                            <select id="bc-taxa-tipo">
+                                <option value="percentual" {% if bolao_config.taxa_tipo == 'percentual' %}selected{% endif %}>Percentual sobre o custo dos jogos (%)</option>
+                                <option value="fixa" {% if bolao_config.taxa_tipo == 'fixa' %}selected{% endif %}>Valor fixo por bolão (R$)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bc-taxa-valor">Taxa</label>
+                            <input type="text" inputmode="decimal" id="bc-taxa-valor" value="{{ bolao_config.taxa_valor }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bc-min-cotas">Mínimo de cotas</label>
+                            <input type="text" inputmode="numeric" id="bc-min-cotas" value="{{ bolao_config.min_cotas }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bc-max-cotas">Máximo de cotas</label>
+                            <input type="text" inputmode="numeric" id="bc-max-cotas" value="{{ bolao_config.max_cotas }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bc-horas">Comprovante até (horas antes do sorteio)</label>
+                            <input type="text" inputmode="numeric" id="bc-horas" value="{{ bolao_config.horas_comprovante }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="bc-reserva">Reserva da cota no checkout (minutos)</label>
+                            <input type="text" inputmode="numeric" id="bc-reserva" value="{{ bolao_config.minutos_reserva }}">
+                        </div>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+                        <input type="checkbox" id="bc-ativo" {% if bolao_config.ativo %}checked{% endif %}> Liberar criação e venda de bolões na plataforma
+                    </label>
+                    <button type="submit" class="btn-primary">💾 Salvar configuração</button>
+                </form>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-header"><h3>🧮 Simulador de Preço da Cota</h3></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="sim-loteria">Loteria</label>
+                        <select id="sim-loteria">
+                            {% for tipo, nome in loterias_bolao.items() %}<option value="{{ tipo }}" {% if tipo == 'lotofacil' %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="sim-dezenas">Números por jogo</label><input type="text" inputmode="numeric" id="sim-dezenas" value="16"></div>
+                    <div class="form-group"><label for="sim-jogos">Quantidade de jogos</label><input type="text" inputmode="numeric" id="sim-jogos" value="10"></div>
+                    <div class="form-group"><label for="sim-cotas">Total de cotas</label><input type="text" inputmode="numeric" id="sim-cotas" value="12"></div>
+                </div>
+                <button type="button" class="btn-secondary" onclick="simularBolao()">Calcular com a taxa do formulário acima</button>
+                <div id="sim-resultado" style="margin-top:16px;"></div>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-header"><h3>🎟️ Bolões Cadastrados</h3></div>
+                <div class="table-responsive">
+                    <table class="responsive-card-table">
+                        <thead><tr><th>#</th><th>Loteria / Concurso</th><th>Organizador</th><th>Cotas pagas</th><th>Valor cota</th><th>Custo Caixa</th><th>Taxa</th><th>Comprovante</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {% for b in boloes %}
+                            <tr>
+                                <td data-label="#">{{ b.id }}</td>
+                                <td data-label="Loteria / Concurso">{{ loterias_bolao.get(b.loteria_type, b.loteria_type) }} · {{ b.concurso }}</td>
+                                <td data-label="Organizador">{{ b.organizador_email }}</td>
+                                <td data-label="Cotas pagas">{{ b.cotas_pagas }} / {{ b.total_cotas }}</td>
+                                <td data-label="Valor cota">R$ {{ '%.2f'|format(b.valor_cota|float) }}</td>
+                                <td data-label="Custo Caixa">R$ {{ '%.2f'|format(b.custo_caixa|float) }}</td>
+                                <td data-label="Taxa">R$ {{ '%.2f'|format(b.taxa_servico|float) }}</td>
+                                <td data-label="Comprovante">{% if b.comprovante_url %}<a href="{{ b.comprovante_url }}" target="_blank" rel="noopener">Ver</a>{% else %}<span class="badge badge-warning">Pendente</span>{% endif %}</td>
+                                <td data-label="Status">
+                                    <select onchange="alterarStatusBolao({{ b.id }}, this.value)">
+                                        {% for st in ['aberto','fechado','registrado','premiado','cancelado'] %}<option value="{{ st }}" {% if b.status == st %}selected{% endif %}>{{ st|capitalize }}</option>{% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="9" style="text-align:center;color:#64748b;">Nenhum bolão criado ainda. A criação pelos organizadores chega na próxima etapa.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- TAB SUPORTE (CHAT LOGS) -->
         <div id="tab-suporte" class="tab-content {% if aba_ativa == 'tab-suporte' %}active{% endif %}">
             <div class="card fade-in">
@@ -983,6 +1081,56 @@
             } else if (tabId === 'tab-pagamentos' && typeof carregarPagamentos === 'function') {
                 carregarPagamentos();
             }
+        }
+
+        // Bolões
+        function _configBolaoForm() {
+            return {
+                ativo: document.getElementById('bc-ativo').checked,
+                taxa_tipo: document.getElementById('bc-taxa-tipo').value,
+                taxa_valor: document.getElementById('bc-taxa-valor').value.replace(',', '.'),
+                min_cotas: document.getElementById('bc-min-cotas').value,
+                max_cotas: document.getElementById('bc-max-cotas').value,
+                horas_comprovante: document.getElementById('bc-horas').value,
+                minutos_reserva: document.getElementById('bc-reserva').value
+            };
+        }
+        const _brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        async function salvarConfigBolao(ev) {
+            ev.preventDefault();
+            const res = await fetch('/api/admin/boloes/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_configBolaoForm()) });
+            const data = await res.json();
+            if (!res.ok) return showToast(data.erro || 'Erro ao salvar', 'error');
+            const badge = document.getElementById('bolao-status-modulo');
+            badge.textContent = data.config.ativo ? 'Módulo ativo' : 'Módulo desativado';
+            badge.className = 'badge ' + (data.config.ativo ? 'badge-success' : 'badge-warning');
+            showToast('Configuração de bolões salva!', 'success');
+        }
+
+        async function simularBolao() {
+            const box = document.getElementById('sim-resultado');
+            const res = await fetch('/api/admin/boloes/simular', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                loteria_type: document.getElementById('sim-loteria').value,
+                dezenas_por_jogo: document.getElementById('sim-dezenas').value,
+                quantidade_jogos: document.getElementById('sim-jogos').value,
+                total_cotas: document.getElementById('sim-cotas').value,
+                config: _configBolaoForm()
+            }) });
+            const d = await res.json();
+            if (!res.ok) { box.innerHTML = ''; return showToast(d.erro || 'Erro na simulação', 'error'); }
+            box.innerHTML = `<div class="metrics-grid">
+                <div class="metric-card"><div class="metric-info"><h4>Custo Caixa</h4><div class="metric-value">${_brl(d.custo_caixa)}</div></div></div>
+                <div class="metric-card"><div class="metric-info"><h4>Taxa de serviço</h4><div class="metric-value">${_brl(d.taxa_servico)}</div></div></div>
+                <div class="metric-card"><div class="metric-info"><h4>Total do bolão</h4><div class="metric-value">${_brl(d.custo_total)}</div></div></div>
+                <div class="metric-card"><div class="metric-info"><h4>Valor da cota</h4><div class="metric-value">${_brl(d.valor_cota)}</div><div class="metric-sub">${d.total_cotas} cotas · sobra de arredondamento ${_brl(d.sobra_arredondamento)}</div></div></div>
+            </div>`;
+        }
+
+        async function alterarStatusBolao(id, status) {
+            const res = await fetch(`/api/admin/boloes/${id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+            const d = await res.json();
+            showToast(res.ok ? `Bolão #${id} agora está "${status}"` : (d.erro || 'Erro'), res.ok ? 'success' : 'error');
         }
 
         // Toasts
