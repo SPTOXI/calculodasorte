@@ -20,6 +20,7 @@ import database
 import updater
 import ai_agent
 import avaliacao
+import bolao
 import conferencia
 import fechamento
 import importador
@@ -1381,7 +1382,10 @@ def admin_dashboard():
         chat_logs=chat_logs,
         system_errors=system_errors,
         api_status=api_status,
-        api_keys_config=ui_api_keys_config
+        api_keys_config=ui_api_keys_config,
+        boloes=database.get_all_boloes(),
+        bolao_config=database.get_bolao_config(),
+        loterias_bolao={t.value: c.nome for t, c in LOTERIAS_CONFIG.items()},
     )
 
 
@@ -2646,6 +2650,61 @@ def api_admin_config_pix():
         'amostra_qr': amostra_qr
     })
 
+
+
+# ==========================================
+# BOLÕES (ADMIN)
+# ==========================================
+
+@app.route('/api/admin/boloes/config', methods=['GET', 'POST'])
+@admin_required
+def api_admin_bolao_config():
+    """Consulta ou define a taxa de serviço e as regras dos bolões (exclusivo do admin)"""
+    if request.method == 'POST':
+        try:
+            cfg = database.save_bolao_config(request.get_json(silent=True) or {})
+        except ValueError as e:
+            return jsonify({'erro': str(e)}), 400
+        return jsonify({'sucesso': True, 'config': cfg})
+    return jsonify({'sucesso': True, 'config': database.get_bolao_config()})
+
+
+@app.route('/api/admin/boloes/simular', methods=['POST'])
+@admin_required
+def api_admin_bolao_simular():
+    """Simula o preço da cota com a taxa configurada (ou a enviada, para testar antes de salvar)"""
+    dados = request.get_json(silent=True) or {}
+    try:
+        config = LOTERIAS_CONFIG[LoteriaType(dados.get('loteria_type'))]
+        dezenas = int(dados.get('dezenas_por_jogo', config.minimo_aposta))
+        qtd = int(dados.get('quantidade_jogos', 1))
+        cotas = int(dados.get('total_cotas', 1))
+        cfg = bolao.normalizar_config({**database.get_bolao_config(), **(dados.get('config') or {})})
+        if not 1 <= qtd <= 1000:
+            raise ValueError('Quantidade de jogos deve ficar entre 1 e 1000.')
+        precos = bolao.calcular_precos(config, [list(range(dezenas))] * qtd, cotas, cfg)
+    except (ValueError, TypeError) as e:
+        return jsonify({'erro': str(e) or 'Parâmetros inválidos.'}), 400
+    return jsonify({'sucesso': True, 'loteria': config.nome, **bolao.precos_para_json(precos)})
+
+
+@app.route('/api/admin/boloes', methods=['GET'])
+@admin_required
+def api_admin_boloes():
+    return jsonify({'sucesso': True, 'boloes': database.get_all_boloes()})
+
+
+@app.route('/api/admin/boloes/<int:bolao_id>/status', methods=['POST'])
+@admin_required
+def api_admin_bolao_status(bolao_id: int):
+    status = (request.get_json(silent=True) or {}).get('status')
+    try:
+        ok = database.update_bolao_status(bolao_id, status)
+    except ValueError as e:
+        return jsonify({'erro': str(e)}), 400
+    if not ok:
+        return jsonify({'erro': 'Bolão não encontrado'}), 404
+    return jsonify({'sucesso': True})
 
 
 # ==========================================
