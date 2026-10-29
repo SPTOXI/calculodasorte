@@ -624,19 +624,60 @@ def salvar_historico(loteria_type: str, historico: list):
 # ROTAS PÚBLICAS E PÁGINAS PRINCIPAIS
 # ==========================================
 
+_cache_bolao_cfg = {'em': 0.0, 'cfg': None}
+
+
+def _bolao_config_cache() -> dict:
+    """Configuração dos bolões com cache de 60s: é lida em todas as páginas (rodapé e Hero)."""
+    if time.time() - _cache_bolao_cfg['em'] > 60 or _cache_bolao_cfg['cfg'] is None:
+        _cache_bolao_cfg.update(em=time.time(), cfg=database.get_bolao_config())
+    return _cache_bolao_cfg['cfg']
+
+
+@app.context_processor
+def _contexto_boloes():
+    try:
+        return {'boloes_ativos': _bolao_config_cache()['ativo']}
+    except Exception:
+        return {'boloes_ativos': False}
+
+
+def _destaque_boloes(forcar: bool = False):
+    """Dados do anúncio de bolões na Hero: só aparece com o módulo ativo (ou na pré-visualização do admin)."""
+    cfg = _bolao_config_cache()
+    if not (cfg['ativo'] or forcar):
+        return None
+    try:
+        abertos = [b for b in database.listar_boloes_abertos() if b['total_cotas'] > b['cotas_vendidas']]
+    except Exception:
+        abertos = []
+    # Destaques: os mais perto de esgotar primeiro (escassez incentiva a compra)
+    abertos.sort(key=lambda b: (b['total_cotas'] - b['cotas_vendidas'], b['valor_cota']))
+    return {
+        'total_abertos': len(abertos),
+        'menor_cota': min((b['valor_cota'] for b in abertos), default=None),
+        'cotas_restantes': sum(b['total_cotas'] - b['cotas_vendidas'] for b in abertos),
+        'destaques': abertos[:3],
+    }
+
+
 @app.route('/')
 def index():
     """Página inicial: Landing Page para visitantes, ou redireciona para dashboard se autenticado"""
+    preview_admin = False
     if 'user_id' in session:
         user = database.get_user_by_id(session['user_id'])
-        if user and not user['is_blocked']:
+        # ?preview=boloes deixa o admin ver a landing com o anúncio mesmo com o módulo desligado
+        preview_admin = bool(user and user.get('role') == 'admin' and request.args.get('preview') == 'boloes')
+        if user and not user['is_blocked'] and not preview_admin:
             return redirect(url_for('dashboard'))
     agora = updater.agora_brasilia()
     proximos = {}
     for lt in LoteriaType:
         prox = proximo_sorteio(LOTERIAS_CONFIG[lt], agora)
         proximos[lt.value] = prox[1] if prox else ''
-    return render_template('landing.html', proximos=proximos)
+    return render_template('landing.html', proximos=proximos, boloes_destaque=_destaque_boloes(forcar=preview_admin),
+                           loterias_nomes=_NOMES_LOTERIAS)
 
 
 # Configuração sintética do universo dos "trevos" da +Milionária (1 a 6, 2 sorteados),
@@ -785,7 +826,9 @@ def dashboard():
         })
     current_user = database.get_user_by_id(session['user_id'])
     access = database.check_user_access(session['user_id'])
-    return render_template('index.html', loterias=loterias, current_user=current_user, access=access)
+    return render_template('index.html', loterias=loterias, current_user=current_user, access=access,
+                           boloes_destaque=_destaque_boloes(forcar=current_user.get('role') == 'admin'),
+                           loterias_nomes=_NOMES_LOTERIAS)
 
 
 @app.route('/analise/<loteria_type>')
@@ -2683,6 +2726,7 @@ def api_admin_bolao_config():
             cfg = database.save_bolao_config(request.get_json(silent=True) or {})
         except ValueError as e:
             return jsonify({'erro': str(e)}), 400
+        _cache_bolao_cfg['cfg'] = None
         return jsonify({'sucesso': True, 'config': cfg})
     return jsonify({'sucesso': True, 'config': database.get_bolao_config()})
 

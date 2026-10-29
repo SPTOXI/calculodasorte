@@ -151,8 +151,8 @@ do sorteio para o comprovante, minutos de reserva e liga/desliga.
 - [ ] **Validação jurídica**: a venda online de cotas de bolão por quem não é lotérica credenciada
       tem restrições (Caixa/SPA-MF). Validar o modelo com um advogado antes de receber dinheiro de
       terceiros.
-- [ ] **Rodapé do site**: o texto *"NÃO comercializamos bilhetes"* contradiz a venda de cotas.
-      Reescrever (`templates/*`, aviso legal do rodapé).
+- [ ] **Rodapé do site**: já é condicional (v5.1.0). Com o módulo ativo, o texto passa a descrever a
+      plataforma como tecnologia e prestação de contas. **Validar a nova redação com um advogado.**
 - [ ] **Termos de Uso (seção 6)**: validar com um advogado o texto e a promessa de reembolso em caso
       de cancelamento.
 - [ ] **Teste real de ponta a ponta** em produção com o módulo desligado: criar o bolão, comprar uma
@@ -193,7 +193,11 @@ do sorteio para o comprovante, minutos de reserva e liga/desliga.
 - [ ] **Página de bilhete**: é pública para quem tem o link (mostra só o primeiro nome do titular).
       Não há QR Code no bilhete.
 - [ ] **Navegação**: não há link para "Minhas cotas" no menu principal (só pela vitrine). O atalho
-      "Meus Bolões" aparece apenas para admin e organizador.
+      "Meus Bolões" aparece apenas para admin e organizador. O anúncio da Hero leva à vitrine.
+- [ ] **Menu da landing (já existia antes)**: em telas de cerca de 1280px, o menu do topo não cabe e o botão
+      "⚡ Análise por R$ 1,00" fica parcialmente cortado. Por isso, não foi adicionado um link "Bolões"
+      ao menu; ajustar o menu antes de incluí-lo.
+- [ ] **Hero**: o anúncio só aparece com o módulo ativo. Pré-visualizar com `/?preview=boloes` (admin).
 - [ ] **Rotina diária**: roda uma vez por dia (23h). O cancelamento por falta de comprovante pode
       acontecer até cerca de 24h depois do prazo, porque o sorteio já ocorreu nesse intervalo. Para
       maior precisão, aumentar a frequência do cron (por exemplo, de hora em hora) ou rodar pelo botão
