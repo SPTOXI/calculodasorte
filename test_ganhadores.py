@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from app import app
+import database
 import ganhadores
 import updater
 
@@ -36,8 +37,17 @@ class TestRegistroEPaginas(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.banco = {}  # loteria -> {concurso: registro}, no lugar da tabela concursos_ganhadores
+
+        def salvar_db(lot, concurso, data, locais):
+            self.banco.setdefault(lot, {})[str(concurso)] = {'data': data, 'locais': locais}
+            return True
+
         self.patches = [patch.object(updater, 'DATA_DIR', self.tmp.name),
-                        patch.object(updater, 'ORIGINAL_DATA_DIR', self.tmp.name)]
+                        patch.object(updater, 'ORIGINAL_DATA_DIR', self.tmp.name),
+                        patch.object(database, 'salvar_ganhadores_db', side_effect=salvar_db),
+                        patch.object(database, 'listar_ganhadores_db',
+                                     side_effect=lambda lot: dict(self.banco.get(lot, {})))]
         for p in self.patches:
             p.start()
         ganhadores._CACHE.clear()
@@ -55,6 +65,23 @@ class TestRegistroEPaginas(unittest.TestCase):
         self.assertTrue(ganhadores.registrar('quina', dados))
         self.assertFalse(ganhadores.registrar('quina', dados))
         self.assertEqual(ganhadores.agregados('quina')['ufs']['PE']['ganhadores'], 1)
+
+    def test_registro_vai_para_o_banco(self):
+        ganhadores.registrar('quina', {'numero': 8, 'listaMunicipioUFGanhadores': []})
+        self.assertIn('8', self.banco['quina'])
+
+    def test_concurso_so_no_banco_aparece(self):
+        # Simula outra instância (ou /tmp apagado): o concurso só existe no banco
+        self.banco['quina'] = {'9': {'data': '02/01/2026', 'locais': [
+            {'municipio': 'NATAL', 'uf': 'RN', 'ganhadores': 1}]}}
+        self.assertEqual(self.client.get('/ganhadores/quina/rn/natal').status_code, 200)
+
+    def test_banco_fora_do_ar_usa_arquivo(self):
+        ganhadores.registrar('quina', {'numero': 7, 'listaMunicipioUFGanhadores': [
+            {'municipio': 'RECIFE', 'uf': 'PE', 'ganhadores': 1}]})
+        ganhadores._CACHE.clear()
+        with patch.object(database, 'listar_ganhadores_db', side_effect=RuntimeError('fora')):
+            self.assertEqual(self.client.get('/ganhadores/quina/pe/recife').status_code, 200)
 
     def test_paginas(self):
         ganhadores.registrar('quina', {'numero': 7, 'dataApuracao': '01/01/2026',

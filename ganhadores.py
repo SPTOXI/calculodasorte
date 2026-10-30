@@ -10,10 +10,12 @@ e loteriascaixa-api (`localGanhadores`).
 import json
 import os
 import re
+import time
 import unicodedata
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+import database
 import updater
 
 UFS = {
@@ -26,6 +28,7 @@ UFS = {
 }
 
 _CACHE: Dict[str, Dict[str, Any]] = {}
+_CACHE_TTL = 3600  # outras instâncias serverless veem concursos novos em até 1h
 
 
 def slugify(texto: str) -> str:
@@ -68,8 +71,7 @@ def _caminho(loteria: str, pasta: str) -> str:
     return os.path.join(pasta, f'{loteria}_ganhadores.json')
 
 
-def carregar(loteria: str) -> Dict[str, Dict[str, Any]]:
-    """{concurso(str): {'data': 'dd/mm/aaaa', 'locais': [...]}}"""
+def _carregar_arquivo(loteria: str) -> Dict[str, Dict[str, Any]]:
     for pasta in (updater.DATA_DIR, updater.ORIGINAL_DATA_DIR):
         path = _caminho(loteria, pasta)
         if os.path.exists(path):
@@ -81,6 +83,17 @@ def carregar(loteria: str) -> Dict[str, Dict[str, Any]]:
     return {}
 
 
+def carregar(loteria: str) -> Dict[str, Dict[str, Any]]:
+    """{concurso(str): {'data': 'dd/mm/aaaa', 'locais': [...]}}: histórico do repositório
+    mais os concursos gravados no banco pela sincronização."""
+    registros = _carregar_arquivo(loteria)
+    try:
+        registros.update(database.listar_ganhadores_db(loteria))
+    except Exception as e:
+        print(f"[GANHADORES] Banco indisponível, usando só o arquivo ({loteria}): {e}")
+    return registros
+
+
 def salvar(loteria: str, registros: Dict[str, Dict[str, Any]]):
     os.makedirs(updater.DATA_DIR, exist_ok=True)
     ordenado = dict(sorted(registros.items(), key=lambda kv: int(kv[0])))
@@ -90,7 +103,7 @@ def salvar(loteria: str, registros: Dict[str, Dict[str, Any]]):
 
 
 def registrar(loteria: str, dados: Dict[str, Any]) -> bool:
-    """Grava os ganhadores de um resultado da API, se ainda não estiverem salvos."""
+    """Grava os ganhadores de um resultado da API no banco (persistente) e no arquivo local."""
     numero = (dados or {}).get('numero') or (dados or {}).get('concurso')
     locais = extrair_ganhadores(dados)
     if not numero or locais is None:
@@ -98,19 +111,27 @@ def registrar(loteria: str, dados: Dict[str, Any]) -> bool:
     registros = carregar(loteria)
     if str(numero) in registros:
         return False
-    registros[str(numero)] = {'data': dados.get('dataApuracao') or dados.get('data'), 'locais': locais}
+    data = dados.get('dataApuracao') or dados.get('data')
+    try:
+        database.salvar_ganhadores_db(loteria, int(numero), data, locais)
+    except Exception as e:
+        print(f"[GANHADORES] Aviso ao gravar no banco ({loteria} {numero}): {e}")
+    registros = _carregar_arquivo(loteria)
+    registros[str(numero)] = {'data': data, 'locais': locais}
     salvar(loteria, registros)
     return True
 
 
 def agregados(loteria: str) -> Dict[str, Any]:
     """Ganhadores agrupados por UF e cidade, com os concursos de cada cidade."""
-    if loteria in _CACHE:
-        return _CACHE[loteria]
+    cache = _CACHE.get(loteria)
+    if cache and time.time() - cache['_em'] < _CACHE_TTL:
+        return cache
     ufs: Dict[str, Dict[str, Any]] = {}
     canal = 0
     total = 0
-    for concurso, reg in carregar(loteria).items():
+    registros = carregar(loteria)
+    for concurso, reg in registros.items():
         for loc in reg.get('locais') or []:
             total += loc['ganhadores']
             if loc['uf'] == '--':
@@ -129,7 +150,7 @@ def agregados(loteria: str) -> Dict[str, Any]:
         for c in uf['cidades'].values():
             c['concursos'].sort(key=lambda x: -x['concurso'])
     resultado = {'ufs': ufs, 'canal_eletronico': canal, 'total': total,
-                 'concursos_registrados': len(carregar(loteria))}
+                 'concursos_registrados': len(registros), '_em': time.time()}
     _CACHE[loteria] = resultado
     return resultado
 
@@ -140,7 +161,7 @@ def backfill(loteria: str) -> Dict[str, int]:
     lista = updater._baixar_lista_completa(slug)
     if not lista:
         return {'adicionados': 0, 'erro': 1}
-    registros = carregar(loteria)
+    registros = _carregar_arquivo(loteria)
     adicionados = 0
     for dados in lista:
         numero = dados.get('concurso') or dados.get('numero')
