@@ -259,6 +259,20 @@ def init_db():
             )
         """)
 
+        # Cidade/UF dos ganhadores do prêmio principal (páginas /ganhadores). O histórico
+        # base fica em data/<loteria>_ganhadores.json; aqui ficam os concursos sincronizados
+        # depois, que no Vercel não sobreviveriam ao /tmp.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS concursos_ganhadores (
+                loteria_type TEXT NOT NULL,
+                concurso INTEGER NOT NULL,
+                data_sorteio TEXT,
+                locais_json TEXT NOT NULL,
+                registrado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (loteria_type, concurso)
+            )
+        """)
+
         # Bolões: o organizador monta os jogos; a taxa vem da configuração do admin
         conn.execute("""
             CREATE TABLE IF NOT EXISTS boloes (
@@ -600,6 +614,29 @@ def listar_concursos_importados(loteria_type: str) -> List[Dict[str, Any]]:
         'trevos': json.loads(r['trevos_json']) if r['trevos_json'] else [],
         'complemento': r['complemento'],
     } for r in rows]
+
+
+def salvar_ganhadores_db(loteria_type: str, concurso: int, data_sorteio: Optional[str],
+                         locais: List[Dict[str, Any]]) -> bool:
+    """Grava a cidade/UF dos ganhadores do prêmio principal de um concurso (ignora se já existe)."""
+    with get_db_connection() as conn:
+        conn.execute('''
+            INSERT INTO concursos_ganhadores (loteria_type, concurso, data_sorteio, locais_json)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (loteria_type, concurso) DO NOTHING
+        ''', (loteria_type, concurso, data_sorteio, json.dumps(locais, ensure_ascii=False)))
+        conn.commit()
+    return True
+
+
+def listar_ganhadores_db(loteria_type: str) -> Dict[str, Dict[str, Any]]:
+    """{concurso(str): {'data': ..., 'locais': [...]}} no mesmo formato do JSON em data/."""
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT concurso, data_sorteio, locais_json FROM concursos_ganhadores
+            WHERE loteria_type = %s
+        ''', (loteria_type,)).fetchall()
+    return {str(r['concurso']): {'data': r['data_sorteio'], 'locais': json.loads(r['locais_json'])} for r in rows}
 
 
 def resumo_concursos_importados() -> Dict[str, Dict[str, Any]]:

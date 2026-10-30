@@ -372,5 +372,58 @@ def resultados_lista(loteria_slug, page=1):
                            page=page,
                            total_pages=total_pages)
 
+
+def _rotulo_ganhadores(n):
+    return f"{n} ganhador" if n == 1 else f"{n} ganhadores"
+
+
+@seo_bp.route('/ganhadores/<loteria_slug>')
+@seo_bp.route('/ganhadores/<loteria_slug>/<uf>')
+@seo_bp.route('/ganhadores/<loteria_slug>/<uf>/<cidade>')
+def ganhadores_por_local(loteria_slug, uf=None, cidade=None):
+    import ganhadores
+    loteria_key, cfg = get_config(loteria_slug)
+    if not cfg:
+        return "Not found", 404
+    dados = ganhadores.agregados(loteria_key)
+    if not dados['concursos_registrados']:
+        return "Not found", 404
+    slug = loteria_key.replace('_', '-')
+    ufs = sorted(dados['ufs'].values(), key=lambda u: -u['ganhadores'])
+    ctx = dict(loteria_nome=cfg.nome, loteria_slug=slug, nivel='brasil', dados=dados,
+               uf=None, cidade=None, rotulo=_rotulo_ganhadores)
+
+    if uf is None:
+        ctx.update(itens=ufs,
+                   h1_title=f"Ganhadores da {cfg.nome} por estado",
+                   resposta_direta=(f"A {cfg.nome} teve {_rotulo_ganhadores(dados['total'])} do prêmio principal nos "
+                                    f"{dados['concursos_registrados']} concursos registrados. "
+                                    + (f"O estado com mais ganhadores é {ufs[0]['nome']}, com {ufs[0]['ganhadores']}." if ufs else "")))
+        return render_template('seo_ganhadores.html', **ctx)
+
+    info_uf = dados['ufs'].get(uf.upper())
+    if not info_uf or uf != uf.lower():
+        return "Not found", 404
+    cidades = sorted(info_uf['cidades'].values(), key=lambda c: (-c['ganhadores'], c['nome']))
+
+    if cidade is None:
+        ctx.update(nivel='uf', uf=info_uf, itens=cidades,
+                   h1_title=f"Ganhadores da {cfg.nome} em {info_uf['nome']} ({info_uf['uf']})",
+                   resposta_direta=(f"{info_uf['nome']} teve {_rotulo_ganhadores(info_uf['ganhadores'])} do prêmio principal da "
+                                    f"{cfg.nome} em {len(cidades)} cidade(s). A cidade com mais ganhadores é "
+                                    f"{cidades[0]['nome']}, com {cidades[0]['ganhadores']}."))
+        return render_template('seo_ganhadores.html', **ctx)
+
+    info = info_uf['cidades'].get(cidade)
+    if not info:
+        return "Not found", 404
+    ultimo = info['concursos'][0]
+    ctx.update(nivel='cidade', uf=info_uf, cidade=info, itens=info['concursos'],
+               h1_title=f"Ganhadores da {cfg.nome} em {info['nome']} - {info_uf['uf']}",
+               resposta_direta=(f"{info['nome']} ({info_uf['uf']}) teve {_rotulo_ganhadores(info['ganhadores'])} do prêmio "
+                                f"principal da {cfg.nome} em {len(info['concursos'])} concurso(s). O mais recente foi o "
+                                f"concurso {ultimo['concurso']}{' de ' + ultimo['data'] if ultimo.get('data') else ''}."))
+    return render_template('seo_ganhadores.html', **ctx)
+
 def register_seo_routes(app):
     app.register_blueprint(seo_bp)

@@ -165,7 +165,8 @@ def sitemap_index():
         'sitemap-paginas.xml',
         'sitemap-ferramentas.xml',
         'sitemap-estatisticas.xml',
-        'sitemap-blog.xml'
+        'sitemap-blog.xml',
+        'sitemap-ganhadores.xml'
     ]
     for loteria in loterias:
         sitemaps.append(f'sitemap-concursos-{loteria.replace("_", "-")}.xml')
@@ -233,6 +234,32 @@ def ferramentas_da_loteria(loteria_key):
 
 
 ESTATISTICAS_SLUGS = ['numeros-mais-sorteados', 'numeros-atrasados']
+
+
+@app.route('/sitemap-ganhadores.xml')
+def sitemap_ganhadores():
+    """Páginas de ganhadores do prêmio principal por loteria, estado e cidade."""
+    import ganhadores
+    host = "https://www.calculodasorte.com.br"
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    for loteria_enum in LOTERIAS_CONFIG.keys():
+        loteria = loteria_enum.value
+        dados = ganhadores.agregados(loteria)
+        if not dados['concursos_registrados']:
+            continue
+        slug = loteria.replace('_', '-')
+        parts.append(f'  <url><loc>{host}/ganhadores/{slug}</loc></url>')
+        for uf in dados['ufs'].values():
+            parts.append(f'  <url><loc>{host}/ganhadores/{slug}/{uf["slug"]}</loc></url>')
+            for cidade in uf['cidades'].values():
+                parts.append(f'  <url><loc>{host}/ganhadores/{slug}/{uf["slug"]}/{cidade["slug"]}</loc></url>')
+    parts.append('</urlset>')
+    response = make_response("\n".join(parts))
+    response.headers["Content-Type"] = "application/xml"
+    return response
 
 
 @app.route('/sitemap-ferramentas.xml')
