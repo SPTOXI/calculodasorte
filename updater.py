@@ -865,6 +865,15 @@ def sincronizar_loteria(loteria_type: str, n_historico: int = 50) -> Dict[str, A
     return res
 
 
+def _registrar_ganhadores(loteria_type: str, dados: Dict[str, Any]):
+    """Guarda cidade/UF dos ganhadores do prêmio principal (páginas /ganhadores)."""
+    try:
+        import ganhadores
+        ganhadores.registrar(loteria_type, dados)
+    except Exception as e:
+        print(f"[UPDATER] Aviso ao registrar ganhadores ({loteria_type}): {e}")
+
+
 def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict[str, Any]:
     """
     Sincroniza uma loteria específica buscando os últimos sorteios da Caixa.
@@ -976,6 +985,7 @@ def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict
                 d = consultar_caixa(slug, concurso=c, max_retries=1)
 
             if d:
+                _registrar_ganhadores(loteria_type, d)
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     historico_acumulado.append(dezenas)
@@ -1037,6 +1047,7 @@ def _sincronizar_loteria_caixa(loteria_type: str, n_historico: int = 50) -> Dict
                 d = consultar_caixa(slug, concurso=c, max_retries=1)
 
             if d:
+                _registrar_ganhadores(loteria_type, d)
                 dezenas = extrair_dezenas(d, slug)
                 if dezenas:
                     novos_concursos.append(dezenas)

@@ -1,0 +1,84 @@
+{% extends "dashboard_base.html" %}
+{% set base = 'https://www.calculodasorte.com.br' %}
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "name": {{ h1_title|tojson }},
+      "description": {{ resposta_direta|tojson }},
+      "inLanguage": "pt-BR"{% if cidade %},
+      "about": { "@type": "City", "name": {{ cidade.nome|tojson }}, "containedInPlace": { "@type": "State", "name": {{ uf.nome|tojson }} } }{% elif uf %},
+      "about": { "@type": "State", "name": {{ uf.nome|tojson }} }{% endif %}
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ base }}/" },
+        { "@type": "ListItem", "position": 2, "name": {{ loteria_nome|tojson }}, "item": "{{ base }}/{{ loteria_slug }}" },
+        { "@type": "ListItem", "position": 3, "name": "Ganhadores", "item": "{{ base }}/ganhadores/{{ loteria_slug }}" }{% if uf %},
+        { "@type": "ListItem", "position": 4, "name": {{ uf.nome|tojson }}, "item": "{{ base }}/ganhadores/{{ loteria_slug }}/{{ uf.slug }}" }{% endif %}{% if cidade %},
+        { "@type": "ListItem", "position": 5, "name": {{ cidade.nome|tojson }}, "item": "{{ base }}/ganhadores/{{ loteria_slug }}/{{ uf.slug }}/{{ cidade.slug }}" }{% endif %}
+      ]
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 20px;">
+    <nav style="font-size: 0.9em; margin-bottom: 20px; color: #666;">
+        <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> &gt;
+        <a href="/{{ loteria_slug }}" style="color: var(--primary); text-decoration: none;">{{ loteria_nome }}</a> &gt;
+        {% if uf %}<a href="/ganhadores/{{ loteria_slug }}" style="color: var(--primary); text-decoration: none;">Ganhadores</a> &gt;{% else %}<strong>Ganhadores</strong>{% endif %}
+        {% if uf and cidade %}<a href="/ganhadores/{{ loteria_slug }}/{{ uf.slug }}" style="color: var(--primary); text-decoration: none;">{{ uf.nome }}</a> &gt; <strong>{{ cidade.nome }}</strong>{% elif uf %}<strong>{{ uf.nome }}</strong>{% endif %}
+    </nav>
+
+    <h1 style="color: var(--primary); margin-bottom: 15px;">{{ h1_title }}</h1>
+    <p style="font-size: 1.1em; color: #475569; margin-bottom: 25px; max-width: 800px;">{{ resposta_direta }}</p>
+
+    <div style="overflow-x: auto; margin-bottom: 25px;">
+    <table style="width: 100%; border-collapse: collapse; max-width: 800px;">
+        <thead>
+            <tr style="background: #f1f5f9; text-align: left;">
+            {% if nivel == 'cidade' %}
+                <th style="padding: 10px;">Concurso</th><th style="padding: 10px;">Data</th><th style="padding: 10px;">Ganhadores</th>
+            {% else %}
+                <th style="padding: 10px;">{{ 'Estado' if nivel == 'brasil' else 'Cidade' }}</th><th style="padding: 10px;">Ganhadores do prêmio principal</th>
+            {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in itens %}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+            {% if nivel == 'cidade' %}
+                <td style="padding: 10px;"><a href="/{{ loteria_slug }}/concurso/{{ item.concurso }}" style="color: var(--primary);">{{ item.concurso }}</a></td>
+                <td style="padding: 10px;">{{ item.data or '-' }}</td>
+                <td style="padding: 10px;">{{ item.ganhadores }}</td>
+            {% elif nivel == 'uf' %}
+                <td style="padding: 10px;"><a href="/ganhadores/{{ loteria_slug }}/{{ uf.slug }}/{{ item.slug }}" style="color: var(--primary);">{{ item.nome }}</a></td>
+                <td style="padding: 10px;">{{ item.ganhadores }}</td>
+            {% else %}
+                <td style="padding: 10px;"><a href="/ganhadores/{{ loteria_slug }}/{{ item.slug }}" style="color: var(--primary);">{{ item.nome }} ({{ item.uf }})</a></td>
+                <td style="padding: 10px;">{{ item.ganhadores }}</td>
+            {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if nivel == 'brasil' and dados.canal_eletronico %}
+    <p style="color: #475569;">Outros {{ rotulo(dados.canal_eletronico) }} apostaram pelo canal eletrônico (internet ou app), sem cidade divulgada.</p>
+    {% endif %}
+
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 25px 0; max-width: 800px; color: #475569; font-size: 0.95em;">
+        <strong>Importante:</strong> o local onde a aposta foi feita não muda a probabilidade de ganhar. Cidades grandes aparecem mais porque concentram mais apostas.
+        Fonte: resultados oficiais divulgados pela Caixa Econômica Federal, apenas a faixa principal de cada concurso.
+        <a href="/{{ loteria_slug }}/probabilidade" style="color: var(--primary);">Veja as probabilidades reais da {{ loteria_nome }}</a>.
+    </div>
+</div>
+{% endblock %}
