@@ -252,16 +252,20 @@ class TestImportacaoAdmin(unittest.TestCase):
         self.assertEqual(updater.carregar_concursos_local('quina'), [1, 2])
 
     def test_rodadas_continuam_de_onde_pararam(self):
-        ultimo = updater.carregar_meta('quina')['ultimo_concurso']
+        # Começa abaixo do concurso mais antigo que já temos, para que todos os pedidos sejam pendentes
+        # (o tamanho do histórico local em data/ muda com o tempo)
+        mais_antigo = min(updater.concursos_existentes('quina'))
         pedidos = []
         def falso(slug, concurso=None, max_retries=2):
             pedidos.append(concurso)
             return None  # API fora do ar
-        with patch.object(updater, 'consultar_caixa', side_effect=falso):
-            r1 = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0, abaixo_de=ultimo - 50)
+        # API fora do ar também para a lista completa; senão o teste dependeria da rede
+        with patch.object(updater, 'consultar_caixa', side_effect=falso), \
+                patch.object(updater, '_baixar_lista_completa', return_value=None):
+            r1 = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0, abaixo_de=mais_antigo)
             r2 = updater.baixar_historico_completo('quina', limite_segundos=0, ultimos=0, abaixo_de=r1['proximo'])
         self.assertEqual(r1['falhas'], 20)
-        self.assertEqual(max(pedidos), ultimo - 51)
+        self.assertEqual(max(pedidos), mais_antigo - 1)
         self.assertLess(max(p for p in pedidos[20:]), min(pedidos[:20]))  # não repete os que falharam
         self.assertEqual(r2['faltam'], r1['faltam'] - 20)
 
