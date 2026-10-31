@@ -250,6 +250,8 @@ class TestNovasFuncionalidades(unittest.TestCase):
         email = f"ia_{uuid.uuid4().hex[:8]}@teste.com"
         user = database.create_user(email, 'senha123', name='IA Tester')
         user_id = user['id']
+        # Conta nova começa sem crédito; o teste é do parecer e do chat, não do paywall
+        database.add_user_credits(user_id, 1)
 
         with self.client.session_transaction() as sess:
             sess['user_id'] = user_id

@@ -11,6 +11,7 @@ Permite ao usuário escolher livremente a forma de análise e de geração de pa
 """
 
 from __future__ import annotations
+import hashlib
 import math
 import random
 import statistics
@@ -417,10 +418,18 @@ def construir_painel_opcoes_analise(modelo: ModeloCanonico40) -> Dict[str, Any]:
     k_aposta = config.minimo_aposta
     dinamica_res = modelo.avaliar_dinamica_expansao_retracao()
     jogo_canonico = list(dinamica_res.get("jogo_ajustado") or [])
-    jogo_quentes = gerar_jogos_por_metodo(modelo, 1, k_aposta, "frequencia_quentes")[0]
-    jogo_atraso = gerar_jogos_por_metodo(modelo, 1, k_aposta, "atraso_frios")[0]
-    jogo_equil = gerar_jogos_por_metodo(modelo, 1, k_aposta, "equilibrio_classico")[0]
-    jogo_hibrido = gerar_jogos_por_metodo(modelo, 1, k_aposta, "hibrida_tradicional")[0]
+    # Os jogos de exemplo do painel usam uma semente derivada do histórico: o mesmo histórico
+    # gera sempre o mesmo resumo. O estado global do random é restaurado em seguida, para não
+    # afetar a geração de jogos pedida pelo usuário.
+    estado_random = random.getstate()
+    random.seed(hashlib.sha256(repr((lot_slug, modelo.historico)).encode()).hexdigest())
+    try:
+        jogo_quentes = gerar_jogos_por_metodo(modelo, 1, k_aposta, "frequencia_quentes")[0]
+        jogo_atraso = gerar_jogos_por_metodo(modelo, 1, k_aposta, "atraso_frios")[0]
+        jogo_equil = gerar_jogos_por_metodo(modelo, 1, k_aposta, "equilibrio_classico")[0]
+        jogo_hibrido = gerar_jogos_por_metodo(modelo, 1, k_aposta, "hibrida_tradicional")[0]
+    finally:
+        random.setstate(estado_random)
 
     faixa_rep_min = max(0, int(math.floor(media_repetidas - 1)))
     faixa_rep_max = min(config.sorteados, int(math.ceil(media_repetidas + 1)))
