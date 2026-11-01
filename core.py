@@ -1485,9 +1485,10 @@ class ModeloCanonico40:
 
         if quantidade_numeros == 10:
             if self.historico:
-                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-                if len(jogo_din) == 10 and len(set(jogo_din)) == 10:
-                    tup_din = tuple(sorted(jogo_din))
+                jogo_din = sorted(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+                # O jogo ajustado só entra se respeitar as mesmas regras dos jogos sorteados abaixo
+                if len(set(jogo_din)) == 10 and 4 <= sum(1 for n in jogo_din if n % 2 == 0) <= 6 and 360 <= sum(jogo_din) <= 450 and len({(n - 1) // 8 for n in jogo_din}) == 10 and len({b - a for a, b in zip(jogo_din, jogo_din[1:])}) > 1:
+                    tup_din = tuple(jogo_din)
                     jogos_set.add(tup_din)
                     jogos.append(list(tup_din))
                     if len(jogos) >= quantidade_jogos:
@@ -1555,9 +1556,10 @@ class ModeloCanonico40:
 
         if quantidade_numeros == 50:
             if self.historico:
-                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-                if len(jogo_din) == 50 and len(set(jogo_din)) == 50:
-                    tup_din = tuple(sorted(jogo_din))
+                jogo_din = sorted(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+                # O jogo ajustado só entra se respeitar as mesmas regras dos jogos sorteados abaixo
+                if len(set(jogo_din)) == 50 and 23 <= sum(1 for n in jogo_din if n % 2 == 0) <= 27 and 2300 <= sum(jogo_din) <= 2650 and all(sum(1 for n in jogo_din if n // 10 == r) == 5 for r in range(10)):
+                    tup_din = tuple(jogo_din)
                     jogos_set.add(tup_din)
                     jogos.append(list(tup_din))
                     if len(jogos) >= quantidade_jogos:
@@ -1616,9 +1618,10 @@ class ModeloCanonico40:
 
         if quantidade_numeros == 6:
             if self.historico:
-                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-                if len(jogo_din) == 6 and len(set(jogo_din)) == 6:
-                    tup_din = tuple(sorted(jogo_din))
+                jogo_din = sorted(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+                # O jogo ajustado só entra se respeitar as mesmas regras dos jogos sorteados abaixo
+                if len(set(jogo_din)) == 6 and 2 <= sum(1 for n in jogo_din if n % 2 == 0) <= 4 and 115 <= sum(jogo_din) <= 195 and all(len(set(jogo_din) & set(st['dezenas'])) == 1 for st in ModeloHexaTrevoMaisMilionaria.SETORES.values()):
+                    tup_din = tuple(jogo_din)
                     jogos_set.add(tup_din)
                     jogos.append(list(tup_din))
                     if len(jogos) >= quantidade_jogos:
@@ -1674,9 +1677,10 @@ class ModeloCanonico40:
 
         if quantidade_numeros == 7:
             if self.historico:
-                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-                if len(jogo_din) == 7 and len(set(jogo_din)) == 7:
-                    tup_din = tuple(sorted(jogo_din))
+                jogo_din = sorted(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+                # O jogo ajustado só entra se respeitar as mesmas regras dos jogos sorteados abaixo
+                if len(set(jogo_din)) == 7 and 3 <= sum(1 for n in jogo_din if n % 2 == 0) <= 4 and 90 <= sum(jogo_din) <= 135 and all(len(set(jogo_din) & set(st['dezenas'])) == 1 for st in ModeloHeptagonalDiaDeSorte.SETORES.values()):
+                    tup_din = tuple(jogo_din)
                     jogos_set.add(tup_din)
                     jogos.append(list(tup_din))
                     if len(jogos) >= quantidade_jogos:
@@ -1732,9 +1736,10 @@ class ModeloCanonico40:
 
         if quantidade_numeros == 6:
             if self.historico:
-                jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-                if len(jogo_din) == 6 and len(set(jogo_din)) == 6:
-                    tup_din = tuple(sorted(jogo_din))
+                jogo_din = sorted(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+                # O jogo ajustado só entra se respeitar as mesmas regras dos jogos sorteados abaixo
+                if len(set(jogo_din)) == 6 and 2 <= sum(1 for n in jogo_din if n % 2 == 0) <= 4 and 125 <= sum(jogo_din) <= 181 and all(len(set(jogo_din) & set(st.dezenas)) == 1 for st in ModeloBivariadoDuplaSena.SETORES):
+                    tup_din = tuple(jogo_din)
                     jogos_set.add(tup_din)
                     jogos.append(list(tup_din))
                     if len(jogos) >= quantidade_jogos:
@@ -1786,8 +1791,11 @@ class ModeloCanonico40:
         vistos = set()
 
         if self.historico:
-            jogo_din = self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", [])
-            if len(jogo_din) == 7:
+            jogo_din = list(self.avaliar_dinamica_expansao_retracao().get("jogo_ajustado", []))
+            # Mesmas restrições do gerador heptacolunar: dígitos 0-9, 2 a 5 pares, soma 22-41, 4+ distintos
+            if (len(jogo_din) == 7 and all(0 <= d <= 9 for d in jogo_din)
+                    and 2 <= sum(1 for d in jogo_din if d % 2 == 0) <= 5
+                    and 22 <= sum(jogo_din) <= 41 and len(set(jogo_din)) >= 4):
                 vistos.add(tuple(jogo_din))
                 jogos.append(list(jogo_din))
                 if len(jogos) >= quantidade_jogos:
