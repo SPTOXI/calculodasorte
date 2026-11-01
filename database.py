@@ -148,6 +148,10 @@ def get_db_connection(auto_sync: bool = True):
 def init_db():
     """Inicializa as tabelas do banco de dados na Supabase"""
     with get_db_connection() as conn:
+        # Instâncias serverless que sobem juntas rodariam os ALTER TABLE em paralelo e o
+        # Postgres abortaria uma delas por deadlock. O lock de transação serializa a
+        # inicialização e é liberado no commit.
+        conn.execute("SELECT pg_advisory_xact_lock(hashtext('calculodasorte.init_db'))")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
