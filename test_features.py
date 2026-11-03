@@ -54,7 +54,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
     def test_03_gerar_multiplos_jogos_api(self):
         """Testa a geração de múltiplos palpites baseados no modelo canônico"""
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
         with self.client.session_transaction() as sess:
             sess['user_id'] = admin['id']
         res = self.client.post('/api/gerar-multiplos-jogos/mega_sena',
@@ -373,7 +373,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         """Testa listagem e aprovação manual de pagamentos no painel administrativo"""
         import uuid
         import database
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
         self.assertIsNotNone(admin)
 
         with self.client.session_transaction() as sess:
@@ -403,7 +403,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         texto_priv = res_priv.get_data(as_text=True)
         self.assertIn('Política de Privacidade', texto_priv)
         self.assertIn('Lei nº 13.709/2018', texto_priv)
-        self.assertIn('silvio.luis.morais@gmail.com', texto_priv)
+        self.assertIn('atendimento@calculodasorte.com.br', texto_priv)
         self.assertIn('Art. 18', texto_priv)
 
         # 2. Página de Termos
@@ -499,7 +499,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
     def test_20_pix_emvco_e_crc16_validos(self):
         """Valida que o payload PIX Copia e Cola gerado atende estritamente à especificação BACEN / EMVCo"""
         import database
-        chave = 'silvio.luis.morais@gmail.com'
+        chave = 'atendimento@calculodasorte.com.br'
         valor = 5.00
         pix = database.gerar_pix_copia_e_cola(chave, 'Calculo da Sorte', 'SAO PAULO', valor, 'CS123456')
         
@@ -525,7 +525,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         import base64
 
         # 1. Teste da função direta
-        pix_code = "00020101021126500014br.gov.bcb.pix0128silvio.luis.morais@gmail.com52040000530398654045.005802BR5916Calculo da Sorte6009SAO PAULO62070503***6304F4C2"
+        pix_code = "00020101021126550014br.gov.bcb.pix0133atendimento@calculodasorte.com.br52040000530398654045.005802BR5916Calculo da Sorte6009SAO PAULO62070503***63049308"
         qr_uri = database.gerar_qrcode_pix_base64(pix_code)
         self.assertTrue(qr_uri.startswith('data:image/svg+xml;base64,'))
         base64_part = qr_uri.split(',', 1)[1]
@@ -711,7 +711,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
 
         # 3. Geração do Copia e Cola conforme BACEN
         payload = database.gerar_pix_copia_e_cola(
-            chave='silvio.luis.morais@gmail.com',
+            chave='atendimento@calculodasorte.com.br',
             nome='Calculo da Sorte',
             cidade='SAO PAULO',
             valor=5.00,
@@ -720,7 +720,7 @@ class TestNovasFuncionalidades(unittest.TestCase):
         self.assertTrue(payload.startswith('000201'), "Payload deve iniciar com Tag 000201")
         self.assertIn('010211', payload, "Payload deve conter Tag 010211 (QR Code Estático)")
         self.assertIn('0014br.gov.bcb.pix', payload, "Payload deve conter GUI do BACEN")
-        self.assertIn('silvio.luis.morais@gmail.com', payload)
+        self.assertIn('atendimento@calculodasorte.com.br', payload)
         self.assertIn('52040000', payload)
         self.assertIn('5303986', payload)
         self.assertIn('54045.00', payload)

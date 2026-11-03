@@ -114,7 +114,7 @@ class TestImportacaoAdmin(unittest.TestCase):
         database.excluir_concursos_importados('quina')
 
         self.client = app.test_client()
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
         with self.client.session_transaction() as sess:
             sess['user_id'] = admin['id']
 

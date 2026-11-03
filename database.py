@@ -342,7 +342,7 @@ def init_db():
 
 
 
-def seed_admin(email: str = 'silvio.luis.morais@gmail.com'):
+def seed_admin(email: str = 'atendimento@calculodasorte.com.br'):
     """Garante a existência do usuário administrador padrão"""
     user = get_user_by_email(email)
     if not user:
@@ -987,7 +987,7 @@ def add_user_credits(user_id: int, amount: int = 1):
         conn.commit()
 
 
-PIX_KEY_DEFAULT = os.environ.get('PIX_KEY', 'silvio.luis.morais@gmail.com')
+PIX_KEY_DEFAULT = os.environ.get('PIX_KEY', 'atendimento@calculodasorte.com.br')
 PIX_BENEFICIARIO_DEFAULT = os.environ.get('PIX_BENEFICIARIO', 'Calculo da Sorte')
 PIX_CIDADE_DEFAULT = os.environ.get('PIX_CIDADE', 'SAO PAULO')
 

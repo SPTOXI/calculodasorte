@@ -20,7 +20,7 @@ class TestCalculadoraDaSorte(unittest.TestCase):
 
     def test_01_admin_seed(self):
         """Verifica se o usuário admin foi gerado com as credenciais especificadas"""
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
         self.assertIsNotNone(admin, "Admin deve existir no banco de dados")
         self.assertEqual(admin['role'], 'admin')
         self.assertTrue(check_password_hash(admin['password_hash'], '123456'), "Senha inicial deve ser 123456")
@@ -30,14 +30,14 @@ class TestCalculadoraDaSorte(unittest.TestCase):
         """Testa o fluxo de login web e cookies de sessão"""
         # Senha incorreta
         res = self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': 'errada'
         }, follow_redirects=True)
         self.assertIn('E-mail ou senha incorretos', res.get_data(as_text=True))
 
         # Senha correta
         res = self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': '123456'
         }, follow_redirects=True)
         self.assertEqual(res.status_code, 200)
@@ -47,7 +47,7 @@ class TestCalculadoraDaSorte(unittest.TestCase):
         """Testa o CRUD de usuários e a trava de bloqueio"""
         # 1. Login como admin
         self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': '123456'
         })
 
@@ -99,10 +99,10 @@ class TestCalculadoraDaSorte(unittest.TestCase):
     def test_04_protecao_auto_exclusao_e_bloqueio(self):
         """Verifica que o admin não pode bloquear ou excluir a si mesmo"""
         self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': '123456'
         })
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
 
         # Tentar se auto-bloquear
         res = self.client.post(f'/api/admin/usuarios/{admin["id"]}/bloquear')
@@ -117,7 +117,7 @@ class TestCalculadoraDaSorte(unittest.TestCase):
     def test_05_alterar_propria_senha(self):
         """Testa alteração de senha após o primeiro login"""
         self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': '123456'
         })
 
@@ -128,7 +128,7 @@ class TestCalculadoraDaSorte(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
         # Confirmar no banco
-        admin = database.get_user_by_email('silvio.luis.morais@gmail.com')
+        admin = database.get_user_by_email('atendimento@calculodasorte.com.br')
         self.assertTrue(check_password_hash(admin['password_hash'], 'admin_nova_senha_2026'))
         self.assertEqual(admin['must_change_password'], 0)
 
@@ -139,7 +139,7 @@ class TestCalculadoraDaSorte(unittest.TestCase):
     def test_06_loterias_status_e_sincronizacao(self):
         """Testa a rota de status e a sincronização com a Caixa"""
         self.client.post('/login', data={
-            'email': 'silvio.luis.morais@gmail.com',
+            'email': 'atendimento@calculodasorte.com.br',
             'password': '123456'
         })
 

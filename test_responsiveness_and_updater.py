@@ -16,7 +16,7 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         self.client = app.test_client()
         with self.client.session_transaction() as sess:
             sess['user_id'] = 1
-            sess['user_email'] = 'silvio.luis.morais@gmail.com'
+            sess['user_email'] = 'atendimento@calculodasorte.com.br'
             sess['user_role'] = 'admin'
 
     def test_01_viewport_meta_em_todos_templates(self):
@@ -192,7 +192,7 @@ class TestResponsividadeEUpdater(unittest.TestCase):
         html = html + '\n' + re.sub(r'\s+', '', html)
 
         # 1. Usuário admin padrão deve estar renderizado na tabela de usuários
-        self.assertIn('silvio.luis.morais@gmail.com', html)
+        self.assertIn('atendimento@calculodasorte.com.br', html)
         self.assertIn('badge-info', html)
 
         # 2. Pagamentos devem estar renderizados na tabela de pagamentos

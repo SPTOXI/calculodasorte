@@ -386,7 +386,7 @@ Documentação completa e lista de pendências em [`BOLOES.md`](BOLOES.md).
   - Enforced no backend (`/api/checkout/pix` e `/api/checkout/infinitepay`) e nas interfaces (`landing.html` e `planos.html`).
 - **Conformidade Completa com a LGPD (Lei nº 13.709/2018):**
   - **Consentimento Explícito no Cadastro (`/cadastro`):** Checkbox obrigatório de concordância com os Termos de Uso e Política de Privacidade e declaração de maioridade (+18 anos), gravando `accepted_terms_at` no banco SQLite.
-  - **Página de Política de Privacidade (`/privacidade`):** Documento jurídico completo indicando Encarregado pelo Tratamento de Dados (DPO Silvio Luis Morais, `silvio.luis.morais@gmail.com`), bases legais (Art. 7º), segurança criptográfica e finalidades.
+  - **Página de Política de Privacidade (`/privacidade`):** Documento jurídico completo indicando Encarregado pelo Tratamento de Dados (DPO Silvio Luis Morais, `atendimento@calculodasorte.com.br`), bases legais (Art. 7º), segurança criptográfica e finalidades.
   - **Página de Termos de Uso e Jogo Responsável (`/termos`):** Definição da natureza estocástica/matemática do Modelo Canônico 3.0, isenção de promessa de ganhos fáceis, política de entretenimento e alerta contra vício em apostas.
   - **Portabilidade de Dados Pessoais (`GET /api/usuario/exportar-dados`):** Implementação do Art. 18, V da LGPD com download em JSON estruturado do cadastro e histórico de apostas.
   - **Eliminação e Direito ao Esquecimento (`POST /api/usuario/excluir-conta`):** Implementação do Art. 18, VI da LGPD com exclusão definitiva de conta e apostas, e anonimização de registros fiscais de pagamentos (Art. 16, I).
@@ -492,7 +492,7 @@ Documentação completa e lista de pendências em [`BOLOES.md`](BOLOES.md).
 #### 🚀 Novas Funcionalidades
 - **Painel Administrativo (`/admin`):**
   - Autenticação e tela de login (`/login`).
-  - Criação de usuário administrador padrão (`silvio.luis.morais@gmail.com`).
+  - Criação de usuário administrador padrão (`atendimento@calculodasorte.com.br`).
   - Gestão completa de usuários (criação, listagem, bloqueio/desbloqueio, exclusão e alteração de senha).
 - **Módulo Atualizador Caixa (`updater.py`):**
   - Comunicação direta com a API da Caixa Econômica Federal para as 9 modalidades de loteria.
