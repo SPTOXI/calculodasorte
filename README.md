@@ -82,10 +82,13 @@ python scripts/submit_indexnow.py --dry-run
 
 A arquitetura canônica permanece como referência do gerador. Os experimentos de aprendizado de máquina são isolados, comparativos e não alteram automaticamente as saídas canônicas.
 
-- [Framework de Aprendizado e Comparação de Modelos 1.0](FRAMEWORK_APRENDIZADO_MODELOS_1_0.md) — organiza regressão, árvores, ensembles, métodos por distância, agrupamento, redes neurais e uso auxiliar de LLMs, com protocolo de validação e critérios de promoção.
-- [Camada Neural Experimental 1.0](APRENDIZADO_NEURAL_1_0.md) — especificação técnica do ciclo de treinamento, entradas, saídas, baselines e avaliação walk-forward.
+- [Framework de Aprendizado e Comparação de Modelos 1.0](FRAMEWORK_APRENDIZADO_MODELOS_1_0.md) — organiza métodos, protocolo de validação e critérios de promoção.
+- [Camada Neural Experimental 1.0](APRENDIZADO_NEURAL_1_0.md) — especificação técnica da rede neural; ainda não implementada.
+- `ml_baselines.py` — primeiro módulo executável: baseline uniforme teórico e baseline de frequência histórica para Mega-Sena, com avaliação walk-forward por Brier score.
+- `test_ml_baselines.py` — testes unitários dos baselines e da validação temporal.
+- `scripts/avaliar_baselines_mega_sena.py` — execução local do relatório de comparação.
 
-**Estado:** documentação conceitual e especificação. A inclusão desses documentos não significa que os algoritmos clássicos ou a rede neural estejam implementados, treinados ou validados no código da aplicação.
+**Estado:** os dois baselines da Mega-Sena e seus testes foram adicionados ao código. A execução retrospectiva com a janela padrão de 150 concursos ainda depende de um histórico com mais de 150 registros. O arquivo atualmente versionado `data/mega_sena_historico.json` contém apenas 53 concursos; portanto, não sustenta essa avaliação. A implementação não altera o gerador canônico.
 
 ---
 
