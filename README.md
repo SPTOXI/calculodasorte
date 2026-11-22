@@ -78,6 +78,17 @@ python scripts/submit_indexnow.py --dry-run
 
 ---
 
+## 🧠 Pesquisa em Machine Learning
+
+A arquitetura canônica permanece como referência do gerador. Os experimentos de aprendizado de máquina são isolados, comparativos e não alteram automaticamente as saídas canônicas.
+
+- [Framework de Aprendizado e Comparação de Modelos 1.0](FRAMEWORK_APRENDIZADO_MODELOS_1_0.md) — organiza regressão, árvores, ensembles, métodos por distância, agrupamento, redes neurais e uso auxiliar de LLMs, com protocolo de validação e critérios de promoção.
+- [Camada Neural Experimental 1.0](APRENDIZADO_NEURAL_1_0.md) — especificação técnica do ciclo de treinamento, entradas, saídas, baselines e avaliação walk-forward.
+
+**Estado:** documentação conceitual e especificação. A inclusão desses documentos não significa que os algoritmos clássicos ou a rede neural estejam implementados, treinados ou validados no código da aplicação.
+
+---
+
 ## 🎯 Funcionalidades
 
 ### 🎟️ Bolões (gestão de grupos e cotas)
