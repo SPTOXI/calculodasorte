@@ -1,6 +1,6 @@
 # Framework de Aprendizado e Comparação de Modelos 1.0
 
-**Status:** conceito técnico aprovado para pesquisa; não habilitado no gerador de jogos  
+**Status:** framework de pesquisa; baselines iniciais da Mega-Sena implementados; não habilitado no gerador de jogos  
 **Escopo:** Calculadora da Sorte — Modelo Canônico 4.0 e módulos especializados  
 **Relação com documentos existentes:** complementa `APRENDIZADO_NEURAL_1_0.md`; não o substitui  
 **Princípio:** comparar métodos de aprendizado sob o mesmo protocolo, sem presumir que complexidade computacional represente capacidade preditiva.
@@ -277,3 +277,18 @@ Este framework complementa a arquitetura registrada no README:
 - este framework organiza os comparadores, protocolos, critérios e governança de experimentos.
 
 **Estado após esta documentação:** conceito formalizado. Isso não significa que os algoritmos clássicos ou a rede neural já estejam implementados, treinados ou validados no código da aplicação.
+
+## 11. Estado de implementação (22/11/2026)
+
+Primeira entrega de código concluída para Mega-Sena:
+
+- `ml_baselines.py`: baseline uniforme teórico e frequência histórica empírica;
+- avaliação walk-forward com previsão do alvo antes de incorporar seu resultado;
+- Brier score médio por concurso e comparação entre os dois baselines;
+- validação da estrutura de cada concurso;
+- `test_ml_baselines.py`: testes unitários;
+- `scripts/avaliar_baselines_mega_sena.py`: runner local em JSON.
+
+**Limitação atual dos dados versionados:** `data/mega_sena_historico.json` contém 53 concursos e `data/mega_sena_meta.json` também informa 53 registros, embora o metadado aponte último concurso 3069. Com a configuração padrão de 150 concursos iniciais, a avaliação walk-forward ainda não pode ser executada sobre esse arquivo. É necessário disponibilizar um histórico íntegro com mais de 150 concursos, em ordem cronológica, antes de produzir métricas retrospectivas.
+
+Os testes foram adicionados ao repositório, mas ainda não foram executados em um ambiente de CI ou local nesta etapa. Não há alegação de desempenho superior, treinamento ou validação estatística concluída.
