@@ -25,7 +25,7 @@ Sistema web completo para análise estatística de loterias brasileiras baseado 
 
 ```bash
 # Instalar dependências
-pip install flask
+pip install -r requirements.txt
 
 # Executar aplicação
 python app.py
