@@ -325,3 +325,20 @@ A diferença de Brier (uniforme menos frequência) foi -0,00006868; portanto, ne
 ### Limitação de persistência
 
 A planilha foi auditada e usada nesta avaliação, mas não foi incorporada como arquivo de dados ao repositório nesta alteração. O arquivo versionado `data/mega_sena_historico.json` ainda contém 53 concursos. Portanto, o executor local padrão continuará limitado até que a base completa seja persistida ou indicada por caminho local. Não declarar a base do repositório atualizada com 3.088 concursos.
+
+
+## 13. Regressão Logística experimental — Mega-Sena (23/11/2026)
+
+Foi adicionada a primeira implementação supervisionada do framework:
+
+- `regressao_logistica_mega_sena.py`: classificador binário compartilhado para as 60 dezenas, com probabilidade marginal por dezena;
+- atributos temporais: frequências nas janelas 30, 60, 100 e 150, frequência acumulada, distância desde a última ocorrência e identidade one-hot da dezena;
+- pipeline `StandardScaler + LogisticRegression`: padronização e ajuste refeitos apenas com dados de treino disponíveis;
+- avaliação walk-forward com treino inicial e retreinamento em blocos de 25 alvos por padrão;
+- Brier score comparado ao baseline uniforme no mesmo período, além da média de acertos do top-6 como métrica descritiva;
+- executor: `scripts/avaliar_regressao_logistica_mega_sena.py`;
+- testes: `test_regressao_logistica_mega_sena.py`.
+
+O primeiro alvo de teste ocorre após 150 concursos para formação das variáveis e mais 150 origens rotuladas para o treino inicial (índice zero-based 300). Entre retreinamentos, o modelo permanece congelado; as previsões continuam sem vazamento, mas não incorporam os resultados intermediários até o ajuste seguinte.
+
+Dependências adicionadas: NumPy e scikit-learn. Os testes e a avaliação integral ainda precisam ser executados em ambiente Python. O histórico completo de 3.088 concursos ainda não está persistido no repositório; o JSON versionado continua com 53 registros. Portanto, não há resultado de desempenho da regressão logística declarado nesta entrega.
