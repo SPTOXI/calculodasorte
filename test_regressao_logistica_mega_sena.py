@@ -20,18 +20,18 @@ class TestFeaturesLogisticas(unittest.TestCase):
         X, y = construir_features_por_origem(
             self.historico, min_historico=3, janelas=(2, 3)
         )
-        # Origem 3: dezena 1 saiu nas origens 0 e 1? Não: apenas origem 0.
+        # Origem 3: dezena 1 apareceu uma vez nos dois concursos anteriores.
         self.assertAlmostEqual(X[0][0, 0], 0.5)
         self.assertEqual(int(y[0][0]), 1)
         # A identidade da dezena 1 ocupa a primeira coluna one-hot após
         # duas janelas + frequência total + gap.
-        self.assertEqual(X[0][0, 5], 1.0)
+        self.assertEqual(X[0][0, 4], 1.0)
 
     def test_formato_das_matrizes(self):
         X, y = construir_features_por_origem(
             self.historico, min_historico=3, janelas=(2, 3)
         )
-        self.assertEqual(X[0].shape, (60, 65))
+        self.assertEqual(X[0].shape, (60, 64))
         self.assertEqual(y[0].shape, (60,))
 
 
