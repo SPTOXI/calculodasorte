@@ -292,3 +292,36 @@ Primeira entrega de código concluída para Mega-Sena:
 **Limitação atual dos dados versionados:** `data/mega_sena_historico.json` contém 53 concursos e `data/mega_sena_meta.json` também informa 53 registros, embora o metadado aponte último concurso 3069. Com a configuração padrão de 150 concursos iniciais, a avaliação walk-forward ainda não pode ser executada sobre esse arquivo. É necessário disponibilizar um histórico íntegro com mais de 150 concursos, em ordem cronológica, antes de produzir métricas retrospectivas.
 
 Os testes foram adicionados ao repositório, mas ainda não foram executados em um ambiente de CI ou local nesta etapa. Não há alegação de desempenho superior, treinamento ou validação estatística concluída.
+
+## 12. Primeira avaliação executada com histórico até o concurso 3088 (23/11/2026)
+
+### Auditoria da planilha recebida
+
+A planilha enviada contém 3.088 linhas de concursos, do concurso 1 (11/03/1996) ao 3088 (19/11/2026), em ordem decrescente no arquivo original. Para a avaliação, os registros foram ordenados cronologicamente.
+
+Verificações realizadas:
+
+- 3.088 concursos;
+- nenhum número de concurso duplicado;
+- nenhum concurso ausente no intervalo 1–3088;
+- seis dezenas em cada concurso;
+- dezenas dentro do intervalo 1–60;
+- nenhuma dezena repetida dentro do mesmo concurso;
+- datas válidas.
+
+### Walk-forward dos dois baselines
+
+Configuração: primeiros 150 concursos usados como histórico inicial; previsão sequencial dos 2.938 concursos seguintes. Em cada etapa, a frequência histórica foi recalculada apenas com concursos anteriores ao alvo. O Brier foi calculado como a média dos erros quadráticos dos 60 indicadores marginais por concurso.
+
+| Métrica | Baseline uniforme | Frequência histórica |
+|---|---:|---:|
+| Brier médio | 0,09000000 | 0,09006868 |
+| Média de acertos da seleção top-6 | 0,600 esperado ao acaso | 0,60245 observado |
+
+A diferença de Brier (uniforme menos frequência) foi -0,00006868; portanto, nesta avaliação, o baseline uniforme teve Brier ligeiramente menor. A média de acertos da seleção top-6 por frequência foi 0,60245, praticamente igual à expectativa de 0,6 para uma seleção fixa de seis dezenas em sorteio 6/60.
+
+**Conclusão:** não há evidência de vantagem preditiva da frequência histórica sobre o baseline uniforme neste teste. A pequena diferença observada não deve ser interpretada como capacidade de previsão. O resultado é descritivo, restrito ao período e ao protocolo informados; análises adicionais devem considerar dependência temporal, incerteza estatística e replicação em períodos independentes.
+
+### Limitação de persistência
+
+A planilha foi auditada e usada nesta avaliação, mas não foi incorporada como arquivo de dados ao repositório nesta alteração. O arquivo versionado `data/mega_sena_historico.json` ainda contém 53 concursos. Portanto, o executor local padrão continuará limitado até que a base completa seja persistida ou indicada por caminho local. Não declarar a base do repositório atualizada com 3.088 concursos.
