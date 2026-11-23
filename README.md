@@ -87,6 +87,10 @@ A arquitetura canônica permanece como referência do gerador. Os experimentos d
 - `ml_baselines.py` — baseline uniforme e frequência histórica para Mega-Sena, com avaliação walk-forward.
 - `test_ml_baselines.py` — testes unitários.
 - `scripts/avaliar_baselines_mega_sena.py` — executor local do relatório.
+- `regressao_logistica_mega_sena.py` — classificador logístico multi-rótulo experimental por dezena.
+- `test_regressao_logistica_mega_sena.py` — testes da construção temporal das variáveis.
+- `scripts/avaliar_regressao_logistica_mega_sena.py` — executor walk-forward da regressão logística.
+- [Especificação da Regressão Logística 1.0](REGRESSAO_LOGISTICA_MEGA_SENA_1_0.md).
 
 **Primeiro experimento:** a planilha recebida com os concursos 1–3088 foi auditada e usada em uma avaliação walk-forward de 2.938 previsões após 150 concursos iniciais. O baseline uniforme obteve Brier médio 0,09000000; a frequência histórica, 0,09006868. Não foi observada vantagem preditiva da frequência histórica. A planilha analisada ainda não foi persistida no repositório; `data/mega_sena_historico.json` permanece com 53 concursos.
 
